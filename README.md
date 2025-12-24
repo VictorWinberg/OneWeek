@@ -60,7 +60,50 @@ This will automatically install dependencies for both backend and frontend.
 cp config.json.template config.json
 ```
 
-1. Edit `config.json` with your Google Calendar IDs
+1. Edit `config.json` with your calendar configuration.
+
+#### Configuration Structure
+
+The `config.json` file uses a role-based permission system:
+
+```json
+{
+  "users": {
+    "user1": {
+      "emails": ["user1@example.com", "user1.alt@example.com"]
+    }
+  },
+  "roles": {
+    "owner": ["create", "read", "update", "delete"],
+    "editor": ["create", "read", "update"],
+    "viewer": ["read"]
+  },
+  "calendars": [
+    {
+      "id": "your-calendar-id@gmail.com",
+      "name": "Calendar Name",
+      "color": "#FF6B9D",
+      "permissions": {
+        "user1": "owner",
+        "user2": "editor"
+      }
+    }
+  ]
+}
+```
+
+**Key Concepts:**
+
+- **Users**: Define users and their email addresses (a user can have multiple emails)
+- **Roles**: Define what permissions each role has (create, read, update, delete)
+- **Calendars**: Each calendar specifies which users have which roles
+- **Permissions**: When a user logs in with any of their emails, they get the permissions assigned to their user ID
+
+**Example Permissions:**
+
+- `owner`: Full CRUD access (create, read, update, delete)
+- `editor`: Can create, read, and update events, but not delete them
+- `viewer`: Can only read events
 
 ### 5. Run Development
 

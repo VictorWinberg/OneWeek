@@ -6,6 +6,7 @@ import { formatDateFull } from '../../utils/dateUtils';
 import { useCalendarStore } from '../../stores/calendarStore';
 import { useConfigStore } from '../../stores/configStore';
 import { ResponsibilitySelector } from './ResponsibilitySelector';
+import { ConfirmDialog } from '../ConfirmDialog';
 
 interface EventDetailPanelProps {
   block: Block | null;
@@ -17,6 +18,7 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
   const { getPersonById } = useConfigStore();
   const [isMoving, setIsMoving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Close on escape key
   useEffect(() => {
@@ -45,14 +47,18 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm('Är du säker på att du vill ta bort detta event?')) return;
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
 
+  const handleDeleteConfirm = async () => {
     setIsDeleting(true);
     try {
       await deleteBlock(block.id, block.calendarId);
+      setShowDeleteConfirm(false);
       onClose();
-    } finally {
+    } catch (error) {
+      console.error('Failed to delete event:', error);
       setIsDeleting(false);
     }
   };
@@ -144,14 +150,27 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
         {/* Footer */}
         <footer className="p-4 border-t border-[var(--color-bg-tertiary)]">
           <button
-            onClick={handleDelete}
+            onClick={handleDeleteClick}
             disabled={isDeleting}
             className="w-full py-2 px-4 rounded-lg bg-red-900/30 text-red-300 hover:bg-red-900/50 transition-colors disabled:opacity-50"
           >
-            {isDeleting ? 'Tar bort...' : 'Ta bort event'}
+            Ta bort event
           </button>
         </footer>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Ta bort event?"
+        description={`Är du säker på att du vill ta bort "${block.title}"? Detta kan inte ångras.`}
+        confirmText="Ta bort"
+        cancelText="Avbryt"
+        isDangerous={true}
+        isLoading={isDeleting}
+      />
     </>
   );
 }

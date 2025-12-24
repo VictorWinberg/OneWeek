@@ -1,43 +1,42 @@
 import { Router } from 'express';
-import { readFileSync } from 'fs';
-import { join } from 'path';
+import { getCalendarConfig, getUserCalendars, getUserPermissionsForCalendar } from '../services/permissionService.js';
 
 const router = Router();
 
-interface CalendarConfigItem {
-  id: string;
-  name: string;
-  color: string;
-}
-
-interface ConfigFile {
-  allowedEmails?: string[];
-  calendars: CalendarConfigItem[];
-}
-
-// Load config from file
-function loadConfig(): ConfigFile {
-  try {
-    // Read from project root (parent of backend directory)
-    const configPath = join(process.cwd(), '..', 'config.json');
-    const configData = readFileSync(configPath, 'utf-8');
-    const configFile: ConfigFile = JSON.parse(configData);
-
-    return configFile;
-  } catch (error) {
-    console.error('Error loading config:', error);
-    return { calendars: [] };
+// Middleware to check authentication
+const requireAuth = (
+  req: import('express').Request,
+  res: import('express').Response,
+  next: import('express').NextFunction
+) => {
+  if (!req.session.tokens?.access_token) {
+    return res.status(401).json({ error: 'Not authenticated' });
   }
-}
+  next();
+};
 
-// Load config at module level
-const config = loadConfig();
-export const allowedEmails = config.allowedEmails || [];
-
-// GET /api/config/calendars - Get calendar configuration
-router.get('/calendars', (req, res) => {
+// GET /api/config/calendars - Get calendar configuration with user's permissions
+router.get('/calendars', requireAuth, async (req, res) => {
   try {
-    res.json({ calendars: config.calendars });
+    // Get user email from session (should be set during auth)
+    const userEmail = req.session.userEmail;
+
+    if (!userEmail) {
+      return res.status(401).json({ error: 'User email not found in session' });
+    }
+
+    // Get calendars the user has access to
+    const calendars = getUserCalendars(userEmail);
+
+    // Add user's permissions to each calendar
+    const calendarsWithPermissions = calendars.map((cal) => ({
+      id: cal.id,
+      name: cal.name,
+      color: cal.color,
+      permissions: getUserPermissionsForCalendar(userEmail, cal.id),
+    }));
+
+    res.json({ calendars: calendarsWithPermissions });
   } catch (error) {
     console.error('Error getting calendar config:', error);
     res.status(500).json({ error: 'Failed to load calendar configuration' });

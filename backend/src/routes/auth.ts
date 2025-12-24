@@ -7,7 +7,7 @@ import {
   getUserInfo,
 } from '../services/googleAuth.js';
 import { getEnv } from '../utils/env.js';
-import { allowedEmails } from './config.js';
+import { isEmailAllowed } from '../services/permissionService.js';
 
 const router = Router();
 
@@ -49,18 +49,19 @@ router.get('/callback', async (req, res) => {
     setCredentials(oauth2Client, tokens);
     const userInfo = await getUserInfo(oauth2Client);
 
-    if (!userInfo.email || !allowedEmails.includes(userInfo.email)) {
+    if (!userInfo.email || !isEmailAllowed(userInfo.email)) {
       console.warn(`Unauthorized login attempt from: ${userInfo.email}`);
       const frontendUrl = getEnv('FRONTEND_URL', 'http://localhost:5173');
       return res.redirect(`${frontendUrl}?error=unauthorized`);
     }
 
-    // Store tokens in session
+    // Store tokens and user email in session
     req.session.tokens = {
       access_token: tokens.access_token ?? undefined,
       refresh_token: tokens.refresh_token ?? undefined,
       expiry_date: tokens.expiry_date ?? undefined,
     };
+    req.session.userEmail = userInfo.email;
 
     // Redirect to frontend
     const frontendUrl = getEnv('FRONTEND_URL', 'http://localhost:5173');

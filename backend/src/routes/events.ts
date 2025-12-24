@@ -9,6 +9,7 @@ import {
   normalizeEventToBlock,
   blockToGoogleEvent,
 } from '../services/calendarService.js';
+import { hasPermission, getUserCalendars } from '../services/permissionService.js';
 import type { PersonId, CalendarSource } from '../types/index.js';
 
 const router = Router();
@@ -19,7 +20,7 @@ const requireAuth = (
   res: import('express').Response,
   next: import('express').NextFunction
 ) => {
-  if (!req.session.tokens?.access_token) {
+  if (!req.session.tokens?.access_token || !req.session.userEmail) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
   next();
@@ -29,6 +30,7 @@ const requireAuth = (
 router.get('/', requireAuth, async (req, res) => {
   try {
     const { startDate, endDate, calendars: calendarsJson } = req.query;
+    const userEmail = req.session.userEmail!;
 
     if (!startDate || !endDate || !calendarsJson) {
       return res.status(400).json({
@@ -38,11 +40,14 @@ router.get('/', requireAuth, async (req, res) => {
 
     const calendars: CalendarSource[] = JSON.parse(calendarsJson as string);
 
+    // Filter calendars to only those the user has read access to
+    const allowedCalendars = calendars.filter((cal) => hasPermission(userEmail, cal.id, 'read'));
+
     const timeMin = new Date(startDate as string).toISOString();
     const timeMax = new Date(endDate as string).toISOString();
 
     // Fetch events from all calendars in parallel using service account
-    const eventPromises = calendars.map(async (cal) => {
+    const eventPromises = allowedCalendars.map(async (cal) => {
       try {
         const events = await listEvents(cal.id, timeMin, timeMax);
         return events.map((event) => normalizeEventToBlock(event, cal.id, cal.id));
@@ -70,6 +75,12 @@ router.get('/:calendarId/:eventId', requireAuth, async (req, res) => {
   try {
     const { calendarId, eventId } = req.params;
     const { personId } = req.query;
+    const userEmail = req.session.userEmail!;
+
+    // Check read permission
+    if (!hasPermission(userEmail, calendarId, 'read')) {
+      return res.status(403).json({ error: 'No permission to read this calendar' });
+    }
 
     const event = await getEvent(calendarId, eventId);
 
@@ -89,11 +100,17 @@ router.get('/:calendarId/:eventId', requireAuth, async (req, res) => {
 router.post('/', requireAuth, async (req, res) => {
   try {
     const { calendarId, title, description, startTime, endTime, allDay, metadata } = req.body;
+    const userEmail = req.session.userEmail!;
 
     if (!calendarId || !title || !startTime || !endTime) {
       return res.status(400).json({
         error: 'Missing required fields: calendarId, title, startTime, endTime',
       });
+    }
+
+    // Check create permission
+    if (!hasPermission(userEmail, calendarId, 'create')) {
+      return res.status(403).json({ error: 'No permission to create events in this calendar' });
     }
 
     const googleEvent = blockToGoogleEvent(title, description, startTime, endTime, allDay || false, metadata);
@@ -115,6 +132,12 @@ router.patch('/:calendarId/:eventId', requireAuth, async (req, res) => {
   try {
     const { calendarId, eventId } = req.params;
     const { title, description, startTime, endTime } = req.body;
+    const userEmail = req.session.userEmail!;
+
+    // Check update permission
+    if (!hasPermission(userEmail, calendarId, 'update')) {
+      return res.status(403).json({ error: 'No permission to update events in this calendar' });
+    }
 
     const updates: Record<string, unknown> = {};
     if (title !== undefined) updates.summary = title;
@@ -140,9 +163,19 @@ router.post('/:calendarId/:eventId/move', requireAuth, async (req, res) => {
   try {
     const { calendarId, eventId } = req.params;
     const { targetCalendarId } = req.body;
+    const userEmail = req.session.userEmail!;
 
     if (!targetCalendarId) {
       return res.status(400).json({ error: 'Missing targetCalendarId' });
+    }
+
+    // Check delete permission on source calendar and create permission on target calendar
+    if (!hasPermission(userEmail, calendarId, 'delete')) {
+      return res.status(403).json({ error: 'No permission to delete events from source calendar' });
+    }
+
+    if (!hasPermission(userEmail, targetCalendarId, 'create')) {
+      return res.status(403).json({ error: 'No permission to create events in target calendar' });
     }
 
     const movedEvent = await moveEventBetweenCalendars(calendarId, targetCalendarId, eventId);
@@ -162,6 +195,12 @@ router.post('/:calendarId/:eventId/move', requireAuth, async (req, res) => {
 router.delete('/:calendarId/:eventId', requireAuth, async (req, res) => {
   try {
     const { calendarId, eventId } = req.params;
+    const userEmail = req.session.userEmail!;
+
+    // Check delete permission
+    if (!hasPermission(userEmail, calendarId, 'delete')) {
+      return res.status(403).json({ error: 'No permission to delete events from this calendar' });
+    }
 
     const success = await deleteEvent(calendarId, eventId);
 

@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { createOAuth2Client, setCredentials } from '../services/googleAuth.js';
 import {
   listEvents,
   getEvent,
@@ -46,8 +45,6 @@ router.get('/', requireAuth, async (req, res) => {
     const eventPromises = calendars.map(async (cal) => {
       try {
         const events = await listEvents(cal.id, timeMin, timeMax);
-        console.log(`[Events] Calendar ${cal.name} (${cal.id}): ${events.length} events`);
-        // Use calendar.id as the responsiblePersonId
         return events.map((event) => normalizeEventToBlock(event, cal.id, cal.id));
       } catch (error) {
         console.error(`Error fetching events from calendar ${cal.id}:`, error);
@@ -57,18 +54,6 @@ router.get('/', requireAuth, async (req, res) => {
 
     const allEventsArrays = await Promise.all(eventPromises);
     const allEvents = allEventsArrays.flat();
-
-    console.log(`[Events] Total events fetched: ${allEvents.length}`);
-    console.log(
-      '[Events] Sample events:',
-      allEvents.slice(0, 2).map((e) => ({
-        title: e.title,
-        startTime: e.startTime,
-        endTime: e.endTime,
-        calendarId: e.calendarId,
-        responsiblePersonId: e.responsiblePersonId,
-      }))
-    );
 
     // Sort by start time
     allEvents.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());

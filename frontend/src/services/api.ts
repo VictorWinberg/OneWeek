@@ -72,7 +72,6 @@ export const eventsApi = {
     });
 
     const rawBlocks = await fetchJson<Block[]>(`${API_BASE}/events?${params}`);
-    console.log('[API] Raw response from /api/events:', { count: rawBlocks.length, rawBlocks });
 
     // Convert date strings to Date objects
     const blocks = rawBlocks.map((block) => ({
@@ -80,17 +79,6 @@ export const eventsApi = {
       startTime: new Date(block.startTime),
       endTime: new Date(block.endTime),
     }));
-
-    console.log('[API] After date conversion:', {
-      count: blocks.length,
-      samples: blocks.slice(0, 2).map(b => ({
-        title: b.title,
-        startTime: b.startTime,
-        endTime: b.endTime,
-        startTimeType: typeof b.startTime,
-        endTimeType: typeof b.endTime
-      }))
-    });
 
     return blocks;
   },

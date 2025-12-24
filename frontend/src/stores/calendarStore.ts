@@ -144,8 +144,13 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
     // Check if we have cached data
     const cached = weekCache[weekKey];
     if (cached) {
-      // Use cached data immediately
-      set({ blocks: cached.blocks, isLoading: false });
+      // Use cached data immediately - ensure dates are Date objects
+      const blocks = cached.blocks.map((block) => ({
+        ...block,
+        startTime: block.startTime instanceof Date ? block.startTime : new Date(block.startTime),
+        endTime: block.endTime instanceof Date ? block.endTime : new Date(block.endTime),
+      }));
+      set({ blocks, isLoading: false });
       // Refresh in background silently to get latest data
       get().fetchBlocks({ silent: true });
       get().prefetchAdjacentWeeks();
@@ -166,8 +171,13 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
     // Check if we have cached data
     const cached = weekCache[weekKey];
     if (cached) {
-      // Use cached data immediately
-      set({ blocks: cached.blocks, isLoading: false });
+      // Use cached data immediately - ensure dates are Date objects
+      const blocks = cached.blocks.map((block) => ({
+        ...block,
+        startTime: block.startTime instanceof Date ? block.startTime : new Date(block.startTime),
+        endTime: block.endTime instanceof Date ? block.endTime : new Date(block.endTime),
+      }));
+      set({ blocks, isLoading: false });
       // Refresh in background silently to get latest data
       get().fetchBlocks({ silent: true });
       get().prefetchAdjacentWeeks();

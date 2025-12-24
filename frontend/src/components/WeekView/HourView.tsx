@@ -1,10 +1,51 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor, useDroppable } from '@dnd-kit/core';
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { useCalendarStore } from '../../stores/calendarStore';
 import { useConfigStore } from '../../stores/configStore';
 import { getWeekDays, formatWeekHeader, getWeekNumber, formatDayShort, isToday } from '../../utils/dateUtils';
 import { getBlocksForDay } from '../../services/calendarNormalizer';
 import { EventCard } from './EventCard';
 import type { Block } from '../../types';
+
+interface DroppableTimeSlotProps {
+  id: string;
+  date: Date;
+  hour: number;
+  minute: number;
+  children: React.ReactNode;
+  activeBlockDuration?: number; // Duration in milliseconds
+}
+
+function DroppableTimeSlot({ id, date, hour, minute, children, activeBlockDuration }: DroppableTimeSlotProps) {
+  const { setNodeRef, isOver } = useDroppable({
+    id,
+    data: {
+      date,
+      hour,
+      minute,
+    },
+  });
+
+  // Calculate the height of the outline based on the active block's duration
+  const outlineHeight = activeBlockDuration ? Math.max((activeBlockDuration / (1000 * 60 * 60)) * 60, 30) : 0;
+
+  return (
+    <div ref={setNodeRef} className="relative">
+      {children}
+      {/* Show outline of full event when hovering */}
+      {isOver && activeBlockDuration && (
+        <div
+          className="absolute left-0 right-0 border-2 border-[var(--color-accent)] bg-[var(--color-bg-secondary)] rounded pointer-events-none z-10 before:absolute before:inset-0 before:bg-[var(--color-accent)]/10 before:rounded"
+          style={{
+            top: 0,
+            height: `${outlineHeight}px`,
+          }}
+        />
+      )}
+    </div>
+  );
+}
 
 interface HourViewProps {
   onBlockClick: (block: Block) => void;
@@ -13,10 +54,30 @@ interface HourViewProps {
 }
 
 export function HourView({ onBlockClick, onCreateEvent, onCreateEventForDate }: HourViewProps) {
-  const { blocks, selectedDate, isLoading, error, fetchBlocks, prefetchAdjacentWeeks, nextWeek, prevWeek, goToToday } =
-    useCalendarStore();
+  const {
+    blocks,
+    selectedDate,
+    isLoading,
+    error,
+    fetchBlocks,
+    prefetchAdjacentWeeks,
+    nextWeek,
+    prevWeek,
+    goToToday,
+    updateBlockTime,
+  } = useCalendarStore();
   const { isConfigured } = useConfigStore();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [activeBlock, setActiveBlock] = useState<Block | null>(null);
+
+  // Configure drag sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Require 8px movement before drag starts
+      },
+    })
+  );
 
   useEffect(() => {
     if (isConfigured) {
@@ -73,163 +134,233 @@ export function HourView({ onBlockClick, onCreateEvent, onCreateEventForDate }: 
     }
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    const blockId = String(event.active.id);
+    const block = blocks.find((b) => `${b.calendarId}-${b.id}` === blockId);
+    if (block) {
+      setActiveBlock(block);
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveBlock(null);
+
+    if (!event.over) return;
+
+    const blockId = event.active.id as string;
+    const dropData = event.over.data.current as { date: Date; hour: number; minute: number } | undefined;
+
+    if (!dropData) return;
+
+    const block = blocks.find((b) => `${b.calendarId}-${b.id}` === blockId);
+    if (!block) return;
+
+    // Calculate new times
+    const newStartTime = new Date(dropData.date);
+    newStartTime.setHours(dropData.hour, dropData.minute, 0, 0);
+
+    const duration = block.endTime.getTime() - block.startTime.getTime();
+    const newEndTime = new Date(newStartTime.getTime() + duration);
+
+    // Update the block
+    try {
+      await updateBlockTime(block.id, block.calendarId, newStartTime, newEndTime);
+    } catch (error) {
+      console.error('Failed to update block:', error);
+    }
+  };
+
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b border-[var(--color-bg-tertiary)] flex-shrink-0">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{formatWeekHeader(selectedDate)}</h1>
-          <span className="text-sm text-[var(--color-text-secondary)] bg-[var(--color-bg-tertiary)] px-2 py-1 rounded">
-            v.{weekNumber}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onCreateEvent}
-            className="px-3 py-2 rounded-lg bg-green-900/30 text-green-300 hover:bg-green-900/50 transition-colors flex items-center gap-2"
-            aria-label="Skapa event"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            <span className="hidden sm:inline">Skapa event</span>
-          </button>
-
-          <button
-            onClick={prevWeek}
-            className="p-2 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
-            aria-label="Föregående vecka"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-
-          <button
-            onClick={goToToday}
-            className="px-3 py-2 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium hover:bg-[var(--color-accent-hover)] transition-colors"
-          >
-            Idag
-          </button>
-
-          <button
-            onClick={nextWeek}
-            className="p-2 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
-            aria-label="Nästa vecka"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-      </header>
-
-      {/* Error message */}
-      {error && <div className="p-4 bg-red-900/30 border-b border-red-700 text-red-200 flex-shrink-0">{error}</div>}
-
-      {/* Hour Grid */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-auto min-h-0">
-        {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
-              <p className="text-[var(--color-text-secondary)]">Laddar events...</p>
-            </div>
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="flex flex-col h-full overflow-hidden">
+        {/* Header */}
+        <header className="flex items-center justify-between p-4 border-b border-[var(--color-bg-tertiary)] flex-shrink-0">
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{formatWeekHeader(selectedDate)}</h1>
+            <span className="text-sm text-[var(--color-text-secondary)] bg-[var(--color-bg-tertiary)] px-2 py-1 rounded">
+              v.{weekNumber}
+            </span>
           </div>
-        ) : (
-          <div className="flex min-w-max">
-            {/* Time column */}
-            <div className="sticky left-0 z-20 bg-[var(--color-bg-secondary)] border-r border-[var(--color-bg-tertiary)]">
-              <div className="h-[60px] border-b border-[var(--color-bg-tertiary)] flex items-center justify-center px-4">
-                <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Tid</span>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onCreateEvent}
+              className="px-3 py-2 rounded-lg bg-green-900/30 text-green-300 hover:bg-green-900/50 transition-colors flex items-center gap-2"
+              aria-label="Skapa event"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <span className="hidden sm:inline">Skapa event</span>
+            </button>
+
+            <button
+              onClick={prevWeek}
+              className="p-2 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
+              aria-label="Föregående vecka"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+
+            <button
+              onClick={goToToday}
+              className="px-3 py-2 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium hover:bg-[var(--color-accent-hover)] transition-colors"
+            >
+              Idag
+            </button>
+
+            <button
+              onClick={nextWeek}
+              className="p-2 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
+              aria-label="Nästa vecka"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </header>
+
+        {/* Error message */}
+        {error && <div className="p-4 bg-red-900/30 border-b border-red-700 text-red-200 flex-shrink-0">{error}</div>}
+
+        {/* Hour Grid */}
+        <div ref={scrollContainerRef} className="flex-1 overflow-auto min-h-0">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
+                <p className="text-[var(--color-text-secondary)]">Laddar events...</p>
               </div>
-              {hours.map((hour) => (
-                <div
-                  key={hour}
-                  className="h-[60px] border-b border-[var(--color-bg-tertiary)] flex items-start justify-end pr-2 pt-1"
-                >
-                  <span className="text-xs text-[var(--color-text-secondary)]">
-                    {hour.toString().padStart(2, '0')}:00
-                  </span>
-                </div>
-              ))}
             </div>
-
-            {/* Day columns */}
-            {weekDays.map((date) => {
-              const today = isToday(date);
-              const dayBlocks = getBlocksForDay(blocks, date).filter((block) => !block.allDay);
-
-              return (
-                <div
-                  key={date.toISOString()}
-                  className={`flex-1 min-w-[150px] border-r border-[var(--color-bg-tertiary)] last:border-r-0 ${
-                    today ? 'bg-[var(--color-accent)]/5' : ''
-                  }`}
-                >
-                  {/* Day header */}
+          ) : (
+            <div className="flex min-w-max">
+              {/* Time column */}
+              <div className="sticky left-0 z-20 bg-[var(--color-bg-secondary)] border-r border-[var(--color-bg-tertiary)]">
+                <div className="sticky top-0 z-30 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)] flex items-center justify-center h-[60px] px-4">
+                  <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Tid</span>
+                </div>
+                {hours.map((hour) => (
                   <div
-                    className={`sticky top-0 z-10 h-[60px] border-b border-[var(--color-bg-tertiary)] flex flex-col items-center justify-center ${
-                      today ? 'bg-[var(--color-accent)]/10' : 'bg-[var(--color-bg-secondary)]'
+                    key={hour}
+                    className="border-b border-[var(--color-bg-tertiary)] flex items-start justify-end pt-1 h-[60px] pr-2"
+                  >
+                    <span className="text-xs text-[var(--color-text-secondary)]">
+                      {hour.toString().padStart(2, '0')}:00
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Day columns */}
+              {weekDays.map((date) => {
+                const today = isToday(date);
+                const dayBlocks = getBlocksForDay(blocks, date).filter((block) => !block.allDay);
+
+                return (
+                  <div
+                    key={date.toISOString()}
+                    className={`flex-1 border-r border-[var(--color-bg-tertiary)] last:border-r-0 min-w-[150px] box-content ${
+                      today ? 'bg-[var(--color-accent)]/5' : ''
                     }`}
                   >
+                    {/* Day header */}
                     <div
-                      className={`text-xs uppercase tracking-wide ${
-                        today ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-secondary)]'
+                      className={`sticky top-0 z-10 border-b border-[var(--color-bg-tertiary)] flex flex-col items-center justify-center h-[60px] bg-[var(--color-bg-secondary)] relative ${
+                        today ? 'before:absolute before:inset-0 before:bg-[var(--color-accent)]/10' : ''
                       }`}
                     >
-                      {formatDayShort(date)}
+                      <div
+                        className={`uppercase tracking-wide text-xs relative ${
+                          today ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-secondary)]'
+                        }`}
+                      >
+                        {formatDayShort(date)}
+                      </div>
+                      <div
+                        className={`font-bold text-lg relative ${
+                          today ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'
+                        }`}
+                      >
+                        {date.getDate()}
+                      </div>
                     </div>
-                    <div
-                      className={`text-lg font-bold ${
-                        today ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'
-                      }`}
-                    >
-                      {date.getDate()}
+
+                    {/* Hour grid and events */}
+                    <div className="relative">
+                      {/* Hour grid lines */}
+                      {hours.map((hour) => (
+                        <div key={hour} className="h-[60px] border-b border-[var(--color-bg-tertiary)]" />
+                      ))}
+
+                      {/* 15-minute droppable time slots overlay */}
+                      <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none">
+                        {hours.map((hour) =>
+                          [0, 15, 30, 45].map((minute) => (
+                            <DroppableTimeSlot
+                              key={`${date.toISOString()}-${hour}-${minute}`}
+                              id={`${date.toISOString()}-${hour}-${minute}`}
+                              date={date}
+                              hour={hour}
+                              minute={minute}
+                              activeBlockDuration={
+                                activeBlock
+                                  ? activeBlock.endTime.getTime() - activeBlock.startTime.getTime()
+                                  : undefined
+                              }
+                            >
+                              <div
+                                className="h-[15px] cursor-pointer hover:bg-[var(--color-bg-tertiary)]/10 transition-colors pointer-events-auto"
+                                onClick={() => handleEmptySpaceClick(date)}
+                              />
+                            </DroppableTimeSlot>
+                          ))
+                        )}
+                      </div>
+
+                      {/* Events overlay */}
+                      <div className="absolute top-0 left-0 right-0 pointer-events-none z-0">
+                        {dayBlocks.map((block) => {
+                          const { top, height } = getBlockPosition(block);
+                          return (
+                            <div
+                              key={`${block.calendarId}-${block.id}`}
+                              className="absolute pointer-events-auto left-1 right-1"
+                              style={{
+                                top: `${top}px`,
+                                height: `${height}px`,
+                              }}
+                            >
+                              <EventCard
+                                block={block}
+                                onClick={() => onBlockClick(block)}
+                                compact={height < 60}
+                                fillHeight={true}
+                                draggable={true}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
-
-                  {/* Hour grid and events */}
-                  <div
-                    className="relative cursor-pointer hover:bg-[var(--color-bg-tertiary)]/10 transition-colors"
-                    onClick={() => handleEmptySpaceClick(date)}
-                  >
-                    {/* Hour grid lines */}
-                    {hours.map((hour) => (
-                      <div key={hour} className="h-[60px] border-b border-[var(--color-bg-tertiary)]" />
-                    ))}
-
-                    {/* Events overlay */}
-                    <div className="absolute top-0 left-0 right-0 pointer-events-none">
-                      {dayBlocks.map((block) => {
-                        const { top, height } = getBlockPosition(block);
-                        return (
-                          <div
-                            key={`${block.calendarId}-${block.id}`}
-                            className="absolute left-1 right-1 pointer-events-auto"
-                            style={{
-                              top: `${top}px`,
-                              height: `${height}px`,
-                            }}
-                          >
-                            <EventCard
-                              block={block}
-                              onClick={() => onBlockClick(block)}
-                              compact={height < 60}
-                              fillHeight={true}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* Drag Overlay */}
+      <DragOverlay>
+        {activeBlock ? (
+          <div className="opacity-90">
+            <EventCard block={activeBlock} onClick={() => {}} compact={false} fillHeight={false} />
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }

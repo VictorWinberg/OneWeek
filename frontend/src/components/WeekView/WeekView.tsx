@@ -1,8 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { useCalendarStore } from '../../stores/calendarStore';
 import { useConfigStore } from '../../stores/configStore';
 import { getWeekDays, formatWeekHeader, getWeekNumber } from '../../utils/dateUtils';
 import { DayColumn } from './DayColumn';
+import { EventCard } from './EventCard';
 import type { Block } from '../../types';
 
 interface WeekViewProps {
@@ -12,9 +15,18 @@ interface WeekViewProps {
 }
 
 export function WeekView({ onBlockClick, onCreateEvent, onCreateEventForDate }: WeekViewProps) {
-  const { blocks, selectedDate, isLoading, error, fetchBlocks, prefetchAdjacentWeeks, nextWeek, prevWeek, goToToday } = useCalendarStore();
-
+  const { blocks, selectedDate, isLoading, error, fetchBlocks, prefetchAdjacentWeeks, nextWeek, prevWeek, goToToday, updateBlockTime } = useCalendarStore();
   const { isConfigured } = useConfigStore();
+  const [activeBlock, setActiveBlock] = useState<Block | null>(null);
+
+  // Configure drag sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   useEffect(() => {
     if (isConfigured) {
@@ -28,6 +40,42 @@ export function WeekView({ onBlockClick, onCreateEvent, onCreateEventForDate }: 
   const weekDays = getWeekDays(selectedDate);
   const weekNumber = getWeekNumber(selectedDate);
 
+  const handleDragStart = (event: DragStartEvent) => {
+    const blockId = String(event.active.id);
+    const block = blocks.find((b) => `${b.calendarId}-${b.id}` === blockId);
+    if (block) {
+      setActiveBlock(block);
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveBlock(null);
+
+    if (!event.over) return;
+
+    const blockId = String(event.active.id);
+    const dropData = event.over.data.current as { date: Date } | undefined;
+
+    if (!dropData) return;
+
+    const block = blocks.find((b) => `${b.calendarId}-${b.id}` === blockId);
+    if (!block) return;
+
+    // Calculate new times - keep same time, just change the day
+    const newStartTime = new Date(dropData.date);
+    newStartTime.setHours(block.startTime.getHours(), block.startTime.getMinutes(), 0, 0);
+
+    const duration = block.endTime.getTime() - block.startTime.getTime();
+    const newEndTime = new Date(newStartTime.getTime() + duration);
+
+    // Update the block
+    try {
+      await updateBlockTime(block.id, block.calendarId, newStartTime, newEndTime);
+    } catch (error) {
+      console.error('Failed to update block:', error);
+    }
+  };
+
   if (!isConfigured) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -37,7 +85,8 @@ export function WeekView({ onBlockClick, onCreateEvent, onCreateEventForDate }: 
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="flex flex-col h-full">
       {/* Header */}
       <header className="flex items-center justify-between p-4 border-b border-[var(--color-bg-tertiary)]">
         <div className="flex items-center gap-4">
@@ -109,11 +158,22 @@ export function WeekView({ onBlockClick, onCreateEvent, onCreateEventForDate }: 
                 blocks={blocks}
                 onBlockClick={onBlockClick}
                 onEmptySpaceClick={onCreateEventForDate}
+                draggable={true}
               />
             ))}
           </div>
         )}
       </div>
-    </div>
+      </div>
+
+      {/* Drag Overlay */}
+      <DragOverlay>
+        {activeBlock ? (
+          <div className="opacity-90">
+            <EventCard block={activeBlock} onClick={() => {}} compact={false} fillHeight={false} />
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }

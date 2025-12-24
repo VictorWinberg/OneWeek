@@ -1,10 +1,42 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor, useDroppable } from '@dnd-kit/core';
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { useCalendarStore } from '../../stores/calendarStore';
 import { useConfigStore } from '../../stores/configStore';
 import { getWeekDays, formatWeekHeader, getWeekNumber, formatDayShort, isToday } from '../../utils/dateUtils';
 import { EventCard } from './EventCard';
 import { getBlocksForDay, sortBlocksByTime } from '../../services/calendarNormalizer';
 import type { Block } from '../../types';
+
+interface DroppableCellProps {
+  id: string;
+  date: Date;
+  calendarId: string;
+  children: React.ReactNode;
+  onClick: () => void;
+  isToday: boolean;
+}
+
+function DroppableCell({ id, date, calendarId, children, onClick, isToday }: DroppableCellProps) {
+  const { setNodeRef, isOver } = useDroppable({
+    id,
+    data: { date, calendarId },
+  });
+
+  return (
+    <td
+      ref={setNodeRef}
+      onClick={onClick}
+      className={`
+        p-2 border-b border-r border-[var(--color-bg-tertiary)] last:border-r-0 align-top cursor-pointer transition-colors
+        ${isToday ? 'bg-[var(--color-accent)]/5' : ''}
+        ${isOver ? 'bg-[var(--color-accent)]/20 ring-2 ring-[var(--color-accent)] ring-inset' : 'hover:bg-[var(--color-bg-tertiary)]/20'}
+      `}
+    >
+      {children}
+    </td>
+  );
+}
 
 interface CalendarViewProps {
   onBlockClick: (block: Block) => void;
@@ -13,8 +45,18 @@ interface CalendarViewProps {
 }
 
 export function CalendarView({ onBlockClick, onCreateEvent, onCreateEventForDate }: CalendarViewProps) {
-  const { blocks, selectedDate, isLoading, error, fetchBlocks, prefetchAdjacentWeeks, nextWeek, prevWeek, goToToday } = useCalendarStore();
+  const { blocks, selectedDate, isLoading, error, fetchBlocks, prefetchAdjacentWeeks, nextWeek, prevWeek, goToToday, updateBlockTime, moveBlock } = useCalendarStore();
   const { config, isConfigured } = useConfigStore();
+  const [activeBlock, setActiveBlock] = useState<Block | null>(null);
+
+  // Configure drag sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   useEffect(() => {
     if (isConfigured) {
@@ -49,8 +91,60 @@ export function CalendarView({ onBlockClick, onCreateEvent, onCreateEventForDate
     }
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    const blockId = String(event.active.id);
+    const block = blocks.find((b) => `${b.calendarId}-${b.id}` === blockId);
+    if (block) {
+      setActiveBlock(block);
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveBlock(null);
+
+    if (!event.over) return;
+
+    const blockId = String(event.active.id);
+    const dropData = event.over.data.current as { date: Date; calendarId: string } | undefined;
+
+    if (!dropData) return;
+
+    const block = blocks.find((b) => `${b.calendarId}-${b.id}` === blockId);
+    if (!block) return;
+
+    const needsMove = block.calendarId !== dropData.calendarId;
+    const needsTimeUpdate = block.startTime.toDateString() !== dropData.date.toDateString();
+
+    // If calendar changed, move the event
+    if (needsMove) {
+      try {
+        await moveBlock(block.id, block.calendarId, dropData.calendarId);
+      } catch (error) {
+        console.error('Failed to move block:', error);
+        return;
+      }
+    }
+
+    // If day changed, update the time
+    if (needsTimeUpdate) {
+      const newStartTime = new Date(dropData.date);
+      newStartTime.setHours(block.startTime.getHours(), block.startTime.getMinutes(), 0, 0);
+
+      const duration = block.endTime.getTime() - block.startTime.getTime();
+      const newEndTime = new Date(newStartTime.getTime() + duration);
+
+      try {
+        // Use the new calendar ID if moved
+        await updateBlockTime(block.id, needsMove ? dropData.calendarId : block.calendarId, newStartTime, newEndTime);
+      } catch (error) {
+        console.error('Failed to update block time:', error);
+      }
+    }
+  };
+
   return (
-    <div className="flex flex-col h-full">
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="flex flex-col h-full">
       {/* Header */}
       <header className="flex items-center justify-between p-4 border-b border-[var(--color-bg-tertiary)]">
         <div className="flex items-center gap-4">
@@ -162,12 +256,13 @@ export function CalendarView({ onBlockClick, onCreateEvent, onCreateEventForDate
                     {calendars.map((calendar) => {
                       const dayCalendarBlocks = getBlocksForDayAndCalendar(date, calendar.id);
                       return (
-                        <td
+                        <DroppableCell
                           key={`${date.toISOString()}-${calendar.id}`}
-                          className={`p-2 border-b border-r border-[var(--color-bg-tertiary)] last:border-r-0 align-top cursor-pointer hover:bg-[var(--color-bg-tertiary)]/20 transition-colors ${
-                            today ? 'bg-[var(--color-accent)]/5' : ''
-                          }`}
+                          id={`${date.toISOString()}-${calendar.id}`}
+                          date={date}
+                          calendarId={calendar.id}
                           onClick={() => handleEmptySpaceClick(date, calendar.id)}
+                          isToday={today}
                         >
                           <div className="space-y-2 min-h-[80px]">
                             {dayCalendarBlocks.length === 0 ? (
@@ -181,11 +276,12 @@ export function CalendarView({ onBlockClick, onCreateEvent, onCreateEventForDate
                                   block={block}
                                   onClick={() => onBlockClick(block)}
                                   compact={true}
+                                  draggable={true}
                                 />
                               ))
                             )}
                           </div>
-                        </td>
+                        </DroppableCell>
                       );
                     })}
                   </tr>
@@ -195,6 +291,16 @@ export function CalendarView({ onBlockClick, onCreateEvent, onCreateEventForDate
           </table>
         )}
       </div>
-    </div>
+      </div>
+
+      {/* Drag Overlay */}
+      <DragOverlay>
+        {activeBlock ? (
+          <div className="opacity-90">
+            <EventCard block={activeBlock} onClick={() => {}} compact={true} fillHeight={false} />
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }

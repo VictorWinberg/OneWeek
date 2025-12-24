@@ -1,3 +1,5 @@
+import { useDraggable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import type { Block } from '../../types';
 import { getInitial } from '../../types';
 import { useConfigStore } from '../../stores/configStore';
@@ -8,13 +10,27 @@ interface EventCardProps {
   onClick: () => void;
   compact?: boolean;
   fillHeight?: boolean;
+  draggable?: boolean;
 }
 
-export function EventCard({ block, onClick, compact = false, fillHeight = false }: EventCardProps) {
+export function EventCard({ block, onClick, compact = false, fillHeight = false, draggable = false }: EventCardProps) {
   const { getPersonById } = useConfigStore();
   const person = getPersonById(block.responsiblePersonId);
   const isPast = isBlockPast(block);
   const isCurrent = isBlockCurrent(block);
+
+  // Setup draggable
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `${block.calendarId}-${block.id}`,
+    disabled: !draggable || !person,
+  });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.5 : 1,
+    backgroundColor: person ? `color-mix(in srgb, ${person.color} 25%, var(--color-bg-secondary))` : 'transparent',
+    borderLeft: person ? `4px solid ${person.color}` : 'none',
+  };
 
   if (!person) {
     return null; // Don't render if person/calendar not found
@@ -29,7 +45,10 @@ export function EventCard({ block, onClick, compact = false, fillHeight = false 
 
   return (
     <button
+      ref={setNodeRef}
+      style={style}
       onClick={handleClick}
+      {...(draggable ? { ...listeners, ...attributes } : {})}
       className={`
         group relative w-full text-left rounded-lg transition-all duration-200
         flex flex-col items-start justify-start
@@ -37,13 +56,10 @@ export function EventCard({ block, onClick, compact = false, fillHeight = false 
         ${compact ? 'p-2' : 'p-3'}
         ${isPast ? 'opacity-60' : ''}
         ${isCurrent ? 'ring-2 ring-white/30 shadow-lg' : ''}
-        hover:scale-[1.02] hover:shadow-lg
+        ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}
+        ${!isDragging ? 'hover:scale-[1.02] hover:shadow-lg' : ''}
         focus:outline-none focus:ring-2 focus:ring-white/50
       `}
-      style={{
-        backgroundColor: `color-mix(in srgb, ${person.color} 25%, var(--color-bg-secondary))`,
-        borderLeft: `4px solid ${person.color}`,
-      }}
     >
       {/* Avatar */}
       <div

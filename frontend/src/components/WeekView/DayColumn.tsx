@@ -1,3 +1,4 @@
+import { useDroppable } from '@dnd-kit/core';
 import type { Block } from '../../types';
 import { isToday, formatDayShort, formatDayNumber } from '../../utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '../../services/calendarNormalizer';
@@ -9,11 +10,17 @@ interface DayColumnProps {
   onBlockClick: (block: Block) => void;
   onEmptySpaceClick?: (date: Date) => void;
   compact?: boolean;
+  draggable?: boolean;
 }
 
-export function DayColumn({ date, blocks, onBlockClick, onEmptySpaceClick, compact = false }: DayColumnProps) {
+export function DayColumn({ date, blocks, onBlockClick, onEmptySpaceClick, compact = false, draggable = false }: DayColumnProps) {
   const dayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date));
   const today = isToday(date);
+
+  const { setNodeRef, isOver } = useDroppable({
+    id: `day-${date.toISOString()}`,
+    data: { date },
+  });
 
   const handleEmptySpaceClick = () => {
     if (onEmptySpaceClick) {
@@ -23,10 +30,12 @@ export function DayColumn({ date, blocks, onBlockClick, onEmptySpaceClick, compa
 
   return (
     <div
+      ref={setNodeRef}
       className={`
         flex flex-col min-w-0 flex-1
         ${today ? 'bg-[var(--color-bg-tertiary)]/30' : ''}
         ${compact ? '' : 'border-r border-[var(--color-bg-tertiary)] last:border-r-0'}
+        ${isOver ? 'ring-2 ring-[var(--color-accent)] ring-inset' : ''}
       `}
     >
       {/* Day Header */}
@@ -64,6 +73,7 @@ export function DayColumn({ date, blocks, onBlockClick, onEmptySpaceClick, compa
               block={block}
               onClick={() => onBlockClick(block)}
               compact={compact}
+              draggable={draggable}
             />
           ))
         )}

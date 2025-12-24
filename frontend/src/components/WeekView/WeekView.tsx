@@ -12,15 +12,18 @@ interface WeekViewProps {
 }
 
 export function WeekView({ onBlockClick, onCreateEvent, onCreateEventForDate }: WeekViewProps) {
-  const { blocks, selectedDate, isLoading, error, fetchBlocks, nextWeek, prevWeek, goToToday } = useCalendarStore();
+  const { blocks, selectedDate, isLoading, error, fetchBlocks, prefetchAdjacentWeeks, nextWeek, prevWeek, goToToday } = useCalendarStore();
 
   const { isConfigured } = useConfigStore();
 
   useEffect(() => {
     if (isConfigured) {
-      fetchBlocks();
+      fetchBlocks().then(() => {
+        // Prefetch adjacent weeks after initial load
+        prefetchAdjacentWeeks();
+      });
     }
-  }, [isConfigured, fetchBlocks]);
+  }, [isConfigured, fetchBlocks, prefetchAdjacentWeeks]);
 
   const weekDays = getWeekDays(selectedDate);
   const weekNumber = getWeekNumber(selectedDate);

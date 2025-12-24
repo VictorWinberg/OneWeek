@@ -19,19 +19,22 @@ interface MobileViewProps {
 }
 
 export function MobileView({ onBlockClick, onCreateEvent }: MobileViewProps) {
-  const { blocks, selectedDate, isLoading, error, goToToday, nextWeek, prevWeek, fetchBlocks } = useCalendarStore();
+  const { blocks, selectedDate, isLoading, error, goToToday, nextWeek, prevWeek, fetchBlocks, prefetchAdjacentWeeks } = useCalendarStore();
   const { config, isConfigured } = useConfigStore();
   const weekDays = getWeekDays(selectedDate);
   const weekNumber = getWeekNumber(selectedDate);
   const calendars = config.calendars;
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'grid'>('list');
 
   // Fetch blocks on mount and when configuration changes
   useEffect(() => {
     if (isConfigured) {
-      fetchBlocks();
+      fetchBlocks().then(() => {
+        // Prefetch adjacent weeks after initial load
+        prefetchAdjacentWeeks();
+      });
     }
-  }, [isConfigured, fetchBlocks]);
+  }, [isConfigured, fetchBlocks, prefetchAdjacentWeeks]);
 
   // Get blocks for a specific day and calendar
   const getBlocksForDayAndCalendar = (date: Date, calendarId: string) => {
@@ -101,7 +104,7 @@ export function MobileView({ onBlockClick, onCreateEvent }: MobileViewProps) {
         <div className="flex items-center justify-center gap-1 bg-[var(--color-bg-tertiary)] rounded-lg p-1">
           <button
             onClick={() => setViewMode('list')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+            className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
               viewMode === 'list'
                 ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
                 : 'text-[var(--color-text-secondary)]'
@@ -110,8 +113,18 @@ export function MobileView({ onBlockClick, onCreateEvent }: MobileViewProps) {
             Lista
           </button>
           <button
+            onClick={() => setViewMode('grid')}
+            className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              viewMode === 'grid'
+                ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
+                : 'text-[var(--color-text-secondary)]'
+            }`}
+          >
+            Rutnät
+          </button>
+          <button
             onClick={() => setViewMode('calendar')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+            className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
               viewMode === 'calendar'
                 ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
                 : 'text-[var(--color-text-secondary)]'
@@ -145,6 +158,76 @@ export function MobileView({ onBlockClick, onCreateEvent }: MobileViewProps) {
               );
             })}
           </>
+        ) : viewMode === 'grid' ? (
+          // Grid View (2x4)
+          <div className="grid grid-cols-2 gap-2 p-2">
+            {weekDays.map((date) => {
+              const dayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date));
+              const isCurrentDay = isToday(date);
+
+              return (
+                <div
+                  key={date.toISOString()}
+                  className={`
+                    rounded-lg border overflow-hidden
+                    ${
+                      isCurrentDay
+                        ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/5'
+                        : 'border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)]'
+                    }
+                  `}
+                >
+                  {/* Day Header */}
+                  <div
+                    className={`
+                      px-3 py-2 text-center border-b
+                      ${
+                        isCurrentDay
+                          ? 'bg-[var(--color-accent)]/10 border-[var(--color-accent)]'
+                          : 'bg-[var(--color-bg-tertiary)] border-[var(--color-bg-tertiary)]'
+                      }
+                    `}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <div
+                        className={`text-sm font-bold ${
+                          isCurrentDay ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'
+                        }`}
+                      >
+                        {formatDayShort(date)}
+                      </div>
+                      {isCurrentDay && <div className="w-2 h-2 bg-[var(--color-accent)] rounded-full animate-pulse" />}
+                    </div>
+                    <div className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+                      {date.getDate()}/{date.getMonth() + 1}
+                    </div>
+                  </div>
+
+                  {/* Events */}
+                  <div className="p-2 space-y-2 min-h-[120px] max-h-[200px] overflow-y-auto">
+                    {dayBlocks.length === 0 ? (
+                      <p className="text-center text-[var(--color-text-secondary)] text-xs py-8 opacity-60">
+                        Inga events
+                      </p>
+                    ) : (
+                      dayBlocks.map((block) => (
+                        <EventCard
+                          key={`${block.calendarId}-${block.id}`}
+                          block={block}
+                          onClick={() => onBlockClick(block)}
+                          compact={true}
+                        />
+                      ))
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            {/* Empty cell for 8th position if needed */}
+            {weekDays.length % 2 !== 0 && (
+              <div className="rounded-lg border border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)]/50" />
+            )}
+          </div>
         ) : (
           // Calendar View
           <div className="overflow-x-auto">

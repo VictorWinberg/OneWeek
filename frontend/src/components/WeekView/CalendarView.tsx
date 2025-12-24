@@ -13,14 +13,17 @@ interface CalendarViewProps {
 }
 
 export function CalendarView({ onBlockClick, onCreateEvent, onCreateEventForDate }: CalendarViewProps) {
-  const { blocks, selectedDate, isLoading, error, fetchBlocks, nextWeek, prevWeek, goToToday } = useCalendarStore();
+  const { blocks, selectedDate, isLoading, error, fetchBlocks, prefetchAdjacentWeeks, nextWeek, prevWeek, goToToday } = useCalendarStore();
   const { config, isConfigured } = useConfigStore();
 
   useEffect(() => {
     if (isConfigured) {
-      fetchBlocks();
+      fetchBlocks().then(() => {
+        // Prefetch adjacent weeks after initial load
+        prefetchAdjacentWeeks();
+      });
     }
-  }, [isConfigured, fetchBlocks]);
+  }, [isConfigured, fetchBlocks, prefetchAdjacentWeeks]);
 
   const weekDays = getWeekDays(selectedDate);
   const weekNumber = getWeekNumber(selectedDate);

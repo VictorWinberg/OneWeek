@@ -4,6 +4,7 @@ import { useConfigStore } from './stores/configStore';
 import { useCalendarStore } from './stores/calendarStore';
 import { WeekView } from './components/WeekView/WeekView';
 import { CalendarView } from './components/WeekView/CalendarView';
+import { HourView } from './components/WeekView/HourView';
 import { MobileView } from './components/WeekView/MobileView';
 import { EventDetailPanel } from './components/EventDetail/EventDetailPanel';
 import { EventCreatePanel } from './components/EventDetail/EventCreatePanel';
@@ -20,7 +21,7 @@ function App() {
   const [isCreatePanelOpen, setIsCreatePanelOpen] = useState(false);
   const [createEventDate, setCreateEventDate] = useState<Date | undefined>(undefined);
   const [createEventCalendarId, setCreateEventCalendarId] = useState<string | undefined>(undefined);
-  const [viewMode, setViewMode] = useState<'day' | 'calendar'>('day');
+  const [viewMode, setViewMode] = useState<'day' | 'calendar' | 'hour'>('day');
 
   // Check authentication on mount
   useEffect(() => {
@@ -175,6 +176,16 @@ function App() {
               >
                 Kalendervy
               </button>
+              <button
+                onClick={() => setViewMode('hour')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'hour'
+                    ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
+                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                }`}
+              >
+                Timvy
+              </button>
             </div>
           )}
           <LogoutButton />
@@ -187,6 +198,12 @@ function App() {
           <MobileView onBlockClick={handleBlockClick} onCreateEvent={handleOpenCreatePanel} />
         ) : viewMode === 'day' ? (
           <WeekView
+            onBlockClick={handleBlockClick}
+            onCreateEvent={handleOpenCreatePanel}
+            onCreateEventForDate={handleOpenCreatePanelWithDate}
+          />
+        ) : viewMode === 'hour' ? (
+          <HourView
             onBlockClick={handleBlockClick}
             onCreateEvent={handleOpenCreatePanel}
             onCreateEventForDate={handleOpenCreatePanelWithDate}

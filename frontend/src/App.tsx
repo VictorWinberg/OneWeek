@@ -3,6 +3,7 @@ import { useAuthStore } from './stores/authStore';
 import { useConfigStore } from './stores/configStore';
 import { useCalendarStore } from './stores/calendarStore';
 import { WeekView } from './components/WeekView/WeekView';
+import { CalendarView } from './components/WeekView/CalendarView';
 import { MobileView } from './components/WeekView/MobileView';
 import { EventDetailPanel } from './components/EventDetail/EventDetailPanel';
 import { EventCreatePanel } from './components/EventDetail/EventCreatePanel';
@@ -18,6 +19,8 @@ function App() {
   const isMobile = useIsMobile();
   const [isCreatePanelOpen, setIsCreatePanelOpen] = useState(false);
   const [createEventDate, setCreateEventDate] = useState<Date | undefined>(undefined);
+  const [createEventCalendarId, setCreateEventCalendarId] = useState<string | undefined>(undefined);
+  const [viewMode, setViewMode] = useState<'day' | 'calendar'>('day');
 
   // Check authentication on mount
   useEffect(() => {
@@ -41,17 +44,20 @@ function App() {
 
   const handleOpenCreatePanel = () => {
     setCreateEventDate(undefined);
+    setCreateEventCalendarId(undefined);
     setIsCreatePanelOpen(true);
   };
 
-  const handleOpenCreatePanelWithDate = (date: Date) => {
+  const handleOpenCreatePanelWithDate = (date: Date, calendarId?: string) => {
     setCreateEventDate(date);
+    setCreateEventCalendarId(calendarId);
     setIsCreatePanelOpen(true);
   };
 
   const handleCloseCreatePanel = () => {
     setIsCreatePanelOpen(false);
     setCreateEventDate(undefined);
+    setCreateEventCalendarId(undefined);
   };
 
   // Loading state
@@ -147,6 +153,30 @@ function App() {
           </span>
         </h1>
         <div className="flex items-center gap-4">
+          {!isMobile && (
+            <div className="flex items-center gap-1 bg-[var(--color-bg-tertiary)] rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('day')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'day'
+                    ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
+                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                }`}
+              >
+                Dagvy
+              </button>
+              <button
+                onClick={() => setViewMode('calendar')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'calendar'
+                    ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
+                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                }`}
+              >
+                Kalendervy
+              </button>
+            </div>
+          )}
           <LogoutButton />
         </div>
       </nav>
@@ -155,8 +185,14 @@ function App() {
       <main className="flex-1 overflow-hidden">
         {isMobile ? (
           <MobileView onBlockClick={handleBlockClick} onCreateEvent={handleOpenCreatePanel} />
-        ) : (
+        ) : viewMode === 'day' ? (
           <WeekView
+            onBlockClick={handleBlockClick}
+            onCreateEvent={handleOpenCreatePanel}
+            onCreateEventForDate={handleOpenCreatePanelWithDate}
+          />
+        ) : (
+          <CalendarView
             onBlockClick={handleBlockClick}
             onCreateEvent={handleOpenCreatePanel}
             onCreateEventForDate={handleOpenCreatePanelWithDate}
@@ -168,7 +204,12 @@ function App() {
       <EventDetailPanel block={selectedBlock} onClose={handleCloseDetail} />
 
       {/* Event create panel */}
-      <EventCreatePanel isOpen={isCreatePanelOpen} onClose={handleCloseCreatePanel} defaultDate={createEventDate} />
+      <EventCreatePanel
+        isOpen={isCreatePanelOpen}
+        onClose={handleCloseCreatePanel}
+        defaultDate={createEventDate}
+        defaultCalendarId={createEventCalendarId}
+      />
     </div>
   );
 }

@@ -52,7 +52,17 @@ npm install
 
 This will automatically install dependencies for both backend and frontend.
 
-### 4. Run Development
+### 4. Configure Calendars
+
+1. Copy the template config file:
+
+```bash
+cp config.json.template config.json
+```
+
+1. Edit `config.json` with your Google Calendar IDs
+
+### 5. Run Development
 
 ```bash
 npm run dev
@@ -60,11 +70,11 @@ npm run dev
 
 This starts both backend (port 3001) and frontend (port 5173) concurrently.
 
-### 5. Configure Calendars
+### 6. Login and Use
 
-1. Open http://localhost:5173
+1. Open <http://localhost:5173>
 2. Login with Google
-3. Configure which Google Calendar ID corresponds to each family member
+3. Your configured calendars will load automatically from the backend
 
 ## Scripts
 
@@ -74,14 +84,6 @@ This starts both backend (port 3001) and frontend (port 5173) concurrently.
 | `npm run dev` | Start development servers |
 | `npm run build` | Build for production |
 | `npm start` | Start production servers |
-
-## Calendar IDs
-
-To find your Google Calendar IDs:
-1. Go to Google Calendar settings
-2. Click on the calendar you want
-3. Scroll to "Integrate calendar"
-4. Copy the Calendar ID
 
 ## License
 

@@ -1,12 +1,9 @@
 # Dependencies
 node_modules/
-.pnp
-.pnp.js
 
 # Build outputs
 dist/
 build/
-*.tsbuildinfo
 
 # Environment files
 .env
@@ -14,6 +11,10 @@ build/
 .env.development.local
 .env.test.local
 .env.production.local
+credentials.json
+
+# Config
+config.json
 
 # Logs
 logs
@@ -28,20 +29,16 @@ yarn-error.log*
 ._*
 .Spotlight-V100
 .Trashes
-ehthumbs.db
 Thumbs.db
 
 # IDE
-.idea/
 .vscode/
 *.swp
 *.swo
 *~
 
-# Testing
-coverage/
-
 # Misc
 *.local
 .cache
+
 

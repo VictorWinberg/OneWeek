@@ -37,43 +37,43 @@ A family calendar web app built on top of Google Calendar, designed for quick ov
    - Authorized redirect URIs: `http://localhost:3001/api/auth/callback`
 5. Note your Client ID and Client Secret
 
-### 2. Backend Configuration
+### 2. Environment Configuration
 
 ```bash
-cd backend
-cp .env.example .env
+cp env.example .env
 # Edit .env with your Google credentials
 ```
 
 ### 3. Install Dependencies
 
 ```bash
-# Backend
-cd backend
-npm install
-
-# Frontend
-cd ../frontend
 npm install
 ```
+
+This will automatically install dependencies for both backend and frontend.
 
 ### 4. Run Development
 
 ```bash
-# Terminal 1 - Backend
-cd backend
-npm run dev
-
-# Terminal 2 - Frontend
-cd frontend
 npm run dev
 ```
+
+This starts both backend (port 3001) and frontend (port 5173) concurrently.
 
 ### 5. Configure Calendars
 
 1. Open http://localhost:5173
 2. Login with Google
 3. Configure which Google Calendar ID corresponds to each family member
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm install` | Install all dependencies (root, backend, frontend) |
+| `npm run dev` | Start development servers |
+| `npm run build` | Build for production |
+| `npm start` | Start production servers |
 
 ## Calendar IDs
 
@@ -86,4 +86,3 @@ To find your Google Calendar IDs:
 ## License
 
 MIT
-

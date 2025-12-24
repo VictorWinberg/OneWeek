@@ -1,5 +1,14 @@
+import { useState, useEffect } from 'react';
 import { useCalendarStore } from '../../stores/calendarStore';
-import { getWeekDays, formatDayHeader, isToday, formatWeekHeader, getWeekNumber } from '../../utils/dateUtils';
+import { useConfigStore } from '../../stores/configStore';
+import {
+  getWeekDays,
+  formatDayHeader,
+  isToday,
+  formatWeekHeader,
+  getWeekNumber,
+  formatDayShort,
+} from '../../utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '../../services/calendarNormalizer';
 import { EventCard } from './EventCard';
 import type { Block } from '../../types';
@@ -10,9 +19,25 @@ interface MobileViewProps {
 }
 
 export function MobileView({ onBlockClick, onCreateEvent }: MobileViewProps) {
-  const { blocks, selectedDate, isLoading, error, goToToday, nextWeek, prevWeek } = useCalendarStore();
+  const { blocks, selectedDate, isLoading, error, goToToday, nextWeek, prevWeek, fetchBlocks } = useCalendarStore();
+  const { config, isConfigured } = useConfigStore();
   const weekDays = getWeekDays(selectedDate);
   const weekNumber = getWeekNumber(selectedDate);
+  const calendars = config.calendars;
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+
+  // Fetch blocks on mount and when configuration changes
+  useEffect(() => {
+    if (isConfigured) {
+      fetchBlocks();
+    }
+  }, [isConfigured, fetchBlocks]);
+
+  // Get blocks for a specific day and calendar
+  const getBlocksForDayAndCalendar = (date: Date, calendarId: string) => {
+    const dayBlocks = getBlocksForDay(blocks, date);
+    return sortBlocksByTime(dayBlocks.filter((b) => b.calendarId === calendarId));
+  };
 
   if (isLoading) {
     return (
@@ -72,6 +97,29 @@ export function MobileView({ onBlockClick, onCreateEvent }: MobileViewProps) {
             Idag
           </button>
         </div>
+
+        <div className="flex items-center justify-center gap-1 bg-[var(--color-bg-tertiary)] rounded-lg p-1">
+          <button
+            onClick={() => setViewMode('list')}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              viewMode === 'list'
+                ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
+                : 'text-[var(--color-text-secondary)]'
+            }`}
+          >
+            Lista
+          </button>
+          <button
+            onClick={() => setViewMode('calendar')}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              viewMode === 'calendar'
+                ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
+                : 'text-[var(--color-text-secondary)]'
+            }`}
+          >
+            Kalender
+          </button>
+        </div>
       </header>
 
       {/* Error */}
@@ -79,20 +127,105 @@ export function MobileView({ onBlockClick, onCreateEvent }: MobileViewProps) {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        {weekDays.map((date) => {
-          const dayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date));
-          const isCurrentDay = isToday(date);
+        {viewMode === 'list' ? (
+          // List View
+          <>
+            {weekDays.map((date) => {
+              const dayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date));
+              const isCurrentDay = isToday(date);
 
-          return (
-            <DaySection
-              key={date.toISOString()}
-              title={formatDayHeader(date)}
-              blocks={dayBlocks}
-              onBlockClick={onBlockClick}
-              isToday={isCurrentDay}
-            />
-          );
-        })}
+              return (
+                <DaySection
+                  key={date.toISOString()}
+                  title={formatDayHeader(date)}
+                  blocks={dayBlocks}
+                  onBlockClick={onBlockClick}
+                  isToday={isCurrentDay}
+                />
+              );
+            })}
+          </>
+        ) : (
+          // Calendar View
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-xs" style={{ tableLayout: 'fixed' }}>
+              <thead className="sticky top-0 z-10 bg-[var(--color-bg-secondary)]">
+                <tr>
+                  <th className="p-1 text-left text-[9px] font-semibold text-[var(--color-text-primary)] border-b border-r border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)] w-12">
+                    <div className="truncate">Dag</div>
+                  </th>
+                  {calendars.map((calendar) => (
+                    <th
+                      key={calendar.id}
+                      className="p-1 text-center text-[9px] font-semibold text-[var(--color-text-primary)] border-b border-r border-[var(--color-bg-tertiary)] last:border-r-0"
+                      style={{ width: `${Math.max(60, (window.innerWidth - 48) / calendars.length)}px` }}
+                    >
+                      <div className="flex items-center justify-center gap-1">
+                        <div
+                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: calendar.color }}
+                          title={calendar.name}
+                        />
+                        <span className="truncate hidden sm:inline">{calendar.name}</span>
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {weekDays.map((date) => {
+                  const today = isToday(date);
+                  return (
+                    <tr key={date.toISOString()} className={today ? 'bg-[var(--color-accent)]/5' : ''}>
+                      <td
+                        className={`p-1 text-left font-medium border-b border-r border-[var(--color-bg-tertiary)] ${
+                          today ? 'bg-[var(--color-accent)]/10' : 'bg-[var(--color-bg-secondary)]'
+                        }`}
+                      >
+                        <div className="flex flex-col text-[8px]">
+                          <div className={today ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'}>
+                            {formatDayShort(date).substring(0, 2)}
+                          </div>
+                          <div className="text-[var(--color-text-secondary)]">
+                            {date.getDate()}/{date.getMonth() + 1}
+                          </div>
+                        </div>
+                      </td>
+                      {calendars.map((calendar) => {
+                        const dayCalendarBlocks = getBlocksForDayAndCalendar(date, calendar.id);
+                        return (
+                          <td
+                            key={`${date.toISOString()}-${calendar.id}`}
+                            className={`p-0.5 border-b border-r border-[var(--color-bg-tertiary)] last:border-r-0 align-top ${
+                              today ? 'bg-[var(--color-accent)]/5' : ''
+                            }`}
+                          >
+                            <div className="space-y-0.5 min-h-[50px]">
+                              {dayCalendarBlocks.length === 0 ? (
+                                <div className="flex items-center justify-center h-full text-[var(--color-text-secondary)] text-[9px] opacity-50">
+                                  —
+                                </div>
+                              ) : (
+                                dayCalendarBlocks.map((block) => (
+                                  <EventCard
+                                    key={`${block.calendarId}-${block.id}`}
+                                    block={block}
+                                    onClick={() => onBlockClick(block)}
+                                    compact={true}
+                                  />
+                                ))
+                              )}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

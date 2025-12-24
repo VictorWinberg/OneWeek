@@ -146,7 +146,7 @@ function App() {
     <div className="min-h-screen flex flex-col">
       {/* Top navigation */}
       <nav className="flex items-center justify-between p-4 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)]">
-        <h1 className="text-xl font-bold text-[var(--color-text-primary)] flex items-baseline gap-2">
+        <h1 className="text-xl font-bold text-[var(--color-text-primary)] flex items-baseline">
           <img src="/calendar.svg" alt="Calendar" className="w-6 h-6" />
           <span>
             <span className="text-[#ef4136]">One</span>Week

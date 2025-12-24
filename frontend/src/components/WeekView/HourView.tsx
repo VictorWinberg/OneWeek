@@ -39,8 +39,10 @@ export function HourView({ onBlockClick, onCreateEvent, onCreateEventForDate }: 
   const weekDays = getWeekDays(selectedDate);
   const weekNumber = getWeekNumber(selectedDate);
 
-  // Generate hours array (0-23)
-  const hours = Array.from({ length: 24 }, (_, i) => i);
+  // Generate hours array (8-20 visible, but support scrolling to 0-23)
+  const startHour = 0;
+  const endHour = 23;
+  const hours = Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i);
 
   if (!isConfigured) {
     return (
@@ -71,9 +73,9 @@ export function HourView({ onBlockClick, onCreateEvent, onCreateEventForDate }: 
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b border-[var(--color-bg-tertiary)]">
+      <header className="flex items-center justify-between p-4 border-b border-[var(--color-bg-tertiary)] flex-shrink-0">
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{formatWeekHeader(selectedDate)}</h1>
           <span className="text-sm text-[var(--color-text-secondary)] bg-[var(--color-bg-tertiary)] px-2 py-1 rounded">
@@ -123,10 +125,10 @@ export function HourView({ onBlockClick, onCreateEvent, onCreateEventForDate }: 
       </header>
 
       {/* Error message */}
-      {error && <div className="p-4 bg-red-900/30 border-b border-red-700 text-red-200">{error}</div>}
+      {error && <div className="p-4 bg-red-900/30 border-b border-red-700 text-red-200 flex-shrink-0">{error}</div>}
 
       {/* Hour Grid */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-auto">
+      <div ref={scrollContainerRef} className="flex-1 overflow-auto min-h-0">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <div className="flex flex-col items-center gap-3">

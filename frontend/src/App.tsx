@@ -144,9 +144,9 @@ function App() {
 
   // Main app
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden">
       {/* Top navigation */}
-      <nav className="flex items-center justify-between p-4 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)]">
+      <nav className="flex items-center justify-between p-4 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)] flex-shrink-0">
         <h1 className="text-xl font-bold text-[var(--color-text-primary)] flex items-baseline">
           <img src="/calendar.svg" alt="Calendar" className="w-6 h-6" />
           <span>
@@ -193,7 +193,7 @@ function App() {
       </nav>
 
       {/* Main content */}
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-hidden min-h-0">
         {isMobile ? (
           <MobileView onBlockClick={handleBlockClick} onCreateEvent={handleOpenCreatePanel} />
         ) : viewMode === 'day' ? (

@@ -7,9 +7,10 @@ interface EventCardProps {
   block: Block;
   onClick: () => void;
   compact?: boolean;
+  fillHeight?: boolean;
 }
 
-export function EventCard({ block, onClick, compact = false }: EventCardProps) {
+export function EventCard({ block, onClick, compact = false, fillHeight = false }: EventCardProps) {
   const { getPersonById } = useConfigStore();
   const person = getPersonById(block.responsiblePersonId);
   const isPast = isBlockPast(block);
@@ -31,6 +32,8 @@ export function EventCard({ block, onClick, compact = false }: EventCardProps) {
       onClick={handleClick}
       className={`
         group relative w-full text-left rounded-lg transition-all duration-200
+        flex flex-col items-start justify-start
+        ${fillHeight ? 'h-full' : ''}
         ${compact ? 'p-2' : 'p-3'}
         ${isPast ? 'opacity-60' : ''}
         ${isCurrent ? 'ring-2 ring-white/30 shadow-lg' : ''}
@@ -61,7 +64,7 @@ export function EventCard({ block, onClick, compact = false }: EventCardProps) {
       <div className="pr-4">
         <h4
           className={`
-            font-medium text-[var(--color-text-primary)] truncate
+            font-medium text-[var(--color-text-primary)] break-words
             ${compact ? 'text-xs' : 'text-sm'}
           `}
         >

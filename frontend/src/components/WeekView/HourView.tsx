@@ -13,7 +13,8 @@ interface HourViewProps {
 }
 
 export function HourView({ onBlockClick, onCreateEvent, onCreateEventForDate }: HourViewProps) {
-  const { blocks, selectedDate, isLoading, error, fetchBlocks, prefetchAdjacentWeeks, nextWeek, prevWeek, goToToday } = useCalendarStore();
+  const { blocks, selectedDate, isLoading, error, fetchBlocks, prefetchAdjacentWeeks, nextWeek, prevWeek, goToToday } =
+    useCalendarStore();
   const { isConfigured } = useConfigStore();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -60,7 +61,7 @@ export function HourView({ onBlockClick, onCreateEvent, onCreateEventForDate }: 
     const endMinute = block.endTime.getMinutes();
 
     const top = (startHour + startMinute / 60) * 60; // 60px per hour
-    const duration = (endHour - startHour) + (endMinute - startMinute) / 60;
+    const duration = endHour - startHour + (endMinute - startMinute) / 60;
     const height = Math.max(duration * 60, 30); // Minimum 30px height
 
     return { top, height };
@@ -158,7 +159,7 @@ export function HourView({ onBlockClick, onCreateEvent, onCreateEventForDate }: 
             {/* Day columns */}
             {weekDays.map((date) => {
               const today = isToday(date);
-              const dayBlocks = getBlocksForDay(blocks, date).filter(block => !block.allDay);
+              const dayBlocks = getBlocksForDay(blocks, date).filter((block) => !block.allDay);
 
               return (
                 <div
@@ -196,10 +197,7 @@ export function HourView({ onBlockClick, onCreateEvent, onCreateEventForDate }: 
                   >
                     {/* Hour grid lines */}
                     {hours.map((hour) => (
-                      <div
-                        key={hour}
-                        className="h-[60px] border-b border-[var(--color-bg-tertiary)]"
-                      />
+                      <div key={hour} className="h-[60px] border-b border-[var(--color-bg-tertiary)]" />
                     ))}
 
                     {/* Events overlay */}
@@ -219,6 +217,7 @@ export function HourView({ onBlockClick, onCreateEvent, onCreateEventForDate }: 
                               block={block}
                               onClick={() => onBlockClick(block)}
                               compact={height < 60}
+                              fillHeight={true}
                             />
                           </div>
                         );
@@ -234,4 +233,3 @@ export function HourView({ onBlockClick, onCreateEvent, onCreateEventForDate }: 
     </div>
   );
 }
-

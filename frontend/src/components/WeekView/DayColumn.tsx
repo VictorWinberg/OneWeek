@@ -46,7 +46,6 @@ export function DayColumn({ date, blocks, onBlockClick, onEmptySpaceClick, compa
         >
           {formatDayNumber(date)}
         </div>
-        {today && <div className="w-2 h-2 bg-[var(--color-accent)] rounded-full mx-auto mt-1" />}
       </div>
 
       {/* Events */}

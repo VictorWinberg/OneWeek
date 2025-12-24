@@ -142,7 +142,11 @@ export function CalendarView({ onBlockClick, onCreateEvent, onCreateEventForDate
                     >
                       <div className="flex items-center gap-2">
                         <div>
-                          <div className={`text-sm ${today ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'}`}>
+                          <div
+                            className={`text-sm ${
+                              today ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'
+                            }`}
+                          >
                             {formatDayShort(date)}
                           </div>
                           <div className="text-xs text-[var(--color-text-secondary)]">
@@ -191,4 +195,3 @@ export function CalendarView({ onBlockClick, onCreateEvent, onCreateEventForDate
     </div>
   );
 }
-

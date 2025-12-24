@@ -68,7 +68,9 @@ export function EventCard({ block, onClick, compact = false }: EventCardProps) {
           {block.title}
         </h4>
 
-        {!compact && <p className="text-xs text-[var(--color-text-secondary)] mt-1">{formatBlockTime(block)}</p>}
+        <p className={`text-[var(--color-text-secondary)] mt-1 ${compact ? 'text-[10px]' : 'text-xs'}`}>
+          {formatBlockTime(block)}
+        </p>
       </div>
 
       {/* Current indicator */}

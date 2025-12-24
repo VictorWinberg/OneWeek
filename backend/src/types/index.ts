@@ -3,7 +3,7 @@ export type PersonId = 'annie' | 'victor' | 'annie-victor' | 'lillen' | 'familje
 export interface CalendarSource {
   id: string;
   name: string;
-  personId: PersonId;
+  color?: string; // Optional color for frontend display
 }
 
 export interface BlockMetadata {
@@ -20,7 +20,7 @@ export interface Block {
   startTime: string; // ISO string
   endTime: string; // ISO string
   allDay: boolean;
-  responsiblePersonId: PersonId;
+  responsiblePersonId: string; // Calendar ID of responsible person
   metadata: BlockMetadata;
 }
 

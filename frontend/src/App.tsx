@@ -1,10 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuthStore } from './stores/authStore';
 import { useConfigStore } from './stores/configStore';
 import { useCalendarStore } from './stores/calendarStore';
 import { WeekView } from './components/WeekView/WeekView';
 import { MobileView } from './components/WeekView/MobileView';
 import { EventDetailPanel } from './components/EventDetail/EventDetailPanel';
+import { EventCreatePanel } from './components/EventDetail/EventCreatePanel';
 import { LoginButton, LogoutButton } from './components/Auth/LoginButton';
 import { useIsMobile } from './hooks/useMediaQuery';
 import type { Block } from './types';
@@ -15,6 +16,8 @@ function App() {
   const { isConfigured, isLoading: configLoading, error: configError, loadConfig } = useConfigStore();
   const { selectBlock, selectedBlock } = useCalendarStore();
   const isMobile = useIsMobile();
+  const [isCreatePanelOpen, setIsCreatePanelOpen] = useState(false);
+  const [createEventDate, setCreateEventDate] = useState<Date | undefined>(undefined);
 
   // Check authentication on mount
   useEffect(() => {
@@ -34,6 +37,21 @@ function App() {
 
   const handleCloseDetail = () => {
     selectBlock(null);
+  };
+
+  const handleOpenCreatePanel = () => {
+    setCreateEventDate(undefined);
+    setIsCreatePanelOpen(true);
+  };
+
+  const handleOpenCreatePanelWithDate = (date: Date) => {
+    setCreateEventDate(date);
+    setIsCreatePanelOpen(true);
+  };
+
+  const handleCloseCreatePanel = () => {
+    setIsCreatePanelOpen(false);
+    setCreateEventDate(undefined);
   };
 
   // Loading state
@@ -135,11 +153,22 @@ function App() {
 
       {/* Main content */}
       <main className="flex-1 overflow-hidden">
-        {isMobile ? <MobileView onBlockClick={handleBlockClick} /> : <WeekView onBlockClick={handleBlockClick} />}
+        {isMobile ? (
+          <MobileView onBlockClick={handleBlockClick} onCreateEvent={handleOpenCreatePanel} />
+        ) : (
+          <WeekView
+            onBlockClick={handleBlockClick}
+            onCreateEvent={handleOpenCreatePanel}
+            onCreateEventForDate={handleOpenCreatePanelWithDate}
+          />
+        )}
       </main>
 
       {/* Event detail panel */}
       <EventDetailPanel block={selectedBlock} onClose={handleCloseDetail} />
+
+      {/* Event create panel */}
+      <EventCreatePanel isOpen={isCreatePanelOpen} onClose={handleCloseCreatePanel} defaultDate={createEventDate} />
     </div>
   );
 }

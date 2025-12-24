@@ -20,6 +20,14 @@ interface CalendarState {
   selectBlock: (block: Block | null) => void;
 
   // Block operations
+  createBlock: (data: {
+    calendarId: string;
+    title: string;
+    description?: string;
+    startTime: Date;
+    endTime: Date;
+    allDay?: boolean;
+  }) => Promise<void>;
   moveBlock: (blockId: string, calendarId: string, targetCalendarId: string) => Promise<void>;
   updateBlockTime: (blockId: string, calendarId: string, startTime: Date, endTime: Date) => Promise<void>;
   deleteBlock: (blockId: string, calendarId: string) => Promise<void>;
@@ -36,7 +44,6 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
     const { config } = useConfigStore.getState();
 
     if (config.calendars.length === 0) {
-      console.log('[CalendarStore] No calendars configured');
       set({ blocks: [], isLoading: false });
       return;
     }
@@ -48,22 +55,7 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
       const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
       const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
 
-      console.log('[CalendarStore] Fetching blocks:', {
-        weekStart: weekStart.toISOString(),
-        weekEnd: weekEnd.toISOString(),
-        calendarCount: config.calendars.length,
-      });
-
       const blocks = await eventsApi.getEvents(weekStart, weekEnd, config.calendars);
-
-      console.log('[CalendarStore] Received blocks:', {
-        count: blocks.length,
-        blocks: blocks.map((b) => ({
-          title: b.title,
-          start: b.startTime.toISOString(),
-          end: b.endTime.toISOString(),
-        })),
-      });
 
       set({ blocks, isLoading: false });
     } catch (error) {
@@ -97,6 +89,19 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
 
   selectBlock: (block) => {
     set({ selectedBlock: block });
+  },
+
+  createBlock: async (data) => {
+    try {
+      await eventsApi.createEvent(data);
+
+      // Refresh blocks to include the new event
+      await get().fetchBlocks();
+    } catch (error) {
+      set({ error: 'Failed to create event' });
+      console.error('Failed to create block:', error);
+      throw error;
+    }
   },
 
   moveBlock: async (blockId, calendarId, targetCalendarId) => {

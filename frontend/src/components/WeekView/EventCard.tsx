@@ -21,9 +21,14 @@ export function EventCard({ block, onClick, compact = false }: EventCardProps) {
 
   const initial = getInitial(person.name);
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering parent click handlers
+    onClick();
+  };
+
   return (
     <button
-      onClick={onClick}
+      onClick={handleClick}
       className={`
         group relative w-full text-left rounded-lg transition-all duration-200
         ${compact ? 'p-2' : 'p-3'}
@@ -63,11 +68,7 @@ export function EventCard({ block, onClick, compact = false }: EventCardProps) {
           {block.title}
         </h4>
 
-        {!compact && (
-          <p className="text-xs text-[var(--color-text-secondary)] mt-1">
-            {formatBlockTime(block)}
-          </p>
-        )}
+        {!compact && <p className="text-xs text-[var(--color-text-secondary)] mt-1">{formatBlockTime(block)}</p>}
       </div>
 
       {/* Current indicator */}
@@ -77,4 +78,3 @@ export function EventCard({ block, onClick, compact = false }: EventCardProps) {
     </button>
   );
 }
-

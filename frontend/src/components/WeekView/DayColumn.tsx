@@ -7,12 +7,19 @@ interface DayColumnProps {
   date: Date;
   blocks: Block[];
   onBlockClick: (block: Block) => void;
+  onEmptySpaceClick?: (date: Date) => void;
   compact?: boolean;
 }
 
-export function DayColumn({ date, blocks, onBlockClick, compact = false }: DayColumnProps) {
+export function DayColumn({ date, blocks, onBlockClick, onEmptySpaceClick, compact = false }: DayColumnProps) {
   const dayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date));
   const today = isToday(date);
+
+  const handleEmptySpaceClick = () => {
+    if (onEmptySpaceClick) {
+      onEmptySpaceClick(date);
+    }
+  };
 
   return (
     <div
@@ -30,9 +37,7 @@ export function DayColumn({ date, blocks, onBlockClick, compact = false }: DayCo
           ${today ? 'bg-[var(--color-accent)]/10' : ''}
         `}
       >
-        <div className="text-xs uppercase tracking-wide text-[var(--color-text-secondary)]">
-          {formatDayShort(date)}
-        </div>
+        <div className="text-xs uppercase tracking-wide text-[var(--color-text-secondary)]">{formatDayShort(date)}</div>
         <div
           className={`
             text-2xl font-bold mt-1
@@ -41,15 +46,16 @@ export function DayColumn({ date, blocks, onBlockClick, compact = false }: DayCo
         >
           {formatDayNumber(date)}
         </div>
-        {today && (
-          <div className="w-2 h-2 bg-[var(--color-accent)] rounded-full mx-auto mt-1" />
-        )}
+        {today && <div className="w-2 h-2 bg-[var(--color-accent)] rounded-full mx-auto mt-1" />}
       </div>
 
       {/* Events */}
-      <div className="flex-1 p-2 space-y-2 overflow-y-auto">
+      <div
+        className="flex-1 p-2 space-y-2 overflow-y-auto cursor-pointer hover:bg-[var(--color-bg-tertiary)]/20 transition-colors"
+        onClick={handleEmptySpaceClick}
+      >
         {dayBlocks.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-[var(--color-text-secondary)] text-sm opacity-50">
+          <div className="h-full flex items-center justify-center text-[var(--color-text-secondary)] text-sm opacity-50 pointer-events-none">
             —
           </div>
         ) : (
@@ -66,4 +72,3 @@ export function DayColumn({ date, blocks, onBlockClick, compact = false }: DayCo
     </div>
   );
 }
-

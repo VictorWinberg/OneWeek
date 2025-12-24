@@ -6,9 +6,10 @@ import type { Block } from '../../types';
 
 interface MobileViewProps {
   onBlockClick: (block: Block) => void;
+  onCreateEvent: () => void;
 }
 
-export function MobileView({ onBlockClick }: MobileViewProps) {
+export function MobileView({ onBlockClick, onCreateEvent }: MobileViewProps) {
   const { blocks, isLoading, error, goToToday, nextWeek, prevWeek } = useCalendarStore();
   const { today, tomorrow } = getTodayAndTomorrow();
 
@@ -39,12 +40,24 @@ export function MobileView({ onBlockClick }: MobileViewProps) {
           </svg>
         </button>
 
-        <button
-          onClick={goToToday}
-          className="px-4 py-2 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium"
-        >
-          Idag
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onCreateEvent}
+            className="p-2 rounded-lg bg-green-900/30 text-green-300 hover:bg-green-900/50 transition-colors"
+            aria-label="Skapa event"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+
+          <button
+            onClick={goToToday}
+            className="px-4 py-2 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium"
+          >
+            Idag
+          </button>
+        </div>
 
         <button
           onClick={nextWeek}

@@ -1,18 +1,35 @@
 {
-  "allowedEmails": [
-    "user1@example.com",
-    "user2@example.com"
-  ],
+  "users": {
+    "user1": {
+      "emails": ["user1@example.com"]
+    },
+    "user2": {
+      "emails": ["user2@example.com"]
+    }
+  },
+  "roles": {
+    "owner": ["create", "read", "update", "delete"],
+    "editor": ["create", "read", "update"],
+    "viewer": ["read"]
+  },
   "calendars": [
     {
       "id": "your-calendar-id-1@gmail.com",
       "name": "User 1",
-      "color": "#FF6B9D"
+      "color": "#FF6B9D",
+      "permissions": {
+        "user1": "owner",
+        "user2": "editor"
+      }
     },
     {
       "id": "your-calendar-id-2@gmail.com",
       "name": "User 2",
-      "color": "#4A90E2"
+      "color": "#4A90E2",
+      "permissions": {
+        "user1": "editor",
+        "user2": "owner"
+      }
     }
   ]
 }

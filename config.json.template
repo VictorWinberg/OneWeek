@@ -1,0 +1,18 @@
+{
+  "allowedEmails": [
+    "user1@example.com",
+    "user2@example.com"
+  ],
+  "calendars": [
+    {
+      "id": "your-calendar-id-1@gmail.com",
+      "name": "User 1",
+      "color": "#FF6B9D"
+    },
+    {
+      "id": "your-calendar-id-2@gmail.com",
+      "name": "User 2",
+      "color": "#4A90E2"
+    }
+  ]
+}

@@ -62,6 +62,7 @@ declare module 'express-session' {
       refresh_token?: string;
       expiry_date?: number;
     };
+    userEmail?: string;
   }
 }
 

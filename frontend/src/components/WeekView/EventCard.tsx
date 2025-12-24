@@ -1,5 +1,6 @@
 import type { Block } from '../../types';
-import { PERSONS } from '../../types';
+import { getInitial } from '../../types';
+import { useConfigStore } from '../../stores/configStore';
 import { formatBlockTime, isBlockPast, isBlockCurrent } from '../../services/calendarNormalizer';
 
 interface EventCardProps {
@@ -9,9 +10,16 @@ interface EventCardProps {
 }
 
 export function EventCard({ block, onClick, compact = false }: EventCardProps) {
-  const person = PERSONS[block.responsiblePersonId];
+  const { getPersonById } = useConfigStore();
+  const person = getPersonById(block.responsiblePersonId);
   const isPast = isBlockPast(block);
   const isCurrent = isBlockCurrent(block);
+
+  if (!person) {
+    return null; // Don't render if person/calendar not found
+  }
+
+  const initial = getInitial(person.name);
 
   return (
     <button
@@ -41,7 +49,7 @@ export function EventCard({ block, onClick, compact = false }: EventCardProps) {
           color: 'var(--color-bg-primary)',
         }}
       >
-        {person.initial.charAt(0)}
+        {initial.charAt(0)}
       </div>
 
       {/* Content */}

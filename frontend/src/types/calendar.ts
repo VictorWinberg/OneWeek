@@ -1,9 +1,7 @@
-import type { PersonId } from './person';
-
 export interface CalendarSource {
-  id: string; // Google Calendar ID
+  id: string; // Google Calendar ID - also used as person identifier
   name: string;
-  personId: PersonId;
+  color: string;
 }
 
 export interface CalendarConfig {
@@ -13,4 +11,3 @@ export interface CalendarConfig {
 export const DEFAULT_CALENDAR_CONFIG: CalendarConfig = {
   calendars: [],
 };
-

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import type { Block, PersonId } from '../../types';
-import { PERSONS } from '../../types';
+import type { Block } from '../../types';
+import { getInitial } from '../../types';
 import { formatBlockTime } from '../../services/calendarNormalizer';
 import { formatDateFull } from '../../utils/dateUtils';
 import { useCalendarStore } from '../../stores/calendarStore';
+import { useConfigStore } from '../../stores/configStore';
 import { ResponsibilitySelector } from './ResponsibilitySelector';
 
 interface EventDetailPanelProps {
@@ -13,6 +14,7 @@ interface EventDetailPanelProps {
 
 export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
   const { moveBlock, deleteBlock } = useCalendarStore();
+  const { getPersonById } = useConfigStore();
   const [isMoving, setIsMoving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -27,14 +29,17 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
 
   if (!block) return null;
 
-  const person = PERSONS[block.responsiblePersonId];
+  const person = getPersonById(block.responsiblePersonId);
+  if (!person) return null;
 
-  const handleChangeResponsibility = async (newPersonId: PersonId) => {
-    if (newPersonId === block.responsiblePersonId) return;
+  const initial = getInitial(person.name);
+
+  const handleChangeResponsibility = async (newCalendarId: string) => {
+    if (newCalendarId === block.responsiblePersonId) return;
 
     setIsMoving(true);
     try {
-      await moveBlock(block.id, block.calendarId, newPersonId);
+      await moveBlock(block.id, block.calendarId, newCalendarId);
     } finally {
       setIsMoving(false);
     }
@@ -99,7 +104,7 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
                 color: 'var(--color-bg-primary)',
               }}
             >
-              {person.initial.charAt(0)}
+              {initial.charAt(0)}
             </div>
             <span className="text-sm text-[var(--color-text-primary)]">
               {person.name}
@@ -123,7 +128,7 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
 
           {/* Change Responsibility */}
           <ResponsibilitySelector
-            currentPersonId={block.responsiblePersonId}
+            currentCalendarId={block.responsiblePersonId}
             onSelect={handleChangeResponsibility}
             disabled={isMoving}
           />

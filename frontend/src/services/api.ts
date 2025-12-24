@@ -54,26 +54,45 @@ export const calendarApi = {
   },
 };
 
+// Config API
+export const configApi = {
+  getCalendars: async (): Promise<CalendarSource[]> => {
+    const response = await fetchJson<{ calendars: CalendarSource[] }>(`${API_BASE}/config/calendars`);
+    return response.calendars;
+  },
+};
+
 // Events API
 export const eventsApi = {
-  getEvents: async (
-    startDate: Date,
-    endDate: Date,
-    calendars: CalendarSource[]
-  ): Promise<Block[]> => {
+  getEvents: async (startDate: Date, endDate: Date, calendars: CalendarSource[]): Promise<Block[]> => {
     const params = new URLSearchParams({
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
       calendars: JSON.stringify(calendars),
     });
-    const blocks = await fetchJson<Block[]>(`${API_BASE}/events?${params}`);
+
+    const rawBlocks = await fetchJson<Block[]>(`${API_BASE}/events?${params}`);
+    console.log('[API] Raw response from /api/events:', { count: rawBlocks.length, rawBlocks });
 
     // Convert date strings to Date objects
-    return blocks.map((block) => ({
+    const blocks = rawBlocks.map((block) => ({
       ...block,
       startTime: new Date(block.startTime),
       endTime: new Date(block.endTime),
     }));
+
+    console.log('[API] After date conversion:', {
+      count: blocks.length,
+      samples: blocks.slice(0, 2).map(b => ({
+        title: b.title,
+        startTime: b.startTime,
+        endTime: b.endTime,
+        startTimeType: typeof b.startTime,
+        endTimeType: typeof b.endTime
+      }))
+    });
+
+    return blocks;
   },
 
   createEvent: async (data: {
@@ -131,4 +150,3 @@ export const eventsApi = {
     });
   },
 };
-

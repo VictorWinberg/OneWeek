@@ -1,44 +1,14 @@
-export type PersonId = 'annie' | 'victor' | 'annie-victor' | 'lillen' | 'familjen';
+// Person is now just an alias for calendar - calendars ARE the people/entities
+import type { CalendarSource } from './calendar';
 
-export interface Person {
-  id: PersonId;
-  name: string;
-  color: string;
-  initial: string;
+export type Person = CalendarSource;
+
+// Helper to get initial from name
+export function getInitial(name: string): string {
+  return name
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase())
+    .join('')
+    .slice(0, 3); // Max 3 characters for initials like "A&V"
 }
-
-export const PERSONS: Record<PersonId, Person> = {
-  annie: {
-    id: 'annie',
-    name: 'Annie',
-    color: 'var(--color-annie)',
-    initial: 'A',
-  },
-  victor: {
-    id: 'victor',
-    name: 'Victor',
-    color: 'var(--color-victor)',
-    initial: 'V',
-  },
-  'annie-victor': {
-    id: 'annie-victor',
-    name: 'Annie & Victor',
-    color: 'var(--color-annie-victor)',
-    initial: 'A&V',
-  },
-  lillen: {
-    id: 'lillen',
-    name: 'Lillen',
-    color: 'var(--color-lillen)',
-    initial: 'L',
-  },
-  familjen: {
-    id: 'familjen',
-    name: 'Familjen',
-    color: 'var(--color-familjen)',
-    initial: 'F',
-  },
-};
-
-export const PERSON_LIST: Person[] = Object.values(PERSONS);
 

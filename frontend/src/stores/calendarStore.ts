@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { startOfWeek, endOfWeek, addWeeks, subWeeks } from 'date-fns';
-import type { Block, PersonId } from '../types';
+import type { Block } from '../types';
 import { eventsApi } from '../services/api';
 import { useConfigStore } from './configStore';
 
@@ -20,7 +20,7 @@ interface CalendarState {
   selectBlock: (block: Block | null) => void;
 
   // Block operations
-  moveBlock: (blockId: string, calendarId: string, targetPersonId: PersonId) => Promise<void>;
+  moveBlock: (blockId: string, calendarId: string, targetCalendarId: string) => Promise<void>;
   updateBlockTime: (blockId: string, calendarId: string, startTime: Date, endTime: Date) => Promise<void>;
   deleteBlock: (blockId: string, calendarId: string) => Promise<void>;
 }
@@ -36,6 +36,7 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
     const { config } = useConfigStore.getState();
 
     if (config.calendars.length === 0) {
+      console.log('[CalendarStore] No calendars configured');
       set({ blocks: [], isLoading: false });
       return;
     }
@@ -47,13 +48,29 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
       const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
       const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
 
+      console.log('[CalendarStore] Fetching blocks:', {
+        weekStart: weekStart.toISOString(),
+        weekEnd: weekEnd.toISOString(),
+        calendarCount: config.calendars.length,
+      });
+
       const blocks = await eventsApi.getEvents(weekStart, weekEnd, config.calendars);
+
+      console.log('[CalendarStore] Received blocks:', {
+        count: blocks.length,
+        blocks: blocks.map((b) => ({
+          title: b.title,
+          start: b.startTime.toISOString(),
+          end: b.endTime.toISOString(),
+        })),
+      });
+
       set({ blocks, isLoading: false });
     } catch (error) {
-      console.error('Failed to fetch blocks:', error);
+      console.error('[CalendarStore] Failed to fetch blocks:', error);
       set({
         error: error instanceof Error ? error.message : 'Failed to fetch events',
-        isLoading: false
+        isLoading: false,
       });
     }
   },
@@ -82,12 +99,12 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
     set({ selectedBlock: block });
   },
 
-  moveBlock: async (blockId, calendarId, targetPersonId) => {
+  moveBlock: async (blockId, calendarId, targetCalendarId) => {
     const { config } = useConfigStore.getState();
-    const targetCalendar = config.calendars.find((c) => c.personId === targetPersonId);
+    const targetCalendar = config.calendars.find((c) => c.id === targetCalendarId);
 
     if (!targetCalendar) {
-      set({ error: 'No calendar configured for target person' });
+      set({ error: 'Target calendar not found' });
       return;
     }
 
@@ -95,7 +112,7 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
     const { blocks, selectedBlock } = get();
     const updatedBlocks = blocks.map((b) =>
       b.id === blockId && b.calendarId === calendarId
-        ? { ...b, responsiblePersonId: targetPersonId, calendarId: targetCalendar.id }
+        ? { ...b, responsiblePersonId: targetCalendarId, calendarId: targetCalendarId }
         : b
     );
     set({ blocks: updatedBlocks });
@@ -105,25 +122,22 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
       set({
         selectedBlock: {
           ...selectedBlock,
-          responsiblePersonId: targetPersonId,
-          calendarId: targetCalendar.id,
+          responsiblePersonId: targetCalendarId,
+          calendarId: targetCalendarId,
         },
       });
     }
 
     try {
-      const result = await eventsApi.moveEvent(calendarId, blockId, targetCalendar.id);
+      const result = await eventsApi.moveEvent(calendarId, blockId, targetCalendarId);
 
       // Update with new event ID
       set((state) => ({
         blocks: state.blocks.map((b) =>
-          b.id === blockId && b.calendarId === targetCalendar.id
-            ? { ...b, id: result.newEventId }
-            : b
+          b.id === blockId && b.calendarId === targetCalendarId ? { ...b, id: result.newEventId } : b
         ),
-        selectedBlock: state.selectedBlock?.id === blockId
-          ? { ...state.selectedBlock, id: result.newEventId }
-          : state.selectedBlock,
+        selectedBlock:
+          state.selectedBlock?.id === blockId ? { ...state.selectedBlock, id: result.newEventId } : state.selectedBlock,
       }));
     } catch (error) {
       // Revert on error
@@ -136,9 +150,7 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
     // Optimistic update
     const { blocks } = get();
     const updatedBlocks = blocks.map((b) =>
-      b.id === blockId && b.calendarId === calendarId
-        ? { ...b, startTime, endTime }
-        : b
+      b.id === blockId && b.calendarId === calendarId ? { ...b, startTime, endTime } : b
     );
     set({ blocks: updatedBlocks });
 
@@ -154,9 +166,7 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
   deleteBlock: async (blockId, calendarId) => {
     // Optimistic update
     const { blocks, selectedBlock } = get();
-    const updatedBlocks = blocks.filter(
-      (b) => !(b.id === blockId && b.calendarId === calendarId)
-    );
+    const updatedBlocks = blocks.filter((b) => !(b.id === blockId && b.calendarId === calendarId));
     set({
       blocks: updatedBlocks,
       selectedBlock: selectedBlock?.id === blockId ? null : selectedBlock,
@@ -171,4 +181,3 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
     }
   },
 }));
-

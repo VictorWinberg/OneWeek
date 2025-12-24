@@ -1,4 +1,4 @@
-import type { Block, PersonId, BlockMetadata } from '../types';
+import type { Block, BlockMetadata } from '../types';
 
 // This file contains utility functions for working with Block data
 // The actual normalization from Google Calendar events happens on the backend
@@ -16,9 +16,11 @@ export function getBlockDurationHours(block: Block): number {
 }
 
 export function isBlockInDay(block: Block, date: Date): boolean {
-  const blockStart = new Date(block.startTime);
-  const blockEnd = new Date(block.endTime);
+  // Ensure we're working with Date objects
+  const blockStart = block.startTime instanceof Date ? block.startTime : new Date(block.startTime);
+  const blockEnd = block.endTime instanceof Date ? block.endTime : new Date(block.endTime);
 
+  // Create day boundaries in local timezone
   const dayStart = new Date(date);
   dayStart.setHours(0, 0, 0, 0);
 
@@ -39,18 +41,18 @@ export function sortBlocksByTime(blocks: Block[]): Block[] {
   );
 }
 
-export function groupBlocksByPerson(blocks: Block[]): Record<PersonId, Block[]> {
-  const grouped: Partial<Record<PersonId, Block[]>> = {};
+export function groupBlocksByPerson(blocks: Block[]): Record<string, Block[]> {
+  const grouped: Record<string, Block[]> = {};
 
   for (const block of blocks) {
-    const personId = block.responsiblePersonId;
-    if (!grouped[personId]) {
-      grouped[personId] = [];
+    const calendarId = block.responsiblePersonId;
+    if (!grouped[calendarId]) {
+      grouped[calendarId] = [];
     }
-    grouped[personId]!.push(block);
+    grouped[calendarId]!.push(block);
   }
 
-  return grouped as Record<PersonId, Block[]>;
+  return grouped;
 }
 
 export function createBlockMetadata(

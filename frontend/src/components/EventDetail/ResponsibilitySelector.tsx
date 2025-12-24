@@ -1,30 +1,33 @@
-import type { PersonId, Person } from '../../types';
-import { PERSON_LIST } from '../../types';
+import type { Person } from '../../types';
+import { getInitial } from '../../types';
+import { useConfigStore } from '../../stores/configStore';
 
 interface ResponsibilitySelectorProps {
-  currentPersonId: PersonId;
-  onSelect: (personId: PersonId) => void;
+  currentCalendarId: string;
+  onSelect: (calendarId: string) => void;
   disabled?: boolean;
 }
 
 export function ResponsibilitySelector({
-  currentPersonId,
+  currentCalendarId,
   onSelect,
   disabled = false,
 }: ResponsibilitySelectorProps) {
+  const { persons } = useConfigStore();
+
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-[var(--color-text-secondary)]">
         Ansvarig
       </label>
       <div className="grid grid-cols-2 gap-2">
-        {PERSON_LIST.map((person) => (
+        {persons.map((person) => (
           <PersonButton
             key={person.id}
             person={person}
-            isSelected={person.id === currentPersonId}
+            isSelected={person.id === currentCalendarId}
             onClick={() => onSelect(person.id)}
-            disabled={disabled || person.id === currentPersonId}
+            disabled={disabled || person.id === currentCalendarId}
           />
         ))}
       </div>
@@ -40,6 +43,8 @@ interface PersonButtonProps {
 }
 
 function PersonButton({ person, isSelected, onClick, disabled }: PersonButtonProps) {
+  const initial = getInitial(person.name);
+
   return (
     <button
       onClick={onClick}
@@ -61,7 +66,7 @@ function PersonButton({ person, isSelected, onClick, disabled }: PersonButtonPro
           color: 'var(--color-bg-primary)',
         }}
       >
-        {person.initial.charAt(0)}
+        {initial.charAt(0)}
       </div>
       <span className="text-sm font-medium text-[var(--color-text-primary)]">
         {person.name}

@@ -39,17 +39,16 @@ router.get('/', requireAuth, async (req, res) => {
 
     const calendars: CalendarSource[] = JSON.parse(calendarsJson as string);
 
-    const oauth2Client = createOAuth2Client();
-    setCredentials(oauth2Client, req.session.tokens!);
-
     const timeMin = new Date(startDate as string).toISOString();
     const timeMax = new Date(endDate as string).toISOString();
 
-    // Fetch events from all calendars in parallel
+    // Fetch events from all calendars in parallel using service account
     const eventPromises = calendars.map(async (cal) => {
       try {
-        const events = await listEvents(oauth2Client, cal.id, timeMin, timeMax);
-        return events.map((event) => normalizeEventToBlock(event, cal.id, cal.personId));
+        const events = await listEvents(cal.id, timeMin, timeMax);
+        console.log(`[Events] Calendar ${cal.name} (${cal.id}): ${events.length} events`);
+        // Use calendar.id as the responsiblePersonId
+        return events.map((event) => normalizeEventToBlock(event, cal.id, cal.id));
       } catch (error) {
         console.error(`Error fetching events from calendar ${cal.id}:`, error);
         return [];
@@ -58,6 +57,18 @@ router.get('/', requireAuth, async (req, res) => {
 
     const allEventsArrays = await Promise.all(eventPromises);
     const allEvents = allEventsArrays.flat();
+
+    console.log(`[Events] Total events fetched: ${allEvents.length}`);
+    console.log(
+      '[Events] Sample events:',
+      allEvents.slice(0, 2).map((e) => ({
+        title: e.title,
+        startTime: e.startTime,
+        endTime: e.endTime,
+        calendarId: e.calendarId,
+        responsiblePersonId: e.responsiblePersonId,
+      }))
+    );
 
     // Sort by start time
     allEvents.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
@@ -75,10 +86,7 @@ router.get('/:calendarId/:eventId', requireAuth, async (req, res) => {
     const { calendarId, eventId } = req.params;
     const { personId } = req.query;
 
-    const oauth2Client = createOAuth2Client();
-    setCredentials(oauth2Client, req.session.tokens!);
-
-    const event = await getEvent(oauth2Client, calendarId, eventId);
+    const event = await getEvent(calendarId, eventId);
 
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
@@ -103,11 +111,8 @@ router.post('/', requireAuth, async (req, res) => {
       });
     }
 
-    const oauth2Client = createOAuth2Client();
-    setCredentials(oauth2Client, req.session.tokens!);
-
     const googleEvent = blockToGoogleEvent(title, description, startTime, endTime, allDay || false, metadata);
-    const createdEvent = await createEvent(oauth2Client, calendarId, googleEvent);
+    const createdEvent = await createEvent(calendarId, googleEvent);
 
     if (!createdEvent) {
       return res.status(500).json({ error: 'Failed to create event' });
@@ -126,16 +131,13 @@ router.patch('/:calendarId/:eventId', requireAuth, async (req, res) => {
     const { calendarId, eventId } = req.params;
     const { title, description, startTime, endTime } = req.body;
 
-    const oauth2Client = createOAuth2Client();
-    setCredentials(oauth2Client, req.session.tokens!);
-
     const updates: Record<string, unknown> = {};
     if (title !== undefined) updates.summary = title;
     if (description !== undefined) updates.description = description;
     if (startTime !== undefined) updates.start = { dateTime: startTime };
     if (endTime !== undefined) updates.end = { dateTime: endTime };
 
-    const updatedEvent = await updateEvent(oauth2Client, calendarId, eventId, updates);
+    const updatedEvent = await updateEvent(calendarId, eventId, updates);
 
     if (!updatedEvent) {
       return res.status(500).json({ error: 'Failed to update event' });
@@ -158,15 +160,7 @@ router.post('/:calendarId/:eventId/move', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Missing targetCalendarId' });
     }
 
-    const oauth2Client = createOAuth2Client();
-    setCredentials(oauth2Client, req.session.tokens!);
-
-    const movedEvent = await moveEventBetweenCalendars(
-      oauth2Client,
-      calendarId,
-      targetCalendarId,
-      eventId
-    );
+    const movedEvent = await moveEventBetweenCalendars(calendarId, targetCalendarId, eventId);
 
     if (!movedEvent) {
       return res.status(500).json({ error: 'Failed to move event' });
@@ -184,10 +178,7 @@ router.delete('/:calendarId/:eventId', requireAuth, async (req, res) => {
   try {
     const { calendarId, eventId } = req.params;
 
-    const oauth2Client = createOAuth2Client();
-    setCredentials(oauth2Client, req.session.tokens!);
-
-    const success = await deleteEvent(oauth2Client, calendarId, eventId);
+    const success = await deleteEvent(calendarId, eventId);
 
     if (!success) {
       return res.status(500).json({ error: 'Failed to delete event' });
@@ -201,4 +192,3 @@ router.delete('/:calendarId/:eventId', requireAuth, async (req, res) => {
 });
 
 export default router;
-

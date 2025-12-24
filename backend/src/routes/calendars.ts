@@ -19,10 +19,7 @@ const requireAuth = (
 // GET /api/calendars - List all calendars
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const oauth2Client = createOAuth2Client();
-    setCredentials(oauth2Client, req.session.tokens!);
-
-    const calendars = await listCalendars(oauth2Client);
+    const calendars = await listCalendars();
 
     const result = calendars.map((cal) => ({
       id: cal.id,
@@ -40,4 +37,3 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 export default router;
-

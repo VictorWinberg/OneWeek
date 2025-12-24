@@ -1,24 +1,42 @@
 import { google, calendar_v3 } from 'googleapis';
-import type { OAuth2Client } from 'google-auth-library';
 import type { Block, BlockMetadata, GoogleCalendarEvent, PersonId } from '../types/index.js';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
 
-export function getCalendarClient(oauth2Client: OAuth2Client): calendar_v3.Calendar {
-  return google.calendar({ version: 'v3', auth: oauth2Client });
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+let serviceAccountClient: calendar_v3.Calendar | null = null;
+
+/**
+ * Initialize and return the service account calendar client.
+ */
+function getServiceAccountClient(): calendar_v3.Calendar {
+  if (!serviceAccountClient) {
+    const credentialsPath = path.resolve(__dirname, '../../../credentials.json');
+    const auth = new google.auth.GoogleAuth({
+      keyFile: credentialsPath,
+      scopes: ['https://www.googleapis.com/auth/calendar', 'https://www.googleapis.com/auth/calendar.events'],
+    });
+    serviceAccountClient = google.calendar({ version: 'v3', auth });
+  }
+  return serviceAccountClient;
 }
 
-export async function listCalendars(oauth2Client: OAuth2Client) {
-  const calendar = getCalendarClient(oauth2Client);
+/** List all calendars accessible by the service account */
+export async function listCalendars() {
+  const calendar = getServiceAccountClient();
   const response = await calendar.calendarList.list();
   return response.data.items || [];
 }
 
+/** List events in a specific calendar between two times */
 export async function listEvents(
-  oauth2Client: OAuth2Client,
   calendarId: string,
   timeMin: string,
   timeMax: string
 ): Promise<calendar_v3.Schema$Event[]> {
-  const calendar = getCalendarClient(oauth2Client);
+  const calendar = getServiceAccountClient();
   const response = await calendar.events.list({
     calendarId,
     timeMin,
@@ -30,17 +48,11 @@ export async function listEvents(
   return response.data.items || [];
 }
 
-export async function getEvent(
-  oauth2Client: OAuth2Client,
-  calendarId: string,
-  eventId: string
-): Promise<calendar_v3.Schema$Event | null> {
-  const calendar = getCalendarClient(oauth2Client);
+/** Get a single event by ID */
+export async function getEvent(calendarId: string, eventId: string): Promise<calendar_v3.Schema$Event | null> {
+  const calendar = getServiceAccountClient();
   try {
-    const response = await calendar.events.get({
-      calendarId,
-      eventId,
-    });
+    const response = await calendar.events.get({ calendarId, eventId });
     return response.data;
   } catch (error) {
     console.error('Error getting event:', error);
@@ -48,17 +60,14 @@ export async function getEvent(
   }
 }
 
+/** Create a new event */
 export async function createEvent(
-  oauth2Client: OAuth2Client,
   calendarId: string,
   event: GoogleCalendarEvent
 ): Promise<calendar_v3.Schema$Event | null> {
-  const calendar = getCalendarClient(oauth2Client);
+  const calendar = getServiceAccountClient();
   try {
-    const response = await calendar.events.insert({
-      calendarId,
-      requestBody: event,
-    });
+    const response = await calendar.events.insert({ calendarId, requestBody: event });
     return response.data;
   } catch (error) {
     console.error('Error creating event:', error);
@@ -66,19 +75,15 @@ export async function createEvent(
   }
 }
 
+/** Update an existing event */
 export async function updateEvent(
-  oauth2Client: OAuth2Client,
   calendarId: string,
   eventId: string,
   event: Partial<GoogleCalendarEvent>
 ): Promise<calendar_v3.Schema$Event | null> {
-  const calendar = getCalendarClient(oauth2Client);
+  const calendar = getServiceAccountClient();
   try {
-    const response = await calendar.events.patch({
-      calendarId,
-      eventId,
-      requestBody: event,
-    });
+    const response = await calendar.events.patch({ calendarId, eventId, requestBody: event });
     return response.data;
   } catch (error) {
     console.error('Error updating event:', error);
@@ -86,17 +91,11 @@ export async function updateEvent(
   }
 }
 
-export async function deleteEvent(
-  oauth2Client: OAuth2Client,
-  calendarId: string,
-  eventId: string
-): Promise<boolean> {
-  const calendar = getCalendarClient(oauth2Client);
+/** Delete an event */
+export async function deleteEvent(calendarId: string, eventId: string): Promise<boolean> {
+  const calendar = getServiceAccountClient();
   try {
-    await calendar.events.delete({
-      calendarId,
-      eventId,
-    });
+    await calendar.events.delete({ calendarId, eventId });
     return true;
   } catch (error) {
     console.error('Error deleting event:', error);
@@ -104,66 +103,62 @@ export async function deleteEvent(
   }
 }
 
+/** Move an event from one calendar to another */
 export async function moveEventBetweenCalendars(
-  oauth2Client: OAuth2Client,
   sourceCalendarId: string,
   targetCalendarId: string,
   eventId: string,
   originalCalendarId?: string
 ): Promise<calendar_v3.Schema$Event | null> {
-  // Get the original event
-  const originalEvent = await getEvent(oauth2Client, sourceCalendarId, eventId);
-  if (!originalEvent) {
-    return null;
+  const originalEvent = await getEvent(sourceCalendarId, eventId);
+  if (!originalEvent) return null;
+
+  const existingPrivate = originalEvent.extendedProperties?.private || {};
+
+  // Ensure all values are strings to avoid toString errors
+  const metadata: Record<string, string> = {};
+  for (const [key, value] of Object.entries(existingPrivate)) {
+    if (value != null) {
+      metadata[key] = typeof value === 'string' ? value : String(value);
+    }
   }
 
-  // Prepare metadata with original calendar info
-  const existingPrivate = originalEvent.extendedProperties?.private || {};
-  const metadata: Record<string, string> = {
-    ...existingPrivate,
-    originalCalendarId: originalCalendarId || existingPrivate.originalCalendarId || sourceCalendarId,
-  };
+  metadata.originalCalendarId = originalCalendarId || metadata.originalCalendarId || sourceCalendarId;
 
-  // Create new event in target calendar
   const newEvent: GoogleCalendarEvent = {
     summary: originalEvent.summary ?? undefined,
     description: originalEvent.description ?? undefined,
-    start: originalEvent.start ? {
-      dateTime: originalEvent.start.dateTime ?? undefined,
-      date: originalEvent.start.date ?? undefined,
-      timeZone: originalEvent.start.timeZone ?? undefined,
-    } : undefined,
-    end: originalEvent.end ? {
-      dateTime: originalEvent.end.dateTime ?? undefined,
-      date: originalEvent.end.date ?? undefined,
-      timeZone: originalEvent.end.timeZone ?? undefined,
-    } : undefined,
-    extendedProperties: {
-      private: metadata,
-    },
+    start: originalEvent.start
+      ? {
+          dateTime: originalEvent.start.dateTime ?? undefined,
+          date: originalEvent.start.date ?? undefined,
+          timeZone: originalEvent.start.timeZone ?? undefined,
+        }
+      : undefined,
+    end: originalEvent.end
+      ? {
+          dateTime: originalEvent.end.dateTime ?? undefined,
+          date: originalEvent.end.date ?? undefined,
+          timeZone: originalEvent.end.timeZone ?? undefined,
+        }
+      : undefined,
+    extendedProperties: { private: metadata },
   };
 
-  const createdEvent = await createEvent(oauth2Client, targetCalendarId, newEvent);
-  if (!createdEvent) {
-    return null;
-  }
+  const createdEvent = await createEvent(targetCalendarId, newEvent);
+  if (!createdEvent) return null;
 
-  // Delete original event
-  await deleteEvent(oauth2Client, sourceCalendarId, eventId);
-
+  await deleteEvent(sourceCalendarId, eventId);
   return createdEvent;
 }
 
-export function normalizeEventToBlock(
-  event: calendar_v3.Schema$Event,
-  calendarId: string,
-  personId: PersonId
-): Block {
+/** Convert a Google Calendar event to internal Block format */
+export function normalizeEventToBlock(event: calendar_v3.Schema$Event, calendarId: string, personId: string): Block {
   const isAllDay = !event.start?.dateTime;
   const startTime = event.start?.dateTime || event.start?.date || '';
   const endTime = event.end?.dateTime || event.end?.date || '';
-
   const privateProps = event.extendedProperties?.private || {};
+
   const metadata: BlockMetadata = {
     category: privateProps.category,
     energy: privateProps.energy ? parseInt(privateProps.energy, 10) : undefined,
@@ -183,6 +178,7 @@ export function normalizeEventToBlock(
   };
 }
 
+/** Convert internal Block data to Google Calendar event */
 export function blockToGoogleEvent(
   title: string,
   description: string | undefined,
@@ -191,13 +187,9 @@ export function blockToGoogleEvent(
   allDay: boolean,
   metadata?: BlockMetadata
 ): GoogleCalendarEvent {
-  const event: GoogleCalendarEvent = {
-    summary: title,
-    description: description || undefined,
-  };
+  const event: GoogleCalendarEvent = { summary: title, description: description || undefined };
 
   if (allDay) {
-    // For all-day events, use date format (YYYY-MM-DD)
     event.start = { date: startTime.split('T')[0] };
     event.end = { date: endTime.split('T')[0] };
   } else {
@@ -217,4 +209,3 @@ export function blockToGoogleEvent(
 
   return event;
 }
-

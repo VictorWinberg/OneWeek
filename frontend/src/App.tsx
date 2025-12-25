@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { Routes, Route, useParams, useNavigate, Navigate } from 'react-router-dom';
+import { startOfWeek, addWeeks, subWeeks, format, parseISO, isValid } from 'date-fns';
 import { useAuthStore } from './stores/authStore';
 import { useConfigStore } from './stores/configStore';
 import { useCalendarStore } from './stores/calendarStore';
 import { DayView } from './components/WeekView/DayView';
+import { GridView } from './components/WeekView/GridView';
 import { UserView } from './components/WeekView/UserView';
 import { HourView } from './components/WeekView/HourView';
 import { MobileView } from './components/WeekView/MobileView';
@@ -13,15 +16,35 @@ import { useIsMobile } from './hooks/useMediaQuery';
 import type { Block } from './types';
 import './index.css';
 
+type ViewMode = 'day' | 'grid' | 'user' | 'hour';
+
+// Helper to get Monday of the week for a given date
+function getWeekMonday(date: Date): string {
+  const monday = startOfWeek(date, { weekStartsOn: 1 });
+  return format(monday, 'yyyy-MM-dd');
+}
+
+// Helper to parse date from URL parameter
+function parseDateParam(dateParam: string | undefined): Date | null {
+  if (!dateParam) return null;
+  try {
+    const parsed = parseISO(dateParam);
+    if (isValid(parsed)) {
+      return parsed;
+    }
+  } catch {
+    // Invalid date format
+  }
+  return null;
+}
+
 function App() {
   const { isAuthenticated, isLoading: authLoading, checkAuth } = useAuthStore();
   const { isConfigured, isLoading: configLoading, error: configError, loadConfig } = useConfigStore();
   const { selectBlock, selectedBlock } = useCalendarStore();
-  const isMobile = useIsMobile();
   const [isCreatePanelOpen, setIsCreatePanelOpen] = useState(false);
   const [createEventDate, setCreateEventDate] = useState<Date | undefined>(undefined);
   const [createEventCalendarId, setCreateEventCalendarId] = useState<string | undefined>(undefined);
-  const [viewMode, setViewMode] = useState<'day' | 'calendar' | 'hour'>('day');
 
   // Check authentication on mount
   useEffect(() => {
@@ -60,6 +83,58 @@ function App() {
     setCreateEventDate(undefined);
     setCreateEventCalendarId(undefined);
   };
+
+  // Render routes for authenticated users
+  const renderAuthenticatedApp = () => (
+    <Routes>
+      <Route path="/" element={<Navigate to="/day" replace />} />
+      <Route
+        path="/day/:date?"
+        element={
+          <MainLayout
+            viewMode="day"
+            onBlockClick={handleBlockClick}
+            onCreateEvent={handleOpenCreatePanel}
+            onCreateEventForDate={handleOpenCreatePanelWithDate}
+          />
+        }
+      />
+      <Route
+        path="/grid/:date?"
+        element={
+          <MainLayout
+            viewMode="grid"
+            onBlockClick={handleBlockClick}
+            onCreateEvent={handleOpenCreatePanel}
+            onCreateEventForDate={handleOpenCreatePanelWithDate}
+          />
+        }
+      />
+      <Route
+        path="/user/:date?"
+        element={
+          <MainLayout
+            viewMode="user"
+            onBlockClick={handleBlockClick}
+            onCreateEvent={handleOpenCreatePanel}
+            onCreateEventForDate={handleOpenCreatePanelWithDate}
+          />
+        }
+      />
+      <Route
+        path="/hour/:date?"
+        element={
+          <MainLayout
+            viewMode="hour"
+            onBlockClick={handleBlockClick}
+            onCreateEvent={handleOpenCreatePanel}
+            onCreateEventForDate={handleOpenCreatePanelWithDate}
+          />
+        }
+      />
+      <Route path="*" element={<Navigate to="/day" replace />} />
+    </Routes>
+  );
 
   // Loading state
   if (authLoading || configLoading) {
@@ -142,7 +217,85 @@ function App() {
     );
   }
 
-  // Main app
+  // Main authenticated app with routing
+  return (
+    <>
+      {renderAuthenticatedApp()}
+      {/* Event detail panel */}
+      <EventDetailPanel block={selectedBlock} onClose={handleCloseDetail} />
+      {/* Event create panel */}
+      <EventCreatePanel
+        isOpen={isCreatePanelOpen}
+        onClose={handleCloseCreatePanel}
+        defaultDate={createEventDate}
+        defaultCalendarId={createEventCalendarId}
+      />
+    </>
+  );
+}
+
+// MainLayout component that handles URL-based navigation
+interface MainLayoutProps {
+  viewMode: ViewMode;
+  onBlockClick: (block: Block) => void;
+  onCreateEvent: () => void;
+  onCreateEventForDate: (date: Date, calendarId?: string) => void;
+}
+
+function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEventForDate }: MainLayoutProps) {
+  const { date } = useParams<{ date?: string }>();
+  const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const { selectedDate, setSelectedDate } = useCalendarStore();
+
+  // Sync URL date parameter with calendar store
+  useEffect(() => {
+    const parsedDate = parseDateParam(date);
+    if (parsedDate) {
+      // URL has a date, sync to store
+      setSelectedDate(parsedDate);
+    } else if (date) {
+      // Invalid date in URL, redirect to current week
+      navigate(`/${viewMode}/${getWeekMonday(new Date())}`, { replace: true });
+    }
+    // If no date in URL, we'll add it on first render below
+  }, [date, viewMode, navigate, setSelectedDate]);
+
+  // If no date in URL, add the current week's Monday
+  useEffect(() => {
+    if (!date) {
+      const mondayStr = getWeekMonday(selectedDate);
+      navigate(`/${viewMode}/${mondayStr}`, { replace: true });
+    }
+  }, [date, viewMode, selectedDate, navigate]);
+
+  // Navigation handlers that update URL
+  const handleNextWeek = useCallback(() => {
+    const nextWeekDate = addWeeks(selectedDate, 1);
+    const mondayStr = getWeekMonday(nextWeekDate);
+    navigate(`/${viewMode}/${mondayStr}`);
+  }, [selectedDate, viewMode, navigate]);
+
+  const handlePrevWeek = useCallback(() => {
+    const prevWeekDate = subWeeks(selectedDate, 1);
+    const mondayStr = getWeekMonday(prevWeekDate);
+    navigate(`/${viewMode}/${mondayStr}`);
+  }, [selectedDate, viewMode, navigate]);
+
+  const handleGoToToday = useCallback(() => {
+    const todayMonday = getWeekMonday(new Date());
+    navigate(`/${viewMode}/${todayMonday}`);
+  }, [viewMode, navigate]);
+
+  // View mode change handler
+  const handleViewModeChange = useCallback(
+    (newMode: ViewMode) => {
+      const mondayStr = getWeekMonday(selectedDate);
+      navigate(`/${newMode}/${mondayStr}`);
+    },
+    [selectedDate, navigate]
+  );
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       {/* Top navigation */}
@@ -157,7 +310,7 @@ function App() {
           {!isMobile && (
             <div className="flex items-center gap-1 bg-[var(--color-bg-tertiary)] rounded-lg p-1">
               <button
-                onClick={() => setViewMode('day')}
+                onClick={() => handleViewModeChange('day')}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                   viewMode === 'day'
                     ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
@@ -167,9 +320,19 @@ function App() {
                 Dagvy
               </button>
               <button
-                onClick={() => setViewMode('calendar')}
+                onClick={() => handleViewModeChange('grid')}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  viewMode === 'calendar'
+                  viewMode === 'grid'
+                    ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
+                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                }`}
+              >
+                Översikt
+              </button>
+              <button
+                onClick={() => handleViewModeChange('user')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'user'
                     ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
                     : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
                 }`}
@@ -177,7 +340,7 @@ function App() {
                 Användarvy
               </button>
               <button
-                onClick={() => setViewMode('hour')}
+                onClick={() => handleViewModeChange('hour')}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                   viewMode === 'hour'
                     ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
@@ -195,38 +358,44 @@ function App() {
       {/* Main content */}
       <main className="flex-1 overflow-hidden min-h-0">
         {isMobile ? (
-          <MobileView onBlockClick={handleBlockClick} onCreateEvent={handleOpenCreatePanel} />
+          <MobileView
+            onBlockClick={onBlockClick}
+            onCreateEvent={onCreateEvent}
+            viewMode={viewMode}
+            onNextWeek={handleNextWeek}
+            onPrevWeek={handlePrevWeek}
+            onGoToToday={handleGoToToday}
+            onViewModeChange={handleViewModeChange}
+          />
         ) : viewMode === 'day' ? (
           <DayView
-            onBlockClick={handleBlockClick}
-            onCreateEvent={handleOpenCreatePanel}
-            onCreateEventForDate={handleOpenCreatePanelWithDate}
+            onBlockClick={onBlockClick}
+            onCreateEvent={onCreateEvent}
+            onCreateEventForDate={onCreateEventForDate}
+            onNextWeek={handleNextWeek}
+            onPrevWeek={handlePrevWeek}
+            onGoToToday={handleGoToToday}
           />
         ) : viewMode === 'hour' ? (
           <HourView
-            onBlockClick={handleBlockClick}
-            onCreateEvent={handleOpenCreatePanel}
-            onCreateEventForDate={handleOpenCreatePanelWithDate}
+            onBlockClick={onBlockClick}
+            onCreateEvent={onCreateEvent}
+            onCreateEventForDate={onCreateEventForDate}
+            onNextWeek={handleNextWeek}
+            onPrevWeek={handlePrevWeek}
+            onGoToToday={handleGoToToday}
           />
         ) : (
           <UserView
-            onBlockClick={handleBlockClick}
-            onCreateEvent={handleOpenCreatePanel}
-            onCreateEventForDate={handleOpenCreatePanelWithDate}
+            onBlockClick={onBlockClick}
+            onCreateEvent={onCreateEvent}
+            onCreateEventForDate={onCreateEventForDate}
+            onNextWeek={handleNextWeek}
+            onPrevWeek={handlePrevWeek}
+            onGoToToday={handleGoToToday}
           />
         )}
       </main>
-
-      {/* Event detail panel */}
-      <EventDetailPanel block={selectedBlock} onClose={handleCloseDetail} />
-
-      {/* Event create panel */}
-      <EventCreatePanel
-        isOpen={isCreatePanelOpen}
-        onClose={handleCloseCreatePanel}
-        defaultDate={createEventDate}
-        defaultCalendarId={createEventCalendarId}
-      />
     </div>
   );
 }

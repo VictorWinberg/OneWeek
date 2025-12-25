@@ -65,9 +65,6 @@ export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: 
     return { top, height };
   };
 
-  // Check if any day has all-day events
-  const hasAllDayEvents = blocks.some((block) => block.allDay);
-
   return (
     <div className="flex w-full select-none">
       {/* Time column */}
@@ -75,12 +72,10 @@ export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: 
         <div className="sticky top-0 z-30 bg-[var(--color-bg-secondary)] h-[40px] border-b border-[var(--color-bg-tertiary)] flex items-center justify-center px-0.5">
           <span className="text-[8px] font-semibold text-[var(--color-text-secondary)]">Tid</span>
         </div>
-        {/* All-day events spacer */}
-        {hasAllDayEvents && (
-          <div className="sticky top-[40px] z-30 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)] min-h-[15px] flex items-center justify-center px-0.5">
-            <span className="text-[6px] text-[var(--color-text-secondary)] text-center leading-none">Hela</span>
-          </div>
-        )}
+        {/* All-day events spacer - always visible for consistent spacing */}
+        <div className="sticky top-[40px] z-30 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)] min-h-[15px] flex items-center justify-center px-0.5">
+          <span className="text-[6px] text-[var(--color-text-secondary)] text-center leading-none">Hela</span>
+        </div>
         {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
           <div
             key={hour}
@@ -135,24 +130,22 @@ export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: 
               </div>
             </div>
 
-            {/* All-day events row */}
-            {allDayBlocks.length > 0 && (
-              <div className="sticky top-[40px] z-10 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)] p-0.5 flex flex-col gap-0.5 min-h-[15px]">
-                {allDayBlocks.map((block) => (
-                  <EventCard
-                    key={`${block.calendarId}-${block.id}`}
-                    block={block}
-                    onClick={() => onBlockClick(block)}
-                    compact={true}
-                    fillHeight={false}
-                    draggable={false}
-                    isAllDay={true}
-                    hideTime={true}
-                    truncate={true}
-                  />
-                ))}
-              </div>
-            )}
+            {/* All-day events row - always visible for consistent spacing */}
+            <div className="sticky top-[40px] z-10 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)] p-0.5 flex flex-col gap-0.5 min-h-[15px]">
+              {allDayBlocks.map((block) => (
+                <EventCard
+                  key={`${block.calendarId}-${block.id}`}
+                  block={block}
+                  onClick={() => onBlockClick(block)}
+                  compact={true}
+                  fillHeight={false}
+                  draggable={false}
+                  isAllDay={true}
+                  hideTime={true}
+                  truncate={true}
+                />
+              ))}
+            </div>
 
             {/* Hour grid and events */}
             <div className="relative">

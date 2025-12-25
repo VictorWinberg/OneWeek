@@ -26,9 +26,13 @@ router.get('/login', (req, res) => {
     }
 
     // Store redirect URL in session
-    if (req.session) {
-      req.session.redirectUrl = redirectUrl;
+    // Note: cookie-session always provides req.session, but we must set properties
+    // for the cookie to be sent. If this fails silently, check server logs.
+    if (!req.session) {
+      console.error('Session is not available - cookie-session middleware may not be configured');
+      return res.status(500).json({ error: 'Session configuration error' });
     }
+    req.session.redirectUrl = redirectUrl;
 
     const redirectUri = getRedirectUri(req);
     const oauth2Client = createOAuth2Client(redirectUri);
@@ -69,20 +73,21 @@ router.get('/callback', async (req, res) => {
     }
 
     // Store tokens and user email in session
-    if (req.session) {
-      req.session.tokens = {
-        access_token: tokens.access_token ?? undefined,
-        refresh_token: tokens.refresh_token ?? undefined,
-        expiry_date: tokens.expiry_date ?? undefined,
-      };
-      req.session.userEmail = userInfo.email;
+    // Note: cookie-session always provides req.session
+    if (!req.session) {
+      console.error('Session is not available during callback - cookie-session middleware may not be configured');
+      return res.status(500).json({ error: 'Session configuration error' });
     }
+    req.session.tokens = {
+      access_token: tokens.access_token ?? undefined,
+      refresh_token: tokens.refresh_token ?? undefined,
+      expiry_date: tokens.expiry_date ?? undefined,
+    };
+    req.session.userEmail = userInfo.email;
 
     // Get redirect URL from session or default to root
-    const redirectUrl = req.session?.redirectUrl || '/';
-    if (req.session) {
-      delete req.session.redirectUrl; // Clean up session
-    }
+    const redirectUrl = req.session.redirectUrl || '/';
+    delete req.session.redirectUrl; // Clean up session
 
     // Redirect to the original URL or frontend
     res.redirect(redirectUrl);

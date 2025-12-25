@@ -18,6 +18,8 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = Number(getEnv('PORT', '3000'));
 
+app.set('trust proxy', 1);
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(
@@ -28,6 +30,7 @@ app.use(
     secure: getEnv('NODE_ENV', 'development') === 'production',
     httpOnly: true,
     signed: true,
+    sameSite: 'lax', // Required for modern browsers
   })
 );
 

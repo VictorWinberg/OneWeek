@@ -2,7 +2,7 @@ import './utils/env.js';
 
 import express from 'express';
 import cookieParser from 'cookie-parser';
-import session from 'express-session';
+import cookieSession from 'cookie-session';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { getEnv } from './utils/env.js';
@@ -18,19 +18,19 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = Number(getEnv('PORT', '3000'));
 
+app.set('trust proxy', 1);
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(
-  session({
-    secret: getEnv('SESSION_SECRET'),
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: getEnv('NODE_ENV', 'development') === 'production',
-      httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    },
-    proxy: true,
+  cookieSession({
+    name: 'session',
+    keys: [getEnv('SESSION_SECRET')],
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    secure: getEnv('NODE_ENV', 'development') === 'production',
+    httpOnly: true,
+    signed: true,
+    sameSite: 'lax',
   })
 );
 

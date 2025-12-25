@@ -14,17 +14,17 @@
   "description": "OneWeek Family Calendar Backend",
   "dependencies": {
     "cookie-parser": "^1.4.7",
+    "cookie-session": "^2.1.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
-    "express-session": "^1.18.2",
     "googleapis": "^169.0.0"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10",
+    "@types/cookie-session": "^2.0.49",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "@types/express-session": "^1.18.2",
     "@types/node": "^25.0.3",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"

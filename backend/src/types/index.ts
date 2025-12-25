@@ -38,15 +38,3 @@ export interface GoogleCalendarEvent {
     private?: Record<string, string>;
   };
 }
-
-declare module 'express-session' {
-  interface SessionData {
-    tokens?: {
-      access_token?: string;
-      refresh_token?: string;
-      expiry_date?: number;
-    };
-    userEmail?: string;
-    redirectUrl?: string;
-  }
-}

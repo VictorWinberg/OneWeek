@@ -19,13 +19,15 @@ function getRedirectUri(req: Request): string {
 // GET /api/auth/login - Redirect to Google OAuth
 router.get('/login', (req, res) => {
   try {
-    // Require redirect URL
     const redirectUrl = req.query.redirect_url;
     if (!redirectUrl || typeof redirectUrl !== 'string') {
       return res.status(400).json({ error: 'redirect_url query parameter is required' });
     }
 
-    // Store redirect URL in session
+    if (!req.session) {
+      console.error('Session is not available');
+      return res.status(500).json({ error: 'Session configuration error' });
+    }
     req.session.redirectUrl = redirectUrl;
 
     const redirectUri = getRedirectUri(req);
@@ -52,19 +54,22 @@ router.get('/callback', async (req, res) => {
     const oauth2Client = createOAuth2Client(redirectUri);
     const tokens = await getTokensFromCode(oauth2Client, code);
 
-    // Validate user email before storing tokens
     setCredentials(oauth2Client, tokens);
     const userInfo = await getUserInfo(oauth2Client);
 
     if (!userInfo.email || !isEmailAllowed(userInfo.email)) {
       console.warn(`Unauthorized login attempt from: ${userInfo.email}`);
-      // Get redirect URL from session or default to root
-      const redirectUrl = req.session.redirectUrl || '/';
-      delete req.session.redirectUrl; // Clean up session
+      const redirectUrl = req.session?.redirectUrl || '/';
+      if (req.session) {
+        delete req.session.redirectUrl;
+      }
       return res.redirect(`${redirectUrl}${redirectUrl.includes('?') ? '&' : '?'}error=unauthorized`);
     }
 
-    // Store tokens and user email in session
+    if (!req.session) {
+      console.error('Session is not available during callback');
+      return res.status(500).json({ error: 'Session configuration error' });
+    }
     req.session.tokens = {
       access_token: tokens.access_token ?? undefined,
       refresh_token: tokens.refresh_token ?? undefined,
@@ -72,11 +77,9 @@ router.get('/callback', async (req, res) => {
     };
     req.session.userEmail = userInfo.email;
 
-    // Get redirect URL from session or default to root
     const redirectUrl = req.session.redirectUrl || '/';
-    delete req.session.redirectUrl; // Clean up session
+    delete req.session.redirectUrl;
 
-    // Redirect to the original URL or frontend
     res.redirect(redirectUrl);
   } catch (error) {
     console.error('OAuth callback error:', error);
@@ -86,7 +89,7 @@ router.get('/callback', async (req, res) => {
 
 // GET /api/auth/me - Get current user info
 router.get('/me', async (req, res) => {
-  const tokens = req.session.tokens;
+  const tokens = req.session?.tokens;
 
   if (!tokens?.access_token) {
     return res.status(401).json({ error: 'Not authenticated' });
@@ -109,19 +112,13 @@ router.get('/me', async (req, res) => {
 
 // POST /api/auth/logout - Clear session
 router.post('/logout', (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      console.error('Error destroying session:', err);
-      return res.status(500).json({ error: 'Logout failed' });
-    }
-    res.clearCookie('connect.sid');
-    res.json({ success: true });
-  });
+  (req as any).session = null;
+  res.json({ success: true });
 });
 
 // GET /api/auth/status - Check authentication status
 router.get('/status', (req, res) => {
-  const isAuthenticated = !!req.session.tokens?.access_token;
+  const isAuthenticated = !!req.session?.tokens?.access_token;
   res.json({ isAuthenticated });
 });
 

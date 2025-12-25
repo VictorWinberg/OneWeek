@@ -17,7 +17,7 @@ const router = Router();
 
 // Middleware to check authentication
 const requireAuth = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.session.tokens?.access_token || !req.session.userEmail) {
+  if (!req.session?.tokens?.access_token || !req.session?.userEmail) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
   next();
@@ -27,7 +27,7 @@ const requireAuth = (req: Request, res: Response, next: NextFunction) => {
 router.get('/', requireAuth, async (req, res) => {
   try {
     const { startDate, endDate, calendars: calendarsJson } = req.query;
-    const userEmail = req.session.userEmail!;
+    const userEmail = req.session?.userEmail!;
 
     if (!startDate || !endDate || !calendarsJson) {
       return res.status(400).json({
@@ -71,7 +71,7 @@ router.get('/', requireAuth, async (req, res) => {
 router.get('/:calendarId/:eventId', requireAuth, async (req, res) => {
   try {
     const { calendarId, eventId } = req.params;
-    const userEmail = req.session.userEmail!;
+    const userEmail = req.session?.userEmail!;
 
     // Check read permission
     if (!hasPermission(userEmail, calendarId, 'read')) {
@@ -96,7 +96,7 @@ router.get('/:calendarId/:eventId', requireAuth, async (req, res) => {
 router.post('/', requireAuth, async (req, res) => {
   try {
     const { calendarId, title, description, startTime, endTime, allDay, metadata } = req.body;
-    const userEmail = req.session.userEmail!;
+    const userEmail = req.session?.userEmail!;
 
     if (!calendarId || !title || !startTime || !endTime) {
       return res.status(400).json({
@@ -128,7 +128,7 @@ router.patch('/:calendarId/:eventId', requireAuth, async (req, res) => {
   try {
     const { calendarId, eventId } = req.params;
     const { title, description, startTime, endTime } = req.body;
-    const userEmail = req.session.userEmail!;
+    const userEmail = req.session?.userEmail!;
 
     // Check update permission
     if (!hasPermission(userEmail, calendarId, 'update')) {
@@ -159,7 +159,7 @@ router.post('/:calendarId/:eventId/move', requireAuth, async (req, res) => {
   try {
     const { calendarId, eventId } = req.params;
     const { targetCalendarId } = req.body;
-    const userEmail = req.session.userEmail!;
+    const userEmail = req.session?.userEmail!;
 
     if (!targetCalendarId) {
       return res.status(400).json({ error: 'Missing targetCalendarId' });
@@ -191,7 +191,7 @@ router.post('/:calendarId/:eventId/move', requireAuth, async (req, res) => {
 router.delete('/:calendarId/:eventId', requireAuth, async (req, res) => {
   try {
     const { calendarId, eventId } = req.params;
-    const userEmail = req.session.userEmail!;
+    const userEmail = req.session?.userEmail!;
 
     // Check delete permission
     if (!hasPermission(userEmail, calendarId, 'delete')) {

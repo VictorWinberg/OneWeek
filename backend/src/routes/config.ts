@@ -9,7 +9,7 @@ const requireAuth = (
   res: import('express').Response,
   next: import('express').NextFunction
 ) => {
-  if (!req.session.tokens?.access_token) {
+  if (!req.session?.tokens?.access_token) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
   next();
@@ -19,7 +19,7 @@ const requireAuth = (
 router.get('/calendars', requireAuth, async (req, res) => {
   try {
     // Get user email from session (should be set during auth)
-    const userEmail = req.session.userEmail;
+    const userEmail = req.session?.userEmail;
 
     if (!userEmail) {
       return res.status(401).json({ error: 'User email not found in session' });

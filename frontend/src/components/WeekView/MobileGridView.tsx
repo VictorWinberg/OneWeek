@@ -85,19 +85,11 @@ interface MobileGridViewProps {
 export function MobileGridView({ weekDays, blocks, onBlockClick }: MobileGridViewProps) {
   const hasAllDayEvents = blocks.some((block) => block.allDay);
 
-  // Calculate max number of all-day events in any day to maintain consistent height
-  const maxAllDayEvents = hasAllDayEvents
-    ? Math.max(
-        ...weekDays.map((date) => getBlocksForDay(blocks, date).filter((b) => b.allDay).length),
-        1 // Minimum of 1 to show at least one row
-      )
-    : 0;
-
   return (
     <div className="flex flex-col gap-2 p-2">
-      {/* All-day events section - only show if there are any */}
+      {/* All-day events section - fixed height with scroll */}
       {hasAllDayEvents && (
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 h-[60px] flex-shrink-0">
           {weekDays.map((date) => {
             const allDayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date).filter((b) => b.allDay));
             const isCurrentDay = isToday(date);
@@ -106,7 +98,7 @@ export function MobileGridView({ weekDays, blocks, onBlockClick }: MobileGridVie
               <div
                 key={`allday-${date.toISOString()}`}
                 className={`
-                  rounded-lg border p-1 space-y-1
+                  rounded-lg border p-1 space-y-1 overflow-y-auto
                   ${
                     isCurrentDay
                       ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/5'
@@ -123,10 +115,6 @@ export function MobileGridView({ weekDays, blocks, onBlockClick }: MobileGridVie
                     isAllDay={true}
                     draggable={false}
                   />
-                ))}
-                {/* Add empty spacers to maintain consistent height */}
-                {Array.from({ length: maxAllDayEvents - allDayBlocks.length }).map((_, idx) => (
-                  <div key={`spacer-${idx}`} className="h-6" />
                 ))}
               </div>
             );

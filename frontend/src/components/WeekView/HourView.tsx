@@ -370,7 +370,7 @@ export function HourView({
                               <EventCard
                                 block={block}
                                 onClick={() => onBlockClick(block)}
-                                compact={height < 60}
+                                compact={false}
                                 fillHeight={true}
                                 draggable={true}
                                 extraCompact={true}

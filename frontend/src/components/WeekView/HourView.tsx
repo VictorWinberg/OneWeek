@@ -248,44 +248,18 @@ export function HourView({
               </div>
             </div>
           ) : (
-            <div className="flex min-w-max">
-              {/* Time column */}
-              <div className="sticky left-0 z-20 bg-[var(--color-bg-secondary)] border-r border-[var(--color-bg-tertiary)]">
-                <div className="sticky top-0 z-30 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)] flex items-center justify-center h-[60px] px-4">
+            <div className="flex flex-col min-w-max h-full">
+              {/* Day Headers Section */}
+              <div className="flex sticky top-0 z-20 bg-[var(--color-bg-secondary)]">
+                <div className="w-[80px] flex-shrink-0 border-r border-[var(--color-bg-tertiary)] border-b border-[var(--color-bg-tertiary)] flex items-center justify-center h-[60px] px-4">
                   <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Tid</span>
                 </div>
-                {/* All-day events spacer - always visible for consistent spacing */}
-                <div className="sticky top-[60px] z-30 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)] min-h-[40px] flex items-center justify-center px-2">
-                  <span className="text-[10px] text-[var(--color-text-secondary)] text-center">Heldag</span>
-                </div>
-                {hours.map((hour) => (
-                  <div
-                    key={hour}
-                    className="border-b border-[var(--color-bg-tertiary)] flex items-start justify-end pt-1 h-[60px] pr-2"
-                  >
-                    <span className="text-xs text-[var(--color-text-secondary)]">
-                      {hour.toString().padStart(2, '0')}:00
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Day columns */}
-              {weekDays.map((date) => {
-                const today = isToday(date);
-                const dayBlocks = getBlocksForDay(blocks, date).filter((block) => !block.allDay);
-                const allDayBlocks = getBlocksForDay(blocks, date).filter((block) => block.allDay);
-
-                return (
-                  <div
-                    key={date.toISOString()}
-                    className={`flex-1 border-r border-[var(--color-bg-tertiary)] last:border-r-0 min-w-[150px] ${
-                      today ? 'bg-[var(--color-accent)]/5' : ''
-                    }`}
-                  >
-                    {/* Day header */}
+                {weekDays.map((date) => {
+                  const today = isToday(date);
+                  return (
                     <div
-                      className={`sticky top-0 z-10 border-b border-[var(--color-bg-tertiary)] flex flex-col items-center justify-center h-[60px] bg-[var(--color-bg-secondary)] relative ${
+                      key={`header-${date.toISOString()}`}
+                      className={`flex-1 border-r border-[var(--color-bg-tertiary)] last:border-r-0 border-b border-[var(--color-bg-tertiary)] flex flex-col items-center justify-center h-[60px] min-w-[150px] relative ${
                         today ? 'before:absolute before:inset-0 before:bg-[var(--color-accent)]/10' : ''
                       }`}
                     >
@@ -304,9 +278,25 @@ export function HourView({
                         {date.getDate()}
                       </div>
                     </div>
+                  );
+                })}
+              </div>
 
-                    {/* All-day events row - always visible for consistent spacing */}
-                    <div className="sticky top-[60px] z-10 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)] p-1 min-h-[40px] flex flex-col gap-1">
+              {/* All-day Events Section */}
+              <div className="flex sticky top-[60px] z-10 bg-[var(--color-bg-secondary)]">
+                <div className="w-[80px] flex-shrink-0 border-r border-[var(--color-bg-tertiary)] border-b border-[var(--color-bg-tertiary)] min-h-[40px] flex items-center justify-center px-2">
+                  <span className="text-[10px] text-[var(--color-text-secondary)] text-center">Heldag</span>
+                </div>
+                {weekDays.map((date) => {
+                  const allDayBlocks = getBlocksForDay(blocks, date).filter((block) => block.allDay);
+                  const today = isToday(date);
+                  return (
+                    <div
+                      key={`allday-${date.toISOString()}`}
+                      className={`flex-1 border-r border-[var(--color-bg-tertiary)] last:border-r-0 border-b border-[var(--color-bg-tertiary)] p-1 min-h-[40px] flex flex-col gap-1 min-w-[150px] ${
+                        today ? 'bg-[var(--color-accent)]/5' : ''
+                      }`}
+                    >
                       {allDayBlocks.map((block) => (
                         <EventCard
                           key={`${block.calendarId}-${block.id}`}
@@ -321,9 +311,38 @@ export function HourView({
                         />
                       ))}
                     </div>
+                  );
+                })}
+              </div>
 
-                    {/* Hour grid and events */}
-                    <div className="relative">
+              {/* Hourly Events Section */}
+              <div className="flex flex-1">
+                {/* Time column */}
+                <div className="w-[80px] flex-shrink-0 sticky left-0 z-10 bg-[var(--color-bg-secondary)] border-r border-[var(--color-bg-tertiary)]">
+                  {hours.map((hour) => (
+                    <div
+                      key={hour}
+                      className="border-b border-[var(--color-bg-tertiary)] flex items-start justify-end pt-1 h-[60px] pr-2"
+                    >
+                      <span className="text-xs text-[var(--color-text-secondary)]">
+                        {hour.toString().padStart(2, '0')}:00
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Day columns with events */}
+                {weekDays.map((date) => {
+                  const today = isToday(date);
+                  const dayBlocks = getBlocksForDay(blocks, date).filter((block) => !block.allDay);
+
+                  return (
+                    <div
+                      key={date.toISOString()}
+                      className={`flex-1 border-r border-[var(--color-bg-tertiary)] last:border-r-0 min-w-[150px] relative ${
+                        today ? 'bg-[var(--color-accent)]/5' : ''
+                      }`}
+                    >
                       {/* Hour grid lines */}
                       {hours.map((hour) => (
                         <div key={hour} className="h-[60px] border-b border-[var(--color-bg-tertiary)]" />
@@ -340,9 +359,7 @@ export function HourView({
                               hour={hour}
                               minute={minute}
                               activeBlockDuration={
-                                activeBlock
-                                  ? activeBlock.endTime.getTime() - activeBlock.startTime.getTime()
-                                  : undefined
+                                activeBlock ? activeBlock.endTime.getTime() - activeBlock.startTime.getTime() : undefined
                               }
                             >
                               <div
@@ -380,9 +397,9 @@ export function HourView({
                         })}
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

@@ -96,13 +96,8 @@ router.get('/:calendarId/:eventId', requireAuth, async (req, res) => {
 // POST /api/events - Create a new event
 router.post('/', requireAuth, async (req, res) => {
   try {
-<<<<<<< HEAD
-    const { calendarId, title, description, startTime, endTime, allDay, metadata } = req.body;
-    const userEmail = req.session?.userEmail!;
-=======
     const { calendarId, title, description, startTime, endTime, allDay, metadata, recurrenceRule } = req.body;
-    const userEmail = req.session.userEmail!;
->>>>>>> 3bb56fe (feat: add recurring events support to create and edit panels)
+    const userEmail = req.session?.userEmail;
 
     if (!calendarId || !title || !startTime || !endTime) {
       return res.status(400).json({

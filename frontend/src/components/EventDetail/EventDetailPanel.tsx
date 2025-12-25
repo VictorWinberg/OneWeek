@@ -32,7 +32,7 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
   const deleteEvent = useDeleteEvent();
   const updateEvent = useUpdateEvent();
 
-  // Initialize form when block changes or entering edit mode
+  // Initialize form when entering edit mode
   useEffect(() => {
     if (block && isEditing) {
       setEditTitle(block.title);
@@ -78,14 +78,18 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
     if (newCalendarId === block.calendarId) return;
 
     try {
-      await moveEvent.mutateAsync({
+      const result = await moveEvent.mutateAsync({
         blockId: block.id,
         calendarId: block.calendarId,
         targetCalendarId: newCalendarId,
         startTime: block.startTime,
       });
-      // Update selected block with new calendar ID
-      selectBlock({ ...block, calendarId: newCalendarId });
+      // Update selected block with new calendar ID and new event ID from the move
+      selectBlock({
+        ...block,
+        id: result.newEventId,
+        calendarId: newCalendarId,
+      });
     } catch (error) {
       console.error('Failed to move event:', error);
     }
@@ -227,9 +231,7 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
             <>
               {/* Edit Form */}
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                  Beskrivning
-                </label>
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Beskrivning</label>
                 <textarea
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
@@ -239,11 +241,23 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
                 />
               </div>
 
+              {/* Change Responsibility */}
+              <ResponsibilitySelector
+                currentCalendarId={block.calendarId}
+                onSelect={handleChangeResponsibility}
+                disabled={moveEvent.isPending}
+              />
+
+              {moveEvent.isPending && (
+                <div className="flex items-center gap-2 text-[var(--color-text-secondary)]">
+                  <div className="w-4 h-4 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
+                  <span className="text-sm">Flyttar event...</span>
+                </div>
+              )}
+
               {/* Date */}
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                  Datum *
-                </label>
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Datum *</label>
                 <input
                   type="date"
                   value={new Intl.DateTimeFormat('sv-SE').format(editDate)}
@@ -266,9 +280,7 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                    Sluttid *
-                  </label>
+                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Sluttid *</label>
                   <input
                     type="time"
                     value={editEndTime}
@@ -280,9 +292,7 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
 
               {/* Error message */}
               {error && (
-                <div className="p-3 bg-red-900/30 border border-red-700 rounded-lg text-red-200 text-sm">
-                  {error}
-                </div>
+                <div className="p-3 bg-red-900/30 border border-red-700 rounded-lg text-red-200 text-sm">{error}</div>
               )}
             </>
           ) : (
@@ -293,20 +303,6 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
                 <div>
                   <h3 className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">Beskrivning</h3>
                   <p className="text-[var(--color-text-primary)] whitespace-pre-wrap">{block.description}</p>
-                </div>
-              )}
-
-              {/* Change Responsibility */}
-              <ResponsibilitySelector
-                currentCalendarId={block.calendarId}
-                onSelect={handleChangeResponsibility}
-                disabled={moveEvent.isPending}
-              />
-
-              {moveEvent.isPending && (
-                <div className="flex items-center gap-2 text-[var(--color-text-secondary)]">
-                  <div className="w-4 h-4 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
-                  <span className="text-sm">Flyttar event...</span>
                 </div>
               )}
             </>

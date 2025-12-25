@@ -31,13 +31,9 @@ export function RecurrenceSelector({ value, onChange, disabled }: RecurrenceSele
   const [frequency, setFrequency] = useState<RecurrenceFrequency>(value?.frequency || 'WEEKLY');
   const [interval, setInterval] = useState<number>(value?.interval || 1);
   const [selectedDays, setSelectedDays] = useState<RecurrenceDay[]>(value?.byDay || []);
-  const [endType, setEndType] = useState<EndType>(
-    value?.until ? 'until' : value?.count ? 'count' : 'never'
-  );
+  const [endType, setEndType] = useState<EndType>(value?.until ? 'until' : value?.count ? 'count' : 'never');
   const [count, setCount] = useState<number>(value?.count || 10);
-  const [until, setUntil] = useState<string>(
-    value?.until ? new Intl.DateTimeFormat('sv-SE').format(value.until) : ''
-  );
+  const [until, setUntil] = useState<string>(value?.until ? new Intl.DateTimeFormat('sv-SE').format(value.until) : '');
 
   const handleRecurringToggle = (checked: boolean) => {
     setIsRecurring(checked);
@@ -48,17 +44,31 @@ export function RecurrenceSelector({ value, onChange, disabled }: RecurrenceSele
     }
   };
 
-  const updateRecurrence = () => {
+  const updateRecurrence = (overrides?: {
+    frequency?: RecurrenceFrequency;
+    interval?: number;
+    selectedDays?: RecurrenceDay[];
+    endType?: EndType;
+    count?: number;
+    until?: string;
+  }) => {
+    const currentFrequency = overrides?.frequency ?? frequency;
+    const currentInterval = overrides?.interval ?? interval;
+    const currentSelectedDays = overrides?.selectedDays ?? selectedDays;
+    const currentEndType = overrides?.endType ?? endType;
+    const currentCount = overrides?.count ?? count;
+    const currentUntil = overrides?.until ?? until;
+
     const rule: RecurrenceRule = {
-      frequency,
-      interval: interval > 1 ? interval : undefined,
-      byDay: frequency === 'WEEKLY' && selectedDays.length > 0 ? selectedDays : undefined,
+      frequency: currentFrequency,
+      interval: currentInterval > 1 ? currentInterval : undefined,
+      byDay: currentFrequency === 'WEEKLY' && currentSelectedDays.length > 0 ? currentSelectedDays : undefined,
     };
 
-    if (endType === 'count') {
-      rule.count = count;
-    } else if (endType === 'until' && until) {
-      rule.until = new Date(until + 'T23:59:59');
+    if (currentEndType === 'count') {
+      rule.count = currentCount;
+    } else if (currentEndType === 'until' && currentUntil) {
+      rule.until = new Date(currentUntil + 'T23:59:59');
     }
 
     onChange(rule);
@@ -67,45 +77,43 @@ export function RecurrenceSelector({ value, onChange, disabled }: RecurrenceSele
   const handleFrequencyChange = (newFrequency: RecurrenceFrequency) => {
     setFrequency(newFrequency);
     if (isRecurring) {
-      setTimeout(() => updateRecurrence(), 0);
+      setTimeout(() => updateRecurrence({ frequency: newFrequency }), 0);
     }
   };
 
   const handleIntervalChange = (newInterval: number) => {
     setInterval(newInterval);
     if (isRecurring) {
-      setTimeout(() => updateRecurrence(), 0);
+      setTimeout(() => updateRecurrence({ interval: newInterval }), 0);
     }
   };
 
   const handleDayToggle = (day: RecurrenceDay) => {
-    const newDays = selectedDays.includes(day)
-      ? selectedDays.filter((d) => d !== day)
-      : [...selectedDays, day];
+    const newDays = selectedDays.includes(day) ? selectedDays.filter((d) => d !== day) : [...selectedDays, day];
     setSelectedDays(newDays);
     if (isRecurring) {
-      setTimeout(() => updateRecurrence(), 0);
+      setTimeout(() => updateRecurrence({ selectedDays: newDays }), 0);
     }
   };
 
   const handleEndTypeChange = (newEndType: EndType) => {
     setEndType(newEndType);
     if (isRecurring) {
-      setTimeout(() => updateRecurrence(), 0);
+      setTimeout(() => updateRecurrence({ endType: newEndType }), 0);
     }
   };
 
   const handleCountChange = (newCount: number) => {
     setCount(newCount);
     if (isRecurring && endType === 'count') {
-      setTimeout(() => updateRecurrence(), 0);
+      setTimeout(() => updateRecurrence({ count: newCount }), 0);
     }
   };
 
   const handleUntilChange = (newUntil: string) => {
     setUntil(newUntil);
     if (isRecurring && endType === 'until') {
-      setTimeout(() => updateRecurrence(), 0);
+      setTimeout(() => updateRecurrence({ until: newUntil }), 0);
     }
   };
 
@@ -130,9 +138,7 @@ export function RecurrenceSelector({ value, onChange, disabled }: RecurrenceSele
         <div className="ml-6 space-y-4 p-4 bg-[var(--color-bg-tertiary)] rounded-lg">
           {/* Frequency */}
           <div>
-            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-              Upprepa
-            </label>
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Upprepa</label>
             <div className="grid grid-cols-2 gap-2">
               {FREQUENCY_OPTIONS.map((option) => (
                 <button
@@ -180,9 +186,7 @@ export function RecurrenceSelector({ value, onChange, disabled }: RecurrenceSele
           {/* Weekly: Select days */}
           {frequency === 'WEEKLY' && (
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                Upprepa på
-              </label>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Upprepa på</label>
               <div className="flex flex-wrap gap-2">
                 {WEEKDAY_OPTIONS.map((day) => (
                   <button

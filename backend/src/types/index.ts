@@ -6,7 +6,6 @@ export interface CalendarSource {
 
 export interface BlockMetadata {
   category?: string;
-  energy?: number;
   originalCalendarId?: string;
 }
 
@@ -18,7 +17,6 @@ export interface Block {
   startTime: string; // ISO string
   endTime: string; // ISO string
   allDay: boolean;
-  responsiblePersonId: string; // Calendar ID of responsible person
   metadata: BlockMetadata;
 }
 
@@ -52,4 +50,3 @@ declare module 'express-session' {
     redirectUrl?: string;
   }
 }
-

@@ -162,26 +162,30 @@ export function useMoveEvent() {
 }
 
 /**
- * Hook to update event time
+ * Hook to update event details (title, description, time)
  */
-export function useUpdateEventTime() {
+export function useUpdateEvent() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({
       blockId,
       calendarId,
+      title,
+      description,
       startTime,
       endTime,
     }: {
       blockId: string;
       calendarId: string;
+      title?: string;
+      description?: string;
       startTime: Date;
       endTime: Date;
     }) => {
-      return eventsApi.updateEvent(calendarId, blockId, { startTime, endTime });
+      return eventsApi.updateEvent(calendarId, blockId, { title, description, startTime, endTime });
     },
-    onMutate: async ({ blockId, calendarId, startTime, endTime }) => {
+    onMutate: async ({ blockId, calendarId, title, description, startTime, endTime }) => {
       const weekKey = getWeekKey(startTime);
       await queryClient.cancelQueries({ queryKey: calendarKeys.week(weekKey) });
 
@@ -193,7 +197,7 @@ export function useUpdateEventTime() {
           calendarKeys.week(weekKey),
           previousData.map((block) =>
             block.id === blockId && block.calendarId === calendarId
-              ? { ...block, startTime, endTime }
+              ? { ...block, ...(title !== undefined && { title }), ...(description !== undefined && { description }), startTime, endTime }
               : block
           )
         );

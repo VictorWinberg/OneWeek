@@ -107,6 +107,13 @@ export const eventsApi = {
     startTime: Date;
     endTime: Date;
     allDay?: boolean;
+    recurrenceRule?: {
+      frequency: string;
+      interval?: number;
+      count?: number;
+      until?: Date;
+      byDay?: string[];
+    } | null;
   }): Promise<{ success: boolean; eventId: string }> => {
     const isAllDay = data.allDay ?? false;
     return fetchJson(`${API_BASE}/events`, {
@@ -115,6 +122,12 @@ export const eventsApi = {
         ...data,
         startTime: formatDateForAPI(data.startTime, isAllDay),
         endTime: formatDateForAPI(data.endTime, isAllDay),
+        recurrenceRule: data.recurrenceRule
+          ? {
+              ...data.recurrenceRule,
+              until: data.recurrenceRule.until?.toISOString(),
+            }
+          : undefined,
       }),
     });
   },

@@ -9,6 +9,62 @@ import { useMoveEvent, useDeleteEvent, useUpdateEvent } from '@/hooks/useCalenda
 import { ResponsibilitySelector } from './ResponsibilitySelector';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 
+// Helper to format recurrence rules for display
+function formatRecurrence(recurrenceRules?: string[]): string | null {
+  if (!recurrenceRules || recurrenceRules.length === 0) return null;
+
+  const rrule = recurrenceRules.find((rule) => rule.startsWith('RRULE:'));
+  if (!rrule) return null;
+
+  const parts = rrule.replace('RRULE:', '').split(';');
+  const ruleMap: Record<string, string> = {};
+  parts.forEach((part) => {
+    const [key, value] = part.split('=');
+    ruleMap[key] = value;
+  });
+
+  let description = '';
+
+  // Frequency
+  const freq = ruleMap['FREQ'];
+  const interval = ruleMap['INTERVAL'] || '1';
+  const intervalNum = parseInt(interval);
+
+  if (freq === 'DAILY') {
+    description = intervalNum === 1 ? 'Varje dag' : `Var ${intervalNum}:e dag`;
+  } else if (freq === 'WEEKLY') {
+    description = intervalNum === 1 ? 'Varje vecka' : `Var ${intervalNum}:e vecka`;
+    if (ruleMap['BYDAY']) {
+      const days = ruleMap['BYDAY'].split(',');
+      const dayNames: Record<string, string> = {
+        MO: 'mån',
+        TU: 'tis',
+        WE: 'ons',
+        TH: 'tor',
+        FR: 'fre',
+        SA: 'lör',
+        SU: 'sön',
+      };
+      const formattedDays = days.map((d) => dayNames[d] || d).join(', ');
+      description += ` på ${formattedDays}`;
+    }
+  } else if (freq === 'MONTHLY') {
+    description = intervalNum === 1 ? 'Varje månad' : `Var ${intervalNum}:e månad`;
+  } else if (freq === 'YEARLY') {
+    description = intervalNum === 1 ? 'Varje år' : `Var ${intervalNum}:e år`;
+  }
+
+  // End condition
+  if (ruleMap['COUNT']) {
+    description += `, ${ruleMap['COUNT']} gånger`;
+  } else if (ruleMap['UNTIL']) {
+    const until = new Date(ruleMap['UNTIL']);
+    description += `, till ${new Intl.DateTimeFormat('sv-SE', { dateStyle: 'short' }).format(until)}`;
+  }
+
+  return description;
+}
+
 interface EventDetailPanelProps {
   block: Block | null;
   onClose: () => void;
@@ -54,6 +110,7 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
   if (!person) return null;
 
   const initial = getInitial(person.name);
+  const recurrenceDescription = formatRecurrence(block.recurrence);
 
   const handleChangeResponsibility = async (newCalendarId: string) => {
     if (newCalendarId === block.calendarId) return;
@@ -294,6 +351,31 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
           ) : (
             <>
               {/* View Mode */}
+              {/* Recurrence Info */}
+              {recurrenceDescription && (
+                <div className="p-3 bg-[var(--color-bg-tertiary)] rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <svg
+                      className="w-5 h-5 text-[var(--color-accent)] mt-0.5 flex-shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-[var(--color-text-primary)]">Återkommande händelse</p>
+                      <p className="text-sm text-[var(--color-text-secondary)] mt-1">{recurrenceDescription}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Description */}
               {block.description && (
                 <div>

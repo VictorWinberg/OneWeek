@@ -86,6 +86,13 @@ export function useCreateEvent() {
       startTime: Date;
       endTime: Date;
       allDay?: boolean;
+      recurrenceRule?: {
+        frequency: string;
+        interval?: number;
+        count?: number;
+        until?: Date;
+        byDay?: string[];
+      } | null;
     }) => {
       return eventsApi.createEvent(data);
     },

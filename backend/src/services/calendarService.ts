@@ -173,6 +173,8 @@ export function normalizeEventToBlock(event: calendar_v3.Schema$Event, calendarI
     endTime,
     allDay: isAllDay,
     metadata,
+    recurrence: event.recurrence || undefined,
+    recurringEventId: event.recurringEventId || undefined,
   };
 }
 
@@ -183,7 +185,8 @@ export function blockToGoogleEvent(
   startTime: string,
   endTime: string,
   allDay: boolean,
-  metadata?: BlockMetadata
+  metadata?: BlockMetadata,
+  recurrence?: string[]
 ): GoogleCalendarEvent {
   const event: GoogleCalendarEvent = { summary: title, description: description || undefined };
 
@@ -202,6 +205,10 @@ export function blockToGoogleEvent(
         ...(metadata.originalCalendarId && { originalCalendarId: metadata.originalCalendarId }),
       },
     };
+  }
+
+  if (recurrence && recurrence.length > 0) {
+    event.recurrence = recurrence;
   }
 
   return event;

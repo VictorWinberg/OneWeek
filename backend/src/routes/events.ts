@@ -12,6 +12,7 @@ import {
 } from '../services/calendarService.js';
 import { hasPermission } from '../services/permissionService.js';
 import type { CalendarSource } from '../types/index.js';
+import { recurrenceRuleToRRULE, type RecurrenceRule } from '../utils/recurrence.js';
 
 const router = Router();
 
@@ -95,8 +96,13 @@ router.get('/:calendarId/:eventId', requireAuth, async (req, res) => {
 // POST /api/events - Create a new event
 router.post('/', requireAuth, async (req, res) => {
   try {
+<<<<<<< HEAD
     const { calendarId, title, description, startTime, endTime, allDay, metadata } = req.body;
     const userEmail = req.session?.userEmail!;
+=======
+    const { calendarId, title, description, startTime, endTime, allDay, metadata, recurrenceRule } = req.body;
+    const userEmail = req.session.userEmail!;
+>>>>>>> 3bb56fe (feat: add recurring events support to create and edit panels)
 
     if (!calendarId || !title || !startTime || !endTime) {
       return res.status(400).json({
@@ -109,7 +115,27 @@ router.post('/', requireAuth, async (req, res) => {
       return res.status(403).json({ error: 'No permission to create events in this calendar' });
     }
 
-    const googleEvent = blockToGoogleEvent(title, description, startTime, endTime, allDay || false, metadata);
+    // Convert recurrenceRule to RRULE string array if provided
+    let recurrence: string[] | undefined;
+    if (recurrenceRule) {
+      try {
+        const rruleString = recurrenceRuleToRRULE(recurrenceRule as RecurrenceRule);
+        recurrence = [rruleString];
+      } catch (error) {
+        console.error('Error converting recurrence rule:', error);
+        return res.status(400).json({ error: 'Invalid recurrence rule' });
+      }
+    }
+
+    const googleEvent = blockToGoogleEvent(
+      title,
+      description,
+      startTime,
+      endTime,
+      allDay || false,
+      metadata,
+      recurrence
+    );
     const createdEvent = await createEvent(calendarId, googleEvent);
 
     if (!createdEvent) {

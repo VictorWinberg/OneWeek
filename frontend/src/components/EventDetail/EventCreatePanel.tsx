@@ -3,6 +3,8 @@ import { useConfigStore } from '@/stores/configStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useCreateEvent } from '@/hooks/useCalendarQueries';
 import { getInitial } from '@/types';
+import { RecurrenceSelector } from './RecurrenceSelector';
+import type { RecurrenceRule } from '@/types/block';
 
 interface EventCreatePanelProps {
   isOpen: boolean;
@@ -43,6 +45,7 @@ export function EventCreatePanel({
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
   const [allDay, setAllDay] = useState(false);
+  const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Helper function to calculate time in minutes from "HH:MM" string
@@ -110,6 +113,7 @@ export function EventCreatePanel({
       }
 
       setAllDay(false);
+      setRecurrenceRule(null);
       setError(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -167,6 +171,7 @@ export function EventCreatePanel({
         startTime: startDateTime,
         endTime: endDateTime,
         allDay,
+        recurrenceRule,
       });
 
       onClose();
@@ -344,6 +349,9 @@ export function EventCreatePanel({
               </div>
             </div>
           )}
+
+          {/* Recurrence */}
+          <RecurrenceSelector value={recurrenceRule} onChange={setRecurrenceRule} disabled={createEvent.isPending} />
 
           {/* Error message */}
           {error && (

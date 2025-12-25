@@ -165,7 +165,7 @@ function DroppableMobileCell({ id, date, calendarId, children, isToday }: Droppa
     <td
       ref={setNodeRef}
       className={`
-        p-0.5 border-b border-r border-[var(--color-bg-tertiary)] last:border-r-0 align-top
+        p-0.5 border-b border-r border-[var(--color-bg-tertiary)] last:border-r-0 align-top h-full
         ${isToday ? 'bg-[var(--color-accent)]/5' : ''}
         ${isOver ? 'bg-[var(--color-accent)]/20 ring-2 ring-[var(--color-accent)] ring-inset' : ''}
       `}
@@ -553,19 +553,19 @@ export function MobileView({ onBlockClick, onCreateEvent }: MobileViewProps) {
                   >
                     {/* Day header */}
                     <div
-                      className={`sticky top-0 z-10 h-[50px] border-b border-[var(--color-bg-tertiary)] flex flex-col items-center justify-center px-0.5 ${
-                        today ? 'bg-[var(--color-accent)]/10' : 'bg-[var(--color-bg-secondary)]'
+                      className={`sticky top-0 z-10 h-[50px] border-b border-[var(--color-bg-tertiary)] flex flex-col items-center justify-center px-0.5 relative bg-[var(--color-bg-secondary)] ${
+                        today ? 'before:absolute before:inset-0 before:bg-[var(--color-accent)]/10' : ''
                       }`}
                     >
                       <div
-                        className={`text-[9px] uppercase tracking-wide ${
+                        className={`text-[9px] uppercase tracking-wide relative ${
                           today ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-secondary)]'
                         }`}
                       >
                         {formatDayShort(date).substring(0, 2)}
                       </div>
                       <div
-                        className={`text-sm font-bold ${
+                        className={`text-sm font-bold relative ${
                           today ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'
                         }`}
                       >
@@ -633,8 +633,8 @@ export function MobileView({ onBlockClick, onCreateEvent }: MobileViewProps) {
             </div>
           ) : (
             // Calendar View
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-xs" style={{ tableLayout: 'fixed' }}>
+            <div className="overflow-x-auto h-full">
+              <table className="w-full h-full border-collapse text-xs" style={{ tableLayout: 'fixed' }}>
                 <thead className="sticky top-0 z-10 bg-[var(--color-bg-secondary)]">
                   <tr>
                     <th className="p-1 text-left text-[9px] font-semibold text-[var(--color-text-primary)] border-b border-r border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)] w-12">
@@ -662,9 +662,9 @@ export function MobileView({ onBlockClick, onCreateEvent }: MobileViewProps) {
                   {weekDays.map((date) => {
                     const today = isToday(date);
                     return (
-                      <tr key={date.toISOString()} className={today ? 'bg-[var(--color-accent)]/5' : ''}>
+                      <tr key={date.toISOString()} className={`h-[14.28%] ${today ? 'bg-[var(--color-accent)]/5' : ''}`}>
                         <td
-                          className={`p-1 text-left font-medium border-b border-r border-[var(--color-bg-tertiary)] ${
+                          className={`p-1 text-left font-medium border-b border-r border-[var(--color-bg-tertiary)] align-top h-full ${
                             today ? 'bg-[var(--color-accent)]/10' : 'bg-[var(--color-bg-secondary)]'
                           }`}
                         >
@@ -687,9 +687,9 @@ export function MobileView({ onBlockClick, onCreateEvent }: MobileViewProps) {
                               calendarId={calendar.id}
                               isToday={today}
                             >
-                              <div className="space-y-0.5 min-h-[50px]">
+                              <div className="space-y-0.5 h-full flex flex-col">
                                 {dayCalendarBlocks.length === 0 ? (
-                                  <div className="flex items-center justify-center h-full text-[var(--color-text-secondary)] text-[9px] opacity-50">
+                                  <div className="flex items-center justify-center flex-1 text-[var(--color-text-secondary)] text-[9px] opacity-50">
                                     —
                                   </div>
                                 ) : (

@@ -41,15 +41,15 @@ export function DayColumn({ date, blocks, onBlockClick, onEmptySpaceClick, compa
       {/* Day Header */}
       <div
         className={`
-          sticky top-0 z-10 p-3 text-center
+          sticky top-0 z-10 p-3 text-center relative
           bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)]
-          ${today ? 'bg-[var(--color-accent)]/10' : ''}
+          ${today ? 'before:absolute before:inset-0 before:bg-[var(--color-accent)]/10' : ''}
         `}
       >
-        <div className="text-xs uppercase tracking-wide text-[var(--color-text-secondary)]">{formatDayShort(date)}</div>
+        <div className="text-xs uppercase tracking-wide text-[var(--color-text-secondary)] relative">{formatDayShort(date)}</div>
         <div
           className={`
-            text-2xl font-bold mt-1
+            text-2xl font-bold mt-1 relative
             ${today ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'}
           `}
         >

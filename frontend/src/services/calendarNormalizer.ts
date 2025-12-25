@@ -1,4 +1,4 @@
-import type { Block, BlockMetadata } from '../types';
+import type { Block } from '@/types';
 
 // This file contains utility functions for working with Block data
 // The actual normalization from Google Calendar events happens on the backend
@@ -28,9 +28,7 @@ export function getBlocksForDay(blocks: Block[], date: Date): Block[] {
 }
 
 export function sortBlocksByTime(blocks: Block[]): Block[] {
-  return [...blocks].sort((a, b) =>
-    new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-  );
+  return [...blocks].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 }
 
 export function formatBlockTime(block: Block): string {
@@ -59,4 +57,3 @@ export function isBlockCurrent(block: Block): boolean {
   const now = new Date();
   return new Date(block.startTime) <= now && new Date(block.endTime) >= now;
 }
-

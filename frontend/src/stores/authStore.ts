@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { authApi } from '../services/api';
+import { authApi } from '@/services/api';
 
 interface User {
   email: string;

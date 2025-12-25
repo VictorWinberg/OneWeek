@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import { useCalendarStore } from '../../stores/calendarStore';
-import { useConfigStore } from '../../stores/configStore';
-import { getWeekDays, formatWeekHeader, getWeekNumber } from '../../utils/dateUtils';
+import { useCalendarStore } from '@/stores/calendarStore';
+import { useConfigStore } from '@/stores/configStore';
+import { getWeekDays, formatWeekHeader, getWeekNumber } from '@/utils/dateUtils';
 import { DayColumn } from './DayColumn';
 import { EventCard } from './EventCard';
-import type { Block } from '../../types';
+import type { Block } from '@/types';
 
 interface WeekViewProps {
   onBlockClick: (block: Block) => void;

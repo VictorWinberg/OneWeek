@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useCalendarStore } from '../../stores/calendarStore';
-import { useConfigStore } from '../../stores/configStore';
-import { getInitial } from '../../types';
+import { useCalendarStore } from '@/stores/calendarStore';
+import { useConfigStore } from '@/stores/configStore';
+import { getInitial } from '@/types';
 
 interface EventCreatePanelProps {
   isOpen: boolean;

@@ -1,6 +1,6 @@
-import type { Person } from '../../types';
-import { getInitial } from '../../types';
-import { useConfigStore } from '../../stores/configStore';
+import type { Person } from '@/types';
+import { getInitial } from '@/types';
+import { useConfigStore } from '@/stores/configStore';
 
 interface ResponsibilitySelectorProps {
   currentCalendarId: string;

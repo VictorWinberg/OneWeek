@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor, useDroppable } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import { useCalendarStore } from '../../stores/calendarStore';
-import { useConfigStore } from '../../stores/configStore';
-import { getWeekDays, formatWeekHeader, getWeekNumber, formatDayShort, isToday } from '../../utils/dateUtils';
-import { getBlocksForDay } from '../../services/calendarNormalizer';
+import { useCalendarStore } from '@/stores/calendarStore';
+import { useConfigStore } from '@/stores/configStore';
+import { getWeekDays, formatWeekHeader, getWeekNumber, formatDayShort, isToday } from '@/utils/dateUtils';
+import { getBlocksForDay } from '@/services/calendarNormalizer';
 import { EventCard } from './EventCard';
-import type { Block } from '../../types';
+import type { Block } from '@/types';
 
 interface DroppableTimeSlotProps {
   id: string;

@@ -1,4 +1,4 @@
-import type { Block, CalendarSource } from '../types';
+import type { Block, CalendarSource } from '@/types';
 
 const API_BASE = '/api';
 

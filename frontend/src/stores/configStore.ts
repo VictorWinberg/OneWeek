@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import type { CalendarConfig, CalendarSource, Person } from '../types';
-import { configApi } from '../services/api';
+import type { CalendarConfig, CalendarSource, Person } from '@/types';
+import { configApi } from '@/services/api';
 
 interface ConfigState {
   config: CalendarConfig;

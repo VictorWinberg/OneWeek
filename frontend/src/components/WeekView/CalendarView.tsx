@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor, useDroppable } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import { useCalendarStore } from '../../stores/calendarStore';
-import { useConfigStore } from '../../stores/configStore';
-import { getWeekDays, formatWeekHeader, getWeekNumber, formatDayShort, isToday } from '../../utils/dateUtils';
+import { useCalendarStore } from '@/stores/calendarStore';
+import { useConfigStore } from '@/stores/configStore';
+import { getWeekDays, formatWeekHeader, getWeekNumber, formatDayShort, isToday } from '@/utils/dateUtils';
 import { EventCard } from './EventCard';
-import { getBlocksForDay, sortBlocksByTime } from '../../services/calendarNormalizer';
-import type { Block } from '../../types';
+import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
+import type { Block } from '@/types';
 
 interface DroppableCellProps {
   id: string;

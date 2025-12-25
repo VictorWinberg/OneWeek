@@ -1,9 +1,9 @@
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import type { Block } from '../../types';
-import { getInitial } from '../../types';
-import { useConfigStore } from '../../stores/configStore';
-import { formatBlockTime, isBlockPast, isBlockCurrent } from '../../services/calendarNormalizer';
+import type { Block } from '@/types';
+import { getInitial } from '@/types';
+import { useConfigStore } from '@/stores/configStore';
+import { formatBlockTime, isBlockPast, isBlockCurrent } from '@/services/calendarNormalizer';
 
 interface EventCardProps {
   block: Block;

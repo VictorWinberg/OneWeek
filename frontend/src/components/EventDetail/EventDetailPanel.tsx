@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import type { Block } from '../../types';
-import { getInitial } from '../../types';
-import { formatBlockTime } from '../../services/calendarNormalizer';
-import { formatDateFull } from '../../utils/dateUtils';
-import { useCalendarStore } from '../../stores/calendarStore';
-import { useConfigStore } from '../../stores/configStore';
+import type { Block } from '@/types';
+import { getInitial } from '@/types';
+import { formatBlockTime } from '@/services/calendarNormalizer';
+import { formatDateFull } from '@/utils/dateUtils';
+import { useCalendarStore } from '@/stores/calendarStore';
+import { useConfigStore } from '@/stores/configStore';
 import { ResponsibilitySelector } from './ResponsibilitySelector';
-import { ConfirmDialog } from '../ConfirmDialog';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 interface EventDetailPanelProps {
   block: Block | null;
@@ -66,10 +66,7 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" onClick={onClose} />
 
       {/* Panel */}
       <div className="fixed inset-y-0 right-0 w-full max-w-md bg-[var(--color-bg-secondary)] shadow-2xl z-50 flex flex-col animate-slide-in">
@@ -80,15 +77,11 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
         >
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-bold text-[var(--color-text-primary)] truncate">
-                {block.title}
-              </h2>
+              <h2 className="text-xl font-bold text-[var(--color-text-primary)] truncate">{block.title}</h2>
               <p className="text-sm text-[var(--color-text-secondary)] mt-1">
                 {formatDateFull(new Date(block.startTime))}
               </p>
-              <p className="text-sm text-[var(--color-text-secondary)]">
-                {formatBlockTime(block)}
-              </p>
+              <p className="text-sm text-[var(--color-text-secondary)]">{formatBlockTime(block)}</p>
             </div>
             <button
               onClick={onClose}
@@ -112,9 +105,7 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
             >
               {initial.charAt(0)}
             </div>
-            <span className="text-sm text-[var(--color-text-primary)]">
-              {person.name}
-            </span>
+            <span className="text-sm text-[var(--color-text-primary)]">{person.name}</span>
           </div>
         </header>
 
@@ -123,12 +114,8 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
           {/* Description */}
           {block.description && (
             <div>
-              <h3 className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                Beskrivning
-              </h3>
-              <p className="text-[var(--color-text-primary)] whitespace-pre-wrap">
-                {block.description}
-              </p>
+              <h3 className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">Beskrivning</h3>
+              <p className="text-[var(--color-text-primary)] whitespace-pre-wrap">{block.description}</p>
             </div>
           )}
 
@@ -174,4 +161,3 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
     </>
   );
 }
-

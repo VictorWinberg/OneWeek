@@ -1,7 +1,7 @@
 import { useDroppable } from '@dnd-kit/core';
-import type { Block } from '../../types';
-import { isToday, formatDayShort, formatDayNumber } from '../../utils/dateUtils';
-import { getBlocksForDay, sortBlocksByTime } from '../../services/calendarNormalizer';
+import type { Block } from '@/types';
+import { isToday, formatDayShort, formatDayNumber } from '@/utils/dateUtils';
+import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
 import { EventCard } from './EventCard';
 
 interface DayColumnProps {

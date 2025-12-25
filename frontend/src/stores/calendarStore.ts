@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { startOfWeek, endOfWeek, addWeeks, subWeeks, isSameWeek } from 'date-fns';
-import type { Block } from '../types';
-import { eventsApi } from '../services/api';
+import type { Block } from '@/types';
+import { eventsApi } from '@/services/api';
 import { useConfigStore } from './configStore';
 
 // Helper to get week key for caching

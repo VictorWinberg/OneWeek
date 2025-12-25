@@ -356,7 +356,7 @@ function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEventForDat
       </nav>
 
       {/* Main content */}
-      <main className="flex-1 overflow-hidden min-h-0">
+      <main className="flex-1 overflow-hidden min-h-0 select-none">
         {isMobile ? (
           <MobileView
             onBlockClick={onBlockClick}

@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from './stores/authStore';
 import { useConfigStore } from './stores/configStore';
 import { useCalendarStore } from './stores/calendarStore';
-import { WeekView } from './components/WeekView/WeekView';
-import { CalendarView } from './components/WeekView/CalendarView';
+import { DayView } from './components/WeekView/DayView';
+import { UserView } from './components/WeekView/UserView';
 import { HourView } from './components/WeekView/HourView';
 import { MobileView } from './components/WeekView/MobileView';
 import { EventDetailPanel } from './components/EventDetail/EventDetailPanel';
@@ -174,7 +174,7 @@ function App() {
                     : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
                 }`}
               >
-                Kalendervy
+                Användarvy
               </button>
               <button
                 onClick={() => setViewMode('hour')}
@@ -197,7 +197,7 @@ function App() {
         {isMobile ? (
           <MobileView onBlockClick={handleBlockClick} onCreateEvent={handleOpenCreatePanel} />
         ) : viewMode === 'day' ? (
-          <WeekView
+          <DayView
             onBlockClick={handleBlockClick}
             onCreateEvent={handleOpenCreatePanel}
             onCreateEventForDate={handleOpenCreatePanelWithDate}
@@ -209,7 +209,7 @@ function App() {
             onCreateEventForDate={handleOpenCreatePanelWithDate}
           />
         ) : (
-          <CalendarView
+          <UserView
             onBlockClick={handleBlockClick}
             onCreateEvent={handleOpenCreatePanel}
             onCreateEventForDate={handleOpenCreatePanelWithDate}

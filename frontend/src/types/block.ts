@@ -1,6 +1,5 @@
 export interface BlockMetadata {
   category?: string;
-  energy?: number;
   originalCalendarId?: string;
 }
 
@@ -12,7 +11,5 @@ export interface Block {
   startTime: Date;
   endTime: Date;
   allDay: boolean;
-  responsiblePersonId: string; // Calendar ID of responsible person
   metadata: BlockMetadata;
 }
-

@@ -47,7 +47,7 @@ router.get('/', requireAuth, async (req, res) => {
     const eventPromises = allowedCalendars.map(async (cal) => {
       try {
         const events = await listEvents(cal.id, timeMin, timeMax);
-        return events.map((event) => normalizeEventToBlock(event, cal.id, cal.id));
+        return events.map((event) => normalizeEventToBlock(event, cal.id));
       } catch (error) {
         console.error(`Error fetching events from calendar ${cal.id}:`, error);
         return [];
@@ -71,7 +71,6 @@ router.get('/', requireAuth, async (req, res) => {
 router.get('/:calendarId/:eventId', requireAuth, async (req, res) => {
   try {
     const { calendarId, eventId } = req.params;
-    const { personId } = req.query;
     const userEmail = req.session.userEmail!;
 
     // Check read permission
@@ -85,7 +84,7 @@ router.get('/:calendarId/:eventId', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    const block = normalizeEventToBlock(event, calendarId, (personId as string) || calendarId);
+    const block = normalizeEventToBlock(event, calendarId);
     res.json(block);
   } catch (error) {
     console.error('Error fetching event:', error);

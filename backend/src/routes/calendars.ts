@@ -1,16 +1,8 @@
 import { Router } from 'express';
-import type { Request, Response, NextFunction } from 'express';
 import { listCalendars } from '../services/calendarService.js';
+import { requireAuth } from './auth.js';
 
 const router = Router();
-
-// Middleware to check authentication
-const requireAuth = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.session.tokens?.access_token) {
-    return res.status(401).json({ error: 'Not authenticated' });
-  }
-  next();
-};
 
 // GET /api/calendars - List all calendars
 router.get('/', requireAuth, async (req, res) => {

@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import type { Request, Response, NextFunction } from 'express';
 import {
   listEvents,
   getEvent,
@@ -12,16 +11,9 @@ import {
 } from '../services/calendarService.js';
 import { hasPermission } from '../services/permissionService.js';
 import type { CalendarSource } from '../types/index.js';
+import { requireAuth } from './auth.js';
 
 const router = Router();
-
-// Middleware to check authentication
-const requireAuth = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.session.tokens?.access_token || !req.session.userEmail) {
-    return res.status(401).json({ error: 'Not authenticated' });
-  }
-  next();
-};
 
 // GET /api/events - Get events from multiple calendars
 router.get('/', requireAuth, async (req, res) => {

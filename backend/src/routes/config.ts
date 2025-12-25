@@ -1,19 +1,8 @@
 import { Router } from 'express';
 import { getUserCalendars, getUserPermissionsForCalendar } from '../services/permissionService.js';
+import { requireAuth } from './auth.js';
 
 const router = Router();
-
-// Middleware to check authentication
-const requireAuth = (
-  req: import('express').Request,
-  res: import('express').Response,
-  next: import('express').NextFunction
-) => {
-  if (!req.session.tokens?.access_token) {
-    return res.status(401).json({ error: 'Not authenticated' });
-  }
-  next();
-};
 
 // GET /api/config/calendars - Get calendar configuration with user's permissions
 router.get('/calendars', requireAuth, async (req, res) => {

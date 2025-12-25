@@ -22,3 +22,7 @@ export function getEnv(key: string, defaultValue?: string): string {
 
   return value;
 }
+
+export function isDev(): boolean {
+  return process.env.NODE_ENV !== 'production';
+}

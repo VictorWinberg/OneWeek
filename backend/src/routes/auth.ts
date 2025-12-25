@@ -1,4 +1,4 @@
-import { Router, type Request } from 'express';
+import { Router, type Request, type Response, type NextFunction } from 'express';
 import {
   createOAuth2Client,
   getAuthUrl,
@@ -7,8 +7,30 @@ import {
   getUserInfo,
 } from '../services/googleAuth.js';
 import { isEmailAllowed } from '../services/permissionService.js';
+import { isDev } from '../utils/env.js';
 
 const router = Router();
+
+// Middleware to check authentication
+export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+  // In dev mode, bypass authentication and set fake user email
+  if (isDev()) {
+    req.session.userEmail = DEV_USER.email;
+    return next();
+  }
+
+  if (!req.session.tokens?.access_token) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  next();
+};
+
+// Fake user for development mode
+const DEV_USER = {
+  email: 'dev@example.com',
+  name: 'Dev User',
+  picture: 'https://placecats.com/neo_banana/32/32',
+};
 
 function getRedirectUri(req: Request): string {
   const protocol = req.get('X-Forwarded-Proto') || req.protocol || 'http';
@@ -86,6 +108,11 @@ router.get('/callback', async (req, res) => {
 
 // GET /api/auth/me - Get current user info
 router.get('/me', async (req, res) => {
+  // In dev mode, return fake user without authentication
+  if (isDev()) {
+    return res.json(DEV_USER);
+  }
+
   const tokens = req.session.tokens;
 
   if (!tokens?.access_token) {
@@ -121,6 +148,11 @@ router.post('/logout', (req, res) => {
 
 // GET /api/auth/status - Check authentication status
 router.get('/status', (req, res) => {
+  // In dev mode, always return authenticated
+  if (isDev()) {
+    return res.json({ isAuthenticated: true });
+  }
+
   const isAuthenticated = !!req.session.tokens?.access_token;
   res.json({ isAuthenticated });
 });

@@ -4,7 +4,8 @@ import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
 import { useWeekEvents, usePrefetchAdjacentWeeks, useUpdateEvent } from '@/hooks/useCalendarQueries';
-import { getWeekDays, formatWeekHeader, getWeekNumber } from '@/utils/dateUtils';
+import { getWeekDays, formatWeekHeader, getWeekNumber, isToday } from '@/utils/dateUtils';
+import { getBlocksForDay } from '@/services/calendarNormalizer';
 import { DayColumn } from './DayColumn';
 import { EventCard } from './EventCard';
 import type { Block } from '@/types';
@@ -164,7 +165,7 @@ export function DayView({
         )}
 
         {/* Week Grid */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden">
           {isLoading ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="flex flex-col items-center gap-3">
@@ -173,18 +174,52 @@ export function DayView({
               </div>
             </div>
           ) : (
-            <div className="flex-1 flex overflow-x-auto">
-              {weekDays.map((date) => (
-                <DayColumn
-                  key={date.toISOString()}
-                  date={date}
-                  blocks={blocks}
-                  onBlockClick={onBlockClick}
-                  onEmptySpaceClick={onCreateEventForDate}
-                  draggable={true}
-                />
-              ))}
-            </div>
+            <>
+              {/* All-day events row - only show if there are any */}
+              {blocks.some((block) => block.allDay) && (
+                <div className="flex border-b border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)]">
+                  {weekDays.map((date) => {
+                    const allDayBlocks = getBlocksForDay(blocks, date).filter((b) => b.allDay);
+                    const today = isToday(date);
+
+                    return (
+                      <div
+                        key={`allday-${date.toISOString()}`}
+                        className={`
+                          flex-1 border-r border-[var(--color-bg-tertiary)] last:border-r-0 p-2 space-y-1 min-w-[150px]
+                          ${today ? 'bg-[var(--color-accent)]/5' : ''}
+                        `}
+                      >
+                        {allDayBlocks.map((block) => (
+                          <EventCard
+                            key={`${block.calendarId}-${block.id}`}
+                            block={block}
+                            onClick={() => onBlockClick(block)}
+                            compact={true}
+                            fillHeight={false}
+                            draggable={false}
+                          />
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Timed events grid */}
+              <div className="flex-1 flex overflow-x-auto">
+                {weekDays.map((date) => (
+                  <DayColumn
+                    key={date.toISOString()}
+                    date={date}
+                    blocks={blocks}
+                    onBlockClick={onBlockClick}
+                    onEmptySpaceClick={onCreateEventForDate}
+                    draggable={true}
+                  />
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>

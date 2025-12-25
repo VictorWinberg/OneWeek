@@ -19,17 +19,13 @@ function getRedirectUri(req: Request): string {
 // GET /api/auth/login - Redirect to Google OAuth
 router.get('/login', (req, res) => {
   try {
-    // Require redirect URL
     const redirectUrl = req.query.redirect_url;
     if (!redirectUrl || typeof redirectUrl !== 'string') {
       return res.status(400).json({ error: 'redirect_url query parameter is required' });
     }
 
-    // Store redirect URL in session
-    // Note: cookie-session always provides req.session, but we must set properties
-    // for the cookie to be sent. If this fails silently, check server logs.
     if (!req.session) {
-      console.error('Session is not available - cookie-session middleware may not be configured');
+      console.error('Session is not available');
       return res.status(500).json({ error: 'Session configuration error' });
     }
     req.session.redirectUrl = redirectUrl;
@@ -58,24 +54,20 @@ router.get('/callback', async (req, res) => {
     const oauth2Client = createOAuth2Client(redirectUri);
     const tokens = await getTokensFromCode(oauth2Client, code);
 
-    // Validate user email before storing tokens
     setCredentials(oauth2Client, tokens);
     const userInfo = await getUserInfo(oauth2Client);
 
     if (!userInfo.email || !isEmailAllowed(userInfo.email)) {
       console.warn(`Unauthorized login attempt from: ${userInfo.email}`);
-      // Get redirect URL from session or default to root
       const redirectUrl = req.session?.redirectUrl || '/';
       if (req.session) {
-        delete req.session.redirectUrl; // Clean up session
+        delete req.session.redirectUrl;
       }
       return res.redirect(`${redirectUrl}${redirectUrl.includes('?') ? '&' : '?'}error=unauthorized`);
     }
 
-    // Store tokens and user email in session
-    // Note: cookie-session always provides req.session
     if (!req.session) {
-      console.error('Session is not available during callback - cookie-session middleware may not be configured');
+      console.error('Session is not available during callback');
       return res.status(500).json({ error: 'Session configuration error' });
     }
     req.session.tokens = {
@@ -85,11 +77,9 @@ router.get('/callback', async (req, res) => {
     };
     req.session.userEmail = userInfo.email;
 
-    // Get redirect URL from session or default to root
     const redirectUrl = req.session.redirectUrl || '/';
-    delete req.session.redirectUrl; // Clean up session
+    delete req.session.redirectUrl;
 
-    // Redirect to the original URL or frontend
     res.redirect(redirectUrl);
   } catch (error) {
     console.error('OAuth callback error:', error);
@@ -122,7 +112,6 @@ router.get('/me', async (req, res) => {
 
 // POST /api/auth/logout - Clear session
 router.post('/logout', (req, res) => {
-  // Clear the session (cookie-session stores everything in the cookie)
   (req as any).session = null;
   res.json({ success: true });
 });

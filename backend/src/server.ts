@@ -30,7 +30,7 @@ app.use(
     secure: getEnv('NODE_ENV', 'development') === 'production',
     httpOnly: true,
     signed: true,
-    sameSite: 'lax', // Required for modern browsers
+    sameSite: 'lax',
   })
 );
 

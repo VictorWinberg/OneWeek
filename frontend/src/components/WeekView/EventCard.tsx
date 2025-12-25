@@ -13,9 +13,10 @@ interface EventCardProps {
   draggable?: boolean;
   isAllDay?: boolean;
   hideTime?: boolean;
+  extraCompact?: boolean;
 }
 
-export function EventCard({ block, onClick, compact = false, fillHeight = false, draggable = false, isAllDay = false, hideTime = false }: EventCardProps) {
+export function EventCard({ block, onClick, compact = false, fillHeight = false, draggable = false, isAllDay = false, hideTime = false, extraCompact = false }: EventCardProps) {
   const { getPersonById } = useConfigStore();
   const person = getPersonById(block.calendarId);
   const isPast = isBlockPast(block);
@@ -55,7 +56,7 @@ export function EventCard({ block, onClick, compact = false, fillHeight = false,
         group relative w-full text-left rounded-lg transition-all duration-200
         flex flex-col items-start justify-start select-none
         ${fillHeight ? 'h-full' : ''}
-        ${compact && isAllDay ? 'p-0.5 py-0.5' : compact ? 'p-1.5' : 'p-3'}
+        ${extraCompact || (compact && isAllDay) ? 'p-0.5 py-0.5' : compact ? 'p-1.5' : 'p-3'}
         ${isPast ? 'opacity-60' : ''}
         ${isCurrent ? 'ring-2 ring-white/30 shadow-lg' : ''}
         ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}

@@ -374,6 +374,7 @@ export function HourView({
                                 compact={height < 60}
                                 fillHeight={true}
                                 draggable={true}
+                                extraCompact={true}
                               />
                             </div>
                           );

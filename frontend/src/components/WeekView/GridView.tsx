@@ -265,26 +265,34 @@ export function GridView({
           ) : (
             <div className="flex flex-col gap-3 h-full">
               {/* All-day events row - only show if there are any */}
-              {blocks.some((block) => block.allDay) && (
-                <div className="grid grid-cols-4 grid-rows-2 gap-3">
-                  {weekDays.map((date) => {
-                    const allDayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date).filter((b) => b.allDay));
-                    const isCurrentDay = isToday(date);
+              {blocks.some((block) => block.allDay) && (() => {
+                // Calculate max number of all-day events in any day to maintain consistent height
+                const maxAllDayEvents = Math.max(
+                  ...weekDays.map((date) => 
+                    getBlocksForDay(blocks, date).filter((b) => b.allDay).length
+                  ),
+                  1 // Minimum of 1 to show at least one row
+                );
 
-                    return (
-                      <div
-                        key={`allday-${date.toISOString()}`}
-                        className={`
-                          rounded-xl border p-2 space-y-1
-                          ${
-                            isCurrentDay
-                              ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/5'
-                              : 'border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)]'
-                          }
-                        `}
-                      >
-                        {allDayBlocks.length > 0 ? (
-                          allDayBlocks.map((block) => (
+                return (
+                  <div className="grid grid-cols-4 grid-rows-2 gap-3">
+                    {weekDays.map((date) => {
+                      const allDayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date).filter((b) => b.allDay));
+                      const isCurrentDay = isToday(date);
+
+                      return (
+                        <div
+                          key={`allday-${date.toISOString()}`}
+                          className={`
+                            rounded-xl border p-2 space-y-1
+                            ${
+                              isCurrentDay
+                                ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/5'
+                                : 'border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)]'
+                            }
+                          `}
+                        >
+                          {allDayBlocks.map((block) => (
                             <EventCard
                               key={`${block.calendarId}-${block.id}`}
                               block={block}
@@ -293,17 +301,19 @@ export function GridView({
                               isAllDay={true}
                               draggable={false}
                             />
-                          ))
-                        ) : (
-                          <div className="h-6" />
-                        )}
-                      </div>
-                    );
-                  })}
-                  {/* Empty cell for 8th position */}
-                  <div className="rounded-xl border border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)]/30" />
-                </div>
-              )}
+                          ))}
+                          {/* Add empty spacers to maintain consistent height */}
+                          {Array.from({ length: maxAllDayEvents - allDayBlocks.length }).map((_, idx) => (
+                            <div key={`spacer-${idx}`} className="h-6" />
+                          ))}
+                        </div>
+                      );
+                    })}
+                    {/* Empty cell for 8th position */}
+                    <div className="rounded-xl border border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)]/30" />
+                  </div>
+                );
+              })()}
 
               {/* Timed events grid */}
               <div className="grid grid-cols-4 grid-rows-2 gap-3 flex-1">

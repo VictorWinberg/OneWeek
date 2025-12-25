@@ -85,6 +85,14 @@ interface MobileGridViewProps {
 export function MobileGridView({ weekDays, blocks, onBlockClick }: MobileGridViewProps) {
   const hasAllDayEvents = blocks.some((block) => block.allDay);
 
+  // Calculate max number of all-day events in any day to maintain consistent height
+  const maxAllDayEvents = hasAllDayEvents
+    ? Math.max(
+        ...weekDays.map((date) => getBlocksForDay(blocks, date).filter((b) => b.allDay).length),
+        1 // Minimum of 1 to show at least one row
+      )
+    : 0;
+
   return (
     <div className="flex flex-col gap-2 p-2">
       {/* All-day events section - only show if there are any */}
@@ -106,20 +114,20 @@ export function MobileGridView({ weekDays, blocks, onBlockClick }: MobileGridVie
                   }
                 `}
               >
-                {allDayBlocks.length > 0 ? (
-                  allDayBlocks.map((block) => (
-                    <EventCard
-                      key={`${block.calendarId}-${block.id}`}
-                      block={block}
-                      onClick={() => onBlockClick(block)}
-                      compact={true}
-                      isAllDay={true}
-                      draggable={false}
-                    />
-                  ))
-                ) : (
-                  <div className="h-6" />
-                )}
+                {allDayBlocks.map((block) => (
+                  <EventCard
+                    key={`${block.calendarId}-${block.id}`}
+                    block={block}
+                    onClick={() => onBlockClick(block)}
+                    compact={true}
+                    isAllDay={true}
+                    draggable={false}
+                  />
+                ))}
+                {/* Add empty spacers to maintain consistent height */}
+                {Array.from({ length: maxAllDayEvents - allDayBlocks.length }).map((_, idx) => (
+                  <div key={`spacer-${idx}`} className="h-6" />
+                ))}
               </div>
             );
           })}

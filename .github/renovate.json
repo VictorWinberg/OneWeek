@@ -1,0 +1,10 @@
+{
+  "extends": ["config:base", "group:allNonMajor", ":pinAllExceptPeerDependencies"],
+  "timezone": "Europe/Stockholm",
+  "schedule": "every 3 months on the first day of the month",
+  "vulnerabilityAlerts": {
+    "groupName": "GitHub Vulnerability Alerts",
+    "labels": ["security"],
+    "schedule": "every 3 months on the first day of the month"
+  }
+}

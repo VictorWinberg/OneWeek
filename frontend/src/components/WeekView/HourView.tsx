@@ -283,7 +283,7 @@ export function HourView({
               </div>
 
               {/* All-day Events Section */}
-              <div className="flex sticky top-[60px] z-10 bg-[var(--color-bg-secondary)]">
+              <div className="flex bg-[var(--color-bg-secondary)]">
                 <div className="w-[80px] flex-shrink-0 border-r border-[var(--color-bg-tertiary)] border-b border-[var(--color-bg-tertiary)] min-h-[40px] flex items-center justify-center px-2">
                   <span className="text-[10px] text-[var(--color-text-secondary)] text-center">Heldag</span>
                 </div>

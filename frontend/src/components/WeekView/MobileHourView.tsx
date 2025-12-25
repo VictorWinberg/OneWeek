@@ -110,7 +110,7 @@ export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: 
       </div>
 
       {/* All-day Events Section */}
-      <div className="flex sticky top-[40px] z-10 bg-[var(--color-bg-secondary)]">
+      <div className="flex bg-[var(--color-bg-secondary)]">
         <div className="w-[35px] flex-shrink-0 border-r border-[var(--color-bg-tertiary)] border-b border-[var(--color-bg-tertiary)] min-h-[24px] flex items-center justify-center px-0.5">
           <span className="text-[6px] text-[var(--color-text-secondary)] text-center leading-none">Hela</span>
         </div>

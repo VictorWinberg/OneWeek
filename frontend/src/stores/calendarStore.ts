@@ -82,7 +82,8 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
         return;
       }
       // For silent refreshes of current week with recent cache, skip
-      if (silent && Date.now() - cached.fetchedAt < 30 * 1000) { // 30 seconds
+      if (silent && Date.now() - cached.fetchedAt < 30 * 1000) {
+        // 30 seconds
         return;
       }
     }
@@ -195,9 +196,29 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
   },
 
   setSelectedDate: (date) => {
+    const { weekCache } = get();
+    const weekKey = getWeekKey(date);
+
     set({ selectedDate: date });
-    get().fetchBlocks();
-    get().prefetchAdjacentWeeks();
+
+    // Check if we have cached data for this week
+    const cached = weekCache[weekKey];
+    if (cached) {
+      // Use cached data immediately - ensure dates are Date objects
+      const blocks = cached.blocks.map((block) => ({
+        ...block,
+        startTime: block.startTime instanceof Date ? block.startTime : new Date(block.startTime),
+        endTime: block.endTime instanceof Date ? block.endTime : new Date(block.endTime),
+      }));
+      set({ blocks, isLoading: false });
+      // Refresh in background silently to get latest data
+      get().fetchBlocks({ silent: true });
+      get().prefetchAdjacentWeeks();
+    } else {
+      // No cache, fetch with loading state
+      get().fetchBlocks();
+      get().prefetchAdjacentWeeks();
+    }
   },
 
   selectBlock: (block) => {
@@ -238,9 +259,7 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
     // Optimistic update
     const { blocks, selectedBlock } = get();
     const updatedBlocks = blocks.map((b) =>
-      b.id === blockId && b.calendarId === calendarId
-        ? { ...b, calendarId: targetCalendarId }
-        : b
+      b.id === blockId && b.calendarId === calendarId ? { ...b, calendarId: targetCalendarId } : b
     );
     set({ blocks: updatedBlocks });
 

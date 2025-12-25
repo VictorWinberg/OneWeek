@@ -11,12 +11,61 @@ import { MobileUserView } from './MobileUserView';
 import { MobileHourView } from './MobileHourView';
 import type { Block } from '@/types';
 
+type MobileViewMode = 'list' | 'calendar' | 'grid' | 'hour';
+type UrlViewMode = 'day' | 'grid' | 'user' | 'hour';
+
 interface MobileViewProps {
   onBlockClick: (block: Block) => void;
   onCreateEvent: () => void;
+  viewMode?: UrlViewMode;
+  onNextWeek?: () => void;
+  onPrevWeek?: () => void;
+  onGoToToday?: () => void;
+  onViewModeChange?: (mode: UrlViewMode) => void;
 }
 
-export function MobileView({ onBlockClick, onCreateEvent }: MobileViewProps) {
+// Map URL view modes to mobile view modes
+function urlToMobileViewMode(urlMode: UrlViewMode | undefined, localMode: MobileViewMode): MobileViewMode {
+  if (!urlMode) return localMode;
+  switch (urlMode) {
+    case 'day':
+      return 'list';
+    case 'grid':
+      return 'grid';
+    case 'user':
+      return 'calendar';
+    case 'hour':
+      return 'hour';
+    default:
+      return 'list';
+  }
+}
+
+// Map mobile view modes to URL view modes
+function mobileToUrlViewMode(mobileMode: MobileViewMode): UrlViewMode {
+  switch (mobileMode) {
+    case 'list':
+      return 'day';
+    case 'grid':
+      return 'grid';
+    case 'calendar':
+      return 'user';
+    case 'hour':
+      return 'hour';
+    default:
+      return 'day';
+  }
+}
+
+export function MobileView({
+  onBlockClick,
+  onCreateEvent,
+  viewMode: urlViewMode,
+  onNextWeek,
+  onPrevWeek,
+  onGoToToday,
+  onViewModeChange,
+}: MobileViewProps) {
   const {
     blocks,
     selectedDate,
@@ -34,7 +83,22 @@ export function MobileView({ onBlockClick, onCreateEvent }: MobileViewProps) {
   const weekDays = getWeekDays(selectedDate);
   const weekNumber = getWeekNumber(selectedDate);
   const calendars = config.calendars;
-  const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'grid' | 'hour'>('list');
+
+  // Compute current mobile view mode from URL mode
+  const mobileViewMode = urlToMobileViewMode(urlViewMode, 'list');
+
+  // Use provided navigation functions or fall back to store methods
+  const handleNextWeek = onNextWeek || nextWeek;
+  const handlePrevWeek = onPrevWeek || prevWeek;
+  const handleGoToToday = onGoToToday || goToToday;
+
+  // Handle view mode changes - all modes now map directly to URL
+  const handleViewModeChange = (newMobileMode: MobileViewMode) => {
+    const newUrlMode = mobileToUrlViewMode(newMobileMode);
+    if (onViewModeChange) {
+      onViewModeChange(newUrlMode);
+    }
+  };
   const [activeBlock, setActiveBlock] = useState<Block | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -59,11 +123,11 @@ export function MobileView({ onBlockClick, onCreateEvent }: MobileViewProps) {
 
   // Auto-scroll to hour 8 (8am) on mount when in hour view
   useEffect(() => {
-    if (viewMode === 'hour' && scrollContainerRef.current && !isLoading) {
+    if (mobileViewMode === 'hour' && scrollContainerRef.current && !isLoading) {
       const targetScrollPosition = 8 * 60;
       scrollContainerRef.current.scrollTop = targetScrollPosition;
     }
-  }, [viewMode, isLoading]);
+  }, [mobileViewMode, isLoading]);
 
   const handleDragStart = (event: DragStartEvent) => {
     const blockId = String(event.active.id);
@@ -162,55 +226,55 @@ export function MobileView({ onBlockClick, onCreateEvent }: MobileViewProps) {
       <div className="flex flex-col h-full overflow-hidden">
         {/* Header */}
         <header className="flex flex-col gap-2 p-4 border-b border-[var(--color-bg-tertiary)]">
-          <div className="flex items-center justify-between">
+          {/* Week header */}
+          <div className="flex flex-col items-center">
+            <h1 className="text-lg font-bold text-[var(--color-text-primary)]">{formatWeekHeader(selectedDate)}</h1>
+            <span className="text-xs text-[var(--color-text-secondary)]">v.{weekNumber}</span>
+          </div>
+
+          {/* Navigation and action buttons */}
+          <div className="flex items-center justify-center gap-1">
             <button
-              onClick={prevWeek}
-              className="p-2 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
+              onClick={handlePrevWeek}
+              className="p-1.5 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
 
-            <div className="flex flex-col items-center">
-              <h1 className="text-lg font-bold text-[var(--color-text-primary)]">{formatWeekHeader(selectedDate)}</h1>
-              <span className="text-xs text-[var(--color-text-secondary)]">v.{weekNumber}</span>
-            </div>
-
-            <button
-              onClick={nextWeek}
-              className="p-2 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-
-          <div className="flex items-center justify-center gap-2">
             <button
               onClick={onCreateEvent}
-              className="p-2 rounded-lg bg-green-900/30 text-green-300 hover:bg-green-900/50 transition-colors"
+              className="p-1.5 rounded-lg bg-green-900/30 text-green-300 hover:bg-green-900/50 transition-colors"
               aria-label="Skapa event"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
             </button>
 
             <button
-              onClick={goToToday}
-              className="px-4 py-2 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium"
+              onClick={handleGoToToday}
+              className="px-3 py-1 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium text-sm"
             >
               Idag
+            </button>
+
+            <button
+              onClick={handleNextWeek}
+              className="p-1.5 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </button>
           </div>
 
           <div className="flex items-center justify-center gap-1 bg-[var(--color-bg-tertiary)] rounded-lg p-1">
             <button
-              onClick={() => setViewMode('list')}
+              onClick={() => handleViewModeChange('list')}
               className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                viewMode === 'list'
+                mobileViewMode === 'list'
                   ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
                   : 'text-[var(--color-text-secondary)]'
               }`}
@@ -218,9 +282,9 @@ export function MobileView({ onBlockClick, onCreateEvent }: MobileViewProps) {
               Agenda
             </button>
             <button
-              onClick={() => setViewMode('grid')}
+              onClick={() => handleViewModeChange('grid')}
               className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                viewMode === 'grid'
+                mobileViewMode === 'grid'
                   ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
                   : 'text-[var(--color-text-secondary)]'
               }`}
@@ -228,9 +292,9 @@ export function MobileView({ onBlockClick, onCreateEvent }: MobileViewProps) {
               Översikt
             </button>
             <button
-              onClick={() => setViewMode('calendar')}
+              onClick={() => handleViewModeChange('calendar')}
               className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                viewMode === 'calendar'
+                mobileViewMode === 'calendar'
                   ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
                   : 'text-[var(--color-text-secondary)]'
               }`}
@@ -238,9 +302,9 @@ export function MobileView({ onBlockClick, onCreateEvent }: MobileViewProps) {
               Användarvy
             </button>
             <button
-              onClick={() => setViewMode('hour')}
+              onClick={() => handleViewModeChange('hour')}
               className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                viewMode === 'hour'
+                mobileViewMode === 'hour'
                   ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
                   : 'text-[var(--color-text-secondary)]'
               }`}
@@ -254,12 +318,12 @@ export function MobileView({ onBlockClick, onCreateEvent }: MobileViewProps) {
         {error && <div className="p-4 bg-red-900/30 border-b border-red-700 text-red-200 text-sm">{error}</div>}
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto" ref={viewMode === 'hour' ? scrollContainerRef : null}>
-          {viewMode === 'list' ? (
+        <div className="flex-1 overflow-y-auto" ref={mobileViewMode === 'hour' ? scrollContainerRef : null}>
+          {mobileViewMode === 'list' ? (
             <MobileListView weekDays={weekDays} blocks={blocks} onBlockClick={onBlockClick} />
-          ) : viewMode === 'grid' ? (
+          ) : mobileViewMode === 'grid' ? (
             <MobileGridView weekDays={weekDays} blocks={blocks} onBlockClick={onBlockClick} />
-          ) : viewMode === 'hour' ? (
+          ) : mobileViewMode === 'hour' ? (
             <MobileHourView weekDays={weekDays} blocks={blocks} onBlockClick={onBlockClick} activeBlock={activeBlock} />
           ) : (
             <MobileUserView weekDays={weekDays} blocks={blocks} calendars={calendars} onBlockClick={onBlockClick} />

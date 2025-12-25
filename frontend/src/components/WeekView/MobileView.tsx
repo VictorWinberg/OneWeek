@@ -165,7 +165,7 @@ function DroppableMobileCell({ id, date, calendarId, children, isToday }: Droppa
     <td
       ref={setNodeRef}
       className={`
-        p-0.5 border-b border-r border-[var(--color-bg-tertiary)] last:border-r-0 align-top h-full
+        p-0.5 border-b border-r border-[var(--color-bg-tertiary)] last:border-r-0 align-top h-full flex-1
         ${isToday ? 'bg-[var(--color-accent)]/5' : ''}
         ${isOver ? 'bg-[var(--color-accent)]/20 ring-2 ring-[var(--color-accent)] ring-inset' : ''}
       `}
@@ -633,48 +633,57 @@ export function MobileView({ onBlockClick, onCreateEvent }: MobileViewProps) {
             </div>
           ) : (
             // Calendar View
-            <div className="overflow-x-auto h-full">
-              <table className="w-full h-full border-collapse text-xs" style={{ tableLayout: 'fixed' }}>
-                <thead className="sticky top-0 z-10 bg-[var(--color-bg-secondary)]">
-                  <tr>
-                    <th className="p-1 text-left text-[9px] font-semibold text-[var(--color-text-primary)] border-b border-r border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)] w-12">
-                      <div className="truncate">Dag</div>
+            <div className="overflow-x-auto h-full flex flex-col">
+              <table className="w-full flex-1 border-collapse text-xs flex flex-col" style={{ tableLayout: 'fixed' }}>
+                <thead className="sticky top-0 z-10 bg-[var(--color-bg-secondary)] block w-full">
+                  <tr className="flex w-full">
+                    <th className="flex items-center justify-center text-xs font-semibold text-[var(--color-text-secondary)] border-b border-r border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)] w-12 flex-shrink-0 px-2">
+                      <span>Dag</span>
                     </th>
                     {calendars.map((calendar) => (
                       <th
                         key={calendar.id}
-                        className="p-1 text-center text-[9px] font-semibold text-[var(--color-text-primary)] border-b border-r border-[var(--color-bg-tertiary)] last:border-r-0"
-                        style={{ width: `${Math.max(60, (window.innerWidth - 48) / calendars.length)}px` }}
+                        className="p-1 text-center text-sm font-semibold text-[var(--color-text-primary)] border-b border-r border-[var(--color-bg-tertiary)] last:border-r-0 flex-1"
+                        style={{ minWidth: `${Math.max(60, (window.innerWidth - 48) / calendars.length)}px` }}
                       >
-                        <div className="flex items-center justify-center gap-1">
+                        <div className="flex flex-col items-center justify-center gap-1">
                           <div
                             className="w-2 h-2 rounded-full flex-shrink-0"
                             style={{ backgroundColor: calendar.color }}
                             title={calendar.name}
                           />
-                          <span className="truncate hidden sm:inline">{calendar.name}</span>
+                          <span className="truncate text-xs">{calendar.name}</span>
                         </div>
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="flex-1 flex flex-col w-full">
                   {weekDays.map((date) => {
                     const today = isToday(date);
                     return (
-                      <tr key={date.toISOString()} className={`h-[14.28%] ${today ? 'bg-[var(--color-accent)]/5' : ''}`}>
+                      <tr
+                        key={date.toISOString()}
+                        className={`flex w-full ${today ? 'bg-[var(--color-accent)]/5' : ''}`}
+                      >
                         <td
-                          className={`p-1 text-left font-medium border-b border-r border-[var(--color-bg-tertiary)] align-top h-full ${
-                            today ? 'bg-[var(--color-accent)]/10' : 'bg-[var(--color-bg-secondary)]'
+                          className={`flex flex-col items-center justify-center border-b border-r border-[var(--color-bg-tertiary)] h-full w-12 flex-shrink-0 relative bg-[var(--color-bg-secondary)] ${
+                            today ? 'before:absolute before:inset-0 before:bg-[var(--color-accent)]/10' : ''
                           }`}
                         >
-                          <div className="flex flex-col text-[8px]">
-                            <div className={today ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'}>
-                              {formatDayShort(date).substring(0, 2)}
-                            </div>
-                            <div className="text-[var(--color-text-secondary)]">
-                              {date.getDate()}/{date.getMonth() + 1}
-                            </div>
+                          <div
+                            className={`uppercase tracking-wide text-xs relative ${
+                              today ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-secondary)]'
+                            }`}
+                          >
+                            {formatDayShort(date).substring(0, 2)}
+                          </div>
+                          <div
+                            className={`font-bold text-lg relative ${
+                              today ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'
+                            }`}
+                          >
+                            {date.getDate()}
                           </div>
                         </td>
                         {calendars.map((calendar) => {

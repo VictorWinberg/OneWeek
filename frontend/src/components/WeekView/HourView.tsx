@@ -262,7 +262,7 @@ export function HourView({ onBlockClick, onCreateEvent, onCreateEventForDate }: 
                 return (
                   <div
                     key={date.toISOString()}
-                    className={`flex-1 border-r border-[var(--color-bg-tertiary)] last:border-r-0 min-w-[150px] box-content ${
+                    className={`flex-1 border-r border-[var(--color-bg-tertiary)] last:border-r-0 min-w-[150px] ${
                       today ? 'bg-[var(--color-accent)]/5' : ''
                     }`}
                   >

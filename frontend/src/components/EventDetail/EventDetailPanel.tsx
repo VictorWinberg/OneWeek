@@ -32,25 +32,6 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
   const deleteEvent = useDeleteEvent();
   const updateEvent = useUpdateEvent();
 
-  // Initialize form when entering edit mode
-  useEffect(() => {
-    if (block && isEditing) {
-      setEditTitle(block.title);
-      setEditDescription(block.description || '');
-      setEditDate(new Date(block.startTime));
-
-      const startDate = new Date(block.startTime);
-      const endDate = new Date(block.endTime);
-      setEditStartTime(
-        `${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')}`
-      );
-      setEditEndTime(
-        `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`
-      );
-      setError(null);
-    }
-  }, [block, isEditing]);
-
   // Close on escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -114,6 +95,21 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
   };
 
   const handleEditToggle = () => {
+    if (!isEditing && block) {
+      // Initialize form with current block data when entering edit mode
+      setEditTitle(block.title);
+      setEditDescription(block.description || '');
+      setEditDate(new Date(block.startTime));
+
+      const startDate = new Date(block.startTime);
+      const endDate = new Date(block.endTime);
+      setEditStartTime(
+        `${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')}`
+      );
+      setEditEndTime(
+        `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`
+      );
+    }
     setIsEditing(!isEditing);
     setError(null);
   };

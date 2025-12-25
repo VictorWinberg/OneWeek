@@ -49,6 +49,7 @@ declare module 'express-session' {
       expiry_date?: number;
     };
     userEmail?: string;
+    redirectUrl?: string;
   }
 }
 

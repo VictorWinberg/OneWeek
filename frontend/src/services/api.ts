@@ -23,7 +23,8 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
 // Auth API
 export const authApi = {
   login: () => {
-    window.location.href = `${API_BASE}/auth/login`;
+    const redirectUrl = encodeURIComponent(window.location.href);
+    window.location.href = `${API_BASE}/auth/login?redirect_url=${redirectUrl}`;
   },
 
   logout: async () => {

@@ -6,7 +6,6 @@ import {
   setCredentials,
   getUserInfo,
 } from '../services/googleAuth.js';
-import { getEnv } from '../utils/env.js';
 import { isEmailAllowed } from '../services/permissionService.js';
 
 const router = Router();
@@ -14,13 +13,21 @@ const router = Router();
 function getRedirectUri(req: Request): string {
   const protocol = req.get('X-Forwarded-Proto') || req.protocol || 'http';
   const host = req.get('X-Forwarded-Host') || req.get('host');
-
   return `${protocol}://${host}/api/auth/callback`;
 }
 
 // GET /api/auth/login - Redirect to Google OAuth
 router.get('/login', (req, res) => {
   try {
+    // Require redirect URL
+    const redirectUrl = req.query.redirect_url;
+    if (!redirectUrl || typeof redirectUrl !== 'string') {
+      return res.status(400).json({ error: 'redirect_url query parameter is required' });
+    }
+
+    // Store redirect URL in session
+    req.session.redirectUrl = redirectUrl;
+
     const redirectUri = getRedirectUri(req);
     const oauth2Client = createOAuth2Client(redirectUri);
     const authUrl = getAuthUrl(oauth2Client, redirectUri);
@@ -51,8 +58,10 @@ router.get('/callback', async (req, res) => {
 
     if (!userInfo.email || !isEmailAllowed(userInfo.email)) {
       console.warn(`Unauthorized login attempt from: ${userInfo.email}`);
-      const frontendUrl = getEnv('FRONTEND_URL', 'http://localhost:5173');
-      return res.redirect(`${frontendUrl}?error=unauthorized`);
+      // Get redirect URL from session or default to root
+      const redirectUrl = req.session.redirectUrl || '/';
+      delete req.session.redirectUrl; // Clean up session
+      return res.redirect(`${redirectUrl}${redirectUrl.includes('?') ? '&' : '?'}error=unauthorized`);
     }
 
     // Store tokens and user email in session
@@ -63,9 +72,12 @@ router.get('/callback', async (req, res) => {
     };
     req.session.userEmail = userInfo.email;
 
-    // Redirect to frontend
-    const frontendUrl = getEnv('FRONTEND_URL', 'http://localhost:5173');
-    res.redirect(frontendUrl);
+    // Get redirect URL from session or default to root
+    const redirectUrl = req.session.redirectUrl || '/';
+    delete req.session.redirectUrl; // Clean up session
+
+    // Redirect to the original URL or frontend
+    res.redirect(redirectUrl);
   } catch (error) {
     console.error('OAuth callback error:', error);
     res.status(500).json({ error: 'Authentication failed' });

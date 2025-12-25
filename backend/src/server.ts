@@ -1,7 +1,6 @@
 import './utils/env.js';
 
 import express from 'express';
-import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
 import path from 'path';
@@ -18,18 +17,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = Number(getEnv('PORT', '3000'));
-const isDevelopment = getEnv('NODE_ENV', 'development') === 'development';
 
-// Middleware
-if (isDevelopment) {
-  // In development, allow CORS for the Vite dev server
-  app.use(
-    cors({
-      origin: getEnv('FRONTEND_URL', 'http://localhost:5173'),
-      credentials: true,
-    })
-  );
-}
 app.use(express.json());
 app.use(cookieParser());
 app.use(
@@ -71,5 +59,4 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📅 Frontend URL: ${getEnv('FRONTEND_URL', 'http://localhost:5173')}`);
 });

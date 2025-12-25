@@ -1,4 +1,4 @@
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay, addDays } from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay, addDays, getWeek } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
 export function getWeekDays(date: Date): Date[] {
@@ -45,8 +45,5 @@ export function formatDateFull(date: Date): string {
 export { isToday, isSameDay, addDays };
 
 export function getWeekNumber(date: Date): number {
-  const start = startOfWeek(date, { weekStartsOn: 1 });
-  const firstDayOfYear = new Date(start.getFullYear(), 0, 1);
-  const pastDaysOfYear = (start.getTime() - firstDayOfYear.getTime()) / 86400000;
-  return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+  return getWeek(date, { weekStartsOn: 1, firstWeekContainsDate: 4 });
 }

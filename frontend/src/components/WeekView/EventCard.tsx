@@ -77,10 +77,10 @@ export function EventCard({ block, onClick, compact = false, fillHeight = false,
       </div>
 
       {/* Content */}
-      <div className="pr-4">
+      <div className="pr-4 overflow-hidden w-full">
         <h4
           className={`
-            font-medium text-[var(--color-text-primary)] break-words
+            font-medium text-[var(--color-text-primary)] wrap-anywhere
             ${compact ? 'text-xs' : 'text-sm'}
           `}
         >

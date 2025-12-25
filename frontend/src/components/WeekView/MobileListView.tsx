@@ -71,7 +71,7 @@ interface MobileListViewProps {
 
 export function MobileListView({ weekDays, blocks, onBlockClick }: MobileListViewProps) {
   return (
-    <>
+    <div className="overflow-y-auto h-full">
       {weekDays.map((date) => {
         const dayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date));
         const isCurrentDay = isToday(date);
@@ -87,7 +87,6 @@ export function MobileListView({ weekDays, blocks, onBlockClick }: MobileListVie
           />
         );
       })}
-    </>
+    </div>
   );
 }
-

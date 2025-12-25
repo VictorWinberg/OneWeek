@@ -153,7 +153,9 @@ export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: 
                 key={hour}
                 className="h-[50px] border-b border-[var(--color-bg-tertiary)] flex items-start justify-end pr-0.5 pt-0.5"
               >
-                <span className="text-[7px] text-[var(--color-text-secondary)]">{hour.toString().padStart(2, '0')}</span>
+                <span className="text-[7px] text-[var(--color-text-secondary)]">
+                  {hour.toString().padStart(2, '0')}
+                </span>
               </div>
             ))}
           </div>

@@ -84,25 +84,27 @@ interface MobileGridViewProps {
 
 export function MobileGridView({ weekDays, blocks, onBlockClick }: MobileGridViewProps) {
   return (
-    <div className="grid grid-cols-2 gap-2 p-2">
-      {weekDays.map((date) => {
-        const dayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date));
-        const isCurrentDay = isToday(date);
+    <div className="overflow-y-auto h-full">
+      <div className="grid grid-cols-2 gap-2 p-2">
+        {weekDays.map((date) => {
+          const dayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date));
+          const isCurrentDay = isToday(date);
 
-        return (
-          <DroppableGridDay
-            key={date.toISOString()}
-            date={date}
-            dayBlocks={dayBlocks}
-            onBlockClick={onBlockClick}
-            isCurrentDay={isCurrentDay}
-          />
-        );
-      })}
-      {/* Empty cell for 8th position if needed */}
-      {weekDays.length % 2 !== 0 && (
-        <div className="rounded-lg border border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)]/50" />
-      )}
+          return (
+            <DroppableGridDay
+              key={date.toISOString()}
+              date={date}
+              dayBlocks={dayBlocks}
+              onBlockClick={onBlockClick}
+              isCurrentDay={isCurrentDay}
+            />
+          );
+        })}
+        {/* Empty cell for 8th position if needed */}
+        {weekDays.length % 2 !== 0 && (
+          <div className="rounded-lg border border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)]/50" />
+        )}
+      </div>
     </div>
   );
 }

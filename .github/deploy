@@ -10,7 +10,7 @@ rsync /home/git/www/oneweek/credentials.json .
 
 echo "> npm install in backend"
 cd backend
-npm install
+npm ci
 
 # # If build wasn't done on github uncomment this
 # echo "> npm run build..."

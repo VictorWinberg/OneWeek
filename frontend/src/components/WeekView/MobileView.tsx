@@ -226,14 +226,8 @@ export function MobileView({
       <div className="flex flex-col h-full overflow-hidden">
         {/* Header */}
         <header className="flex flex-col gap-2 p-4 border-b border-[var(--color-bg-tertiary)]">
-          {/* Week header */}
-          <div className="flex flex-col items-center">
-            <h1 className="text-lg font-bold text-[var(--color-text-primary)]">{formatWeekHeader(selectedDate)}</h1>
-            <span className="text-xs text-[var(--color-text-secondary)]">v.{weekNumber}</span>
-          </div>
-
-          {/* Navigation and action buttons */}
-          <div className="flex items-center justify-center gap-1">
+          {/* Week header with navigation */}
+          <div className="flex items-center justify-between">
             <button
               onClick={handlePrevWeek}
               className="p-1.5 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
@@ -243,6 +237,23 @@ export function MobileView({
               </svg>
             </button>
 
+            <div className="flex flex-col items-center">
+              <h1 className="text-lg font-bold text-[var(--color-text-primary)]">{formatWeekHeader(selectedDate)}</h1>
+              <span className="text-xs text-[var(--color-text-secondary)]">v.{weekNumber}</span>
+            </div>
+
+            <button
+              onClick={handleNextWeek}
+              className="p-1.5 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex items-center justify-center gap-1">
             <button
               onClick={onCreateEvent}
               className="p-1.5 rounded-lg bg-green-900/30 text-green-300 hover:bg-green-900/50 transition-colors"
@@ -258,15 +269,6 @@ export function MobileView({
               className="px-3 py-1 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium text-sm"
             >
               Idag
-            </button>
-
-            <button
-              onClick={handleNextWeek}
-              className="p-1.5 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
             </button>
           </div>
 

@@ -15,7 +15,7 @@ interface EventCardProps {
 
 export function EventCard({ block, onClick, compact = false, fillHeight = false, draggable = false }: EventCardProps) {
   const { getPersonById } = useConfigStore();
-  const person = getPersonById(block.responsiblePersonId);
+  const person = getPersonById(block.calendarId);
   const isPast = isBlockPast(block);
   const isCurrent = isBlockCurrent(block);
 

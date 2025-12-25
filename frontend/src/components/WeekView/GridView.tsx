@@ -334,7 +334,13 @@ export function GridView({
       <DragOverlay>
         {activeBlock ? (
           <div className="opacity-90">
-            <EventCard block={activeBlock} onClick={() => {}} compact={true} fillHeight={false} />
+            <EventCard
+              block={activeBlock}
+              onClick={() => {}}
+              compact={true}
+              fillHeight={false}
+              isAllDay={activeBlock.allDay}
+            />
           </div>
         ) : null}
       </DragOverlay>

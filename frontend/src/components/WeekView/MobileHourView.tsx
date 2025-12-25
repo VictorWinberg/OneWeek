@@ -139,7 +139,7 @@ export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: 
 
             {/* All-day events row */}
             {allDayBlocks.length > 0 && (
-              <div className="sticky top-[40px] z-10 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)] p-0.5 flex flex-col gap-0.5">
+              <div className="sticky top-[40px] z-10 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)] p-0.5 flex flex-col gap-0.5 min-h-[15px]">
                 {allDayBlocks.map((block) => (
                   <EventCard
                     key={`${block.calendarId}-${block.id}`}

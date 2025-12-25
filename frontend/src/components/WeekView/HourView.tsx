@@ -392,7 +392,7 @@ export function HourView({
       <DragOverlay>
         {activeBlock ? (
           <div className="opacity-90">
-            <EventCard block={activeBlock} onClick={() => {}} compact={false} fillHeight={false} />
+            <EventCard block={activeBlock} onClick={() => {}} compact={false} fillHeight={false} hideTime={true} />
           </div>
         ) : null}
       </DragOverlay>

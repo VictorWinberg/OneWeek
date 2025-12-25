@@ -93,11 +93,11 @@ export function MobileView({
   const [activeBlock, setActiveBlock] = useState<Block | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Configure drag sensors
+  // Configure drag sensors - lower distance for better mobile touch responsiveness
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 3,
       },
     })
   );
@@ -348,7 +348,14 @@ export function MobileView({
         <DragOverlay>
           {activeBlock ? (
             <div className="opacity-90">
-              <EventCard block={activeBlock} onClick={() => {}} compact={true} fillHeight={false} />
+              <EventCard
+                block={activeBlock}
+                onClick={() => {}}
+                compact={true}
+                fillHeight={false}
+                hideTime={mobileViewMode === 'hour'}
+                isAllDay={activeBlock.allDay}
+              />
             </div>
           ) : null}
         </DragOverlay>

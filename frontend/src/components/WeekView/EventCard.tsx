@@ -11,9 +11,10 @@ interface EventCardProps {
   compact?: boolean;
   fillHeight?: boolean;
   draggable?: boolean;
+  isAllDay?: boolean;
 }
 
-export function EventCard({ block, onClick, compact = false, fillHeight = false, draggable = false }: EventCardProps) {
+export function EventCard({ block, onClick, compact = false, fillHeight = false, draggable = false, isAllDay = false }: EventCardProps) {
   const { getPersonById } = useConfigStore();
   const person = getPersonById(block.calendarId);
   const isPast = isBlockPast(block);
@@ -53,7 +54,7 @@ export function EventCard({ block, onClick, compact = false, fillHeight = false,
         group relative w-full text-left rounded-lg transition-all duration-200
         flex flex-col items-start justify-start select-none
         ${fillHeight ? 'h-full' : ''}
-        ${compact ? 'p-1.5' : 'p-3'}
+        ${compact && isAllDay ? 'p-1 py-0.5' : compact ? 'p-1.5' : 'p-3'}
         ${isPast ? 'opacity-60' : ''}
         ${isCurrent ? 'ring-2 ring-white/30 shadow-lg' : ''}
         ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}
@@ -66,7 +67,7 @@ export function EventCard({ block, onClick, compact = false, fillHeight = false,
         className={`
           absolute -top-1.5 -right-1.5 rounded-full flex items-center justify-center
           font-bold shadow-md
-          ${compact ? 'w-4 h-4 text-[8px]' : 'w-6 h-6 text-xs'}
+          ${compact && isAllDay ? 'w-3.5 h-3.5 text-[7px]' : compact ? 'w-4 h-4 text-[8px]' : 'w-6 h-6 text-xs'}
         `}
         style={{
           backgroundColor: person.color,
@@ -83,7 +84,13 @@ export function EventCard({ block, onClick, compact = false, fillHeight = false,
         <h4
           className={`
             font-medium text-[var(--color-text-primary)]
-            ${compact ? 'text-[10px] leading-tight whitespace-nowrap overflow-hidden text-ellipsis' : 'text-sm wrap-anywhere'}
+            ${
+              compact && isAllDay
+                ? 'text-[9px] leading-tight whitespace-nowrap overflow-hidden text-ellipsis'
+                : compact
+                  ? 'text-[11px] leading-tight break-words'
+                  : 'text-sm break-words'
+            }
           `}
           style={{
             WebkitTouchCallout: 'none',
@@ -93,15 +100,17 @@ export function EventCard({ block, onClick, compact = false, fillHeight = false,
           {block.title}
         </h4>
 
-        <p
-          className={`mt-0.5 text-[var(--color-text-secondary)] ${compact ? 'text-[8px]' : 'text-xs'}`}
-          style={{
-            WebkitTouchCallout: 'none',
-            WebkitUserSelect: 'none',
-          }}
-        >
-          {formatBlockTime(block)}
-        </p>
+        {!isAllDay && (
+          <p
+            className={`mt-0.5 text-[var(--color-text-secondary)] ${compact ? 'text-[9px] leading-tight' : 'text-xs'}`}
+            style={{
+              WebkitTouchCallout: 'none',
+              WebkitUserSelect: 'none',
+            }}
+          >
+            {formatBlockTime(block)}
+          </p>
+        )}
       </div>
 
       {/* Current indicator */}

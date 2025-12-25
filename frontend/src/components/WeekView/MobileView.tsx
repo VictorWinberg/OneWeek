@@ -3,6 +3,7 @@ import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor } from '@
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
+import { useWeekEvents, usePrefetchAdjacentWeeks, useUpdateEventTime, useMoveEvent } from '@/hooks/useCalendarQueries';
 import { getWeekDays, formatWeekHeader, getWeekNumber } from '@/utils/dateUtils';
 import { EventCard } from './EventCard';
 import { MobileListView } from './MobileListView';
@@ -66,31 +67,21 @@ export function MobileView({
   onGoToToday,
   onViewModeChange,
 }: MobileViewProps) {
-  const {
-    blocks,
-    selectedDate,
-    isLoading,
-    error,
-    goToToday,
-    nextWeek,
-    prevWeek,
-    fetchBlocks,
-    prefetchAdjacentWeeks,
-    updateBlockTime,
-    moveBlock,
-  } = useCalendarStore();
-  const { config, isConfigured } = useConfigStore();
+  const { selectedDate } = useCalendarStore();
+  const { config } = useConfigStore();
+
+  // Fetch events using React Query
+  const { data: blocks = [], isLoading, error } = useWeekEvents(selectedDate);
+  const { prefetch } = usePrefetchAdjacentWeeks(selectedDate);
+  const updateEventTime = useUpdateEventTime();
+  const moveEvent = useMoveEvent();
+
   const weekDays = getWeekDays(selectedDate);
   const weekNumber = getWeekNumber(selectedDate);
   const calendars = config.calendars;
 
   // Compute current mobile view mode from URL mode
   const mobileViewMode = urlToMobileViewMode(urlViewMode, 'list');
-
-  // Use provided navigation functions or fall back to store methods
-  const handleNextWeek = onNextWeek || nextWeek;
-  const handlePrevWeek = onPrevWeek || prevWeek;
-  const handleGoToToday = onGoToToday || goToToday;
 
   // Handle view mode changes - all modes now map directly to URL
   const handleViewModeChange = (newMobileMode: MobileViewMode) => {
@@ -111,15 +102,12 @@ export function MobileView({
     })
   );
 
-  // Fetch blocks on mount and when configuration changes
+  // Prefetch adjacent weeks when data loads
   useEffect(() => {
-    if (isConfigured) {
-      fetchBlocks().then(() => {
-        // Prefetch adjacent weeks after initial load
-        prefetchAdjacentWeeks();
-      });
+    if (!isLoading && blocks.length >= 0) {
+      prefetch();
     }
-  }, [isConfigured, fetchBlocks, prefetchAdjacentWeeks]);
+  }, [isLoading, prefetch, blocks.length]);
 
   // Auto-scroll to hour 8 (8am) on mount when in hour view
   useEffect(() => {
@@ -161,7 +149,12 @@ export function MobileView({
       const newEndTime = new Date(newStartTime.getTime() + duration);
 
       try {
-        await updateBlockTime(block.id, block.calendarId, newStartTime, newEndTime);
+        await updateEventTime.mutateAsync({
+          blockId: block.id,
+          calendarId: block.calendarId,
+          startTime: newStartTime,
+          endTime: newEndTime,
+        });
       } catch (error) {
         console.error('Failed to update block time:', error);
       }
@@ -173,7 +166,12 @@ export function MobileView({
 
       if (needsMove) {
         try {
-          await moveBlock(block.id, block.calendarId, dropData.calendarId);
+          await moveEvent.mutateAsync({
+            blockId: block.id,
+            calendarId: block.calendarId,
+            targetCalendarId: dropData.calendarId,
+            startTime: block.startTime,
+          });
         } catch (error) {
           console.error('Failed to move block:', error);
           return;
@@ -188,7 +186,12 @@ export function MobileView({
         const newEndTime = new Date(newStartTime.getTime() + duration);
 
         try {
-          await updateBlockTime(block.id, needsMove ? dropData.calendarId : block.calendarId, newStartTime, newEndTime);
+          await updateEventTime.mutateAsync({
+            blockId: block.id,
+            calendarId: needsMove ? dropData.calendarId : block.calendarId,
+            startTime: newStartTime,
+            endTime: newEndTime,
+          });
         } catch (error) {
           console.error('Failed to update block time:', error);
         }
@@ -203,7 +206,12 @@ export function MobileView({
       const newEndTime = new Date(newStartTime.getTime() + duration);
 
       try {
-        await updateBlockTime(block.id, block.calendarId, newStartTime, newEndTime);
+        await updateEventTime.mutateAsync({
+          blockId: block.id,
+          calendarId: block.calendarId,
+          startTime: newStartTime,
+          endTime: newEndTime,
+        });
       } catch (error) {
         console.error('Failed to update block time:', error);
       }
@@ -229,7 +237,7 @@ export function MobileView({
           {/* Week header with navigation */}
           <div className="flex items-center justify-between">
             <button
-              onClick={handlePrevWeek}
+              onClick={onPrevWeek}
               className="p-1.5 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -243,7 +251,7 @@ export function MobileView({
             </div>
 
             <button
-              onClick={handleNextWeek}
+              onClick={onNextWeek}
               className="p-1.5 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -265,7 +273,7 @@ export function MobileView({
             </button>
 
             <button
-              onClick={handleGoToToday}
+              onClick={onGoToToday}
               className="px-3 py-1 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium text-sm"
             >
               Idag
@@ -317,7 +325,11 @@ export function MobileView({
         </header>
 
         {/* Error */}
-        {error && <div className="p-4 bg-red-900/30 border-b border-red-700 text-red-200 text-sm">{error}</div>}
+        {error && (
+          <div className="p-4 bg-red-900/30 border-b border-red-700 text-red-200 text-sm">
+            {error instanceof Error ? error.message : 'Failed to load events'}
+          </div>
+        )}
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto" ref={mobileViewMode === 'hour' ? scrollContainerRef : null}>

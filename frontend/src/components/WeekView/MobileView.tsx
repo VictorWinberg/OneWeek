@@ -332,15 +332,21 @@ export function MobileView({
         )}
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto" ref={mobileViewMode === 'hour' ? scrollContainerRef : null}>
+        <div className="flex-1 overflow-hidden">
           {mobileViewMode === 'list' ? (
-            <MobileListView weekDays={weekDays} blocks={blocks} onBlockClick={onBlockClick} />
+            <div className="overflow-y-auto h-full">
+              <MobileListView weekDays={weekDays} blocks={blocks} onBlockClick={onBlockClick} />
+            </div>
           ) : mobileViewMode === 'grid' ? (
-            <MobileGridView weekDays={weekDays} blocks={blocks} onBlockClick={onBlockClick} />
+            <div className="overflow-y-auto h-full">
+              <MobileGridView weekDays={weekDays} blocks={blocks} onBlockClick={onBlockClick} />
+            </div>
           ) : mobileViewMode === 'hour' ? (
             <MobileHourView weekDays={weekDays} blocks={blocks} onBlockClick={onBlockClick} activeBlock={activeBlock} />
           ) : (
-            <MobileUserView weekDays={weekDays} blocks={blocks} calendars={calendars} onBlockClick={onBlockClick} />
+            <div className="overflow-y-auto h-full">
+              <MobileUserView weekDays={weekDays} blocks={blocks} calendars={calendars} onBlockClick={onBlockClick} />
+            </div>
           )}
         </div>
 

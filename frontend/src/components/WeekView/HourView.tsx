@@ -51,9 +51,19 @@ interface HourViewProps {
   onBlockClick: (block: Block) => void;
   onCreateEvent: () => void;
   onCreateEventForDate?: (date: Date) => void;
+  onNextWeek?: () => void;
+  onPrevWeek?: () => void;
+  onGoToToday?: () => void;
 }
 
-export function HourView({ onBlockClick, onCreateEvent, onCreateEventForDate }: HourViewProps) {
+export function HourView({
+  onBlockClick,
+  onCreateEvent,
+  onCreateEventForDate,
+  onNextWeek,
+  onPrevWeek,
+  onGoToToday,
+}: HourViewProps) {
   const {
     blocks,
     selectedDate,
@@ -66,6 +76,10 @@ export function HourView({ onBlockClick, onCreateEvent, onCreateEventForDate }: 
     goToToday,
     updateBlockTime,
   } = useCalendarStore();
+
+  const handleNextWeek = onNextWeek || nextWeek;
+  const handlePrevWeek = onPrevWeek || prevWeek;
+  const handleGoToToday = onGoToToday || goToToday;
   const { isConfigured } = useConfigStore();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [activeBlock, setActiveBlock] = useState<Block | null>(null);
@@ -195,7 +209,7 @@ export function HourView({ onBlockClick, onCreateEvent, onCreateEventForDate }: 
             </button>
 
             <button
-              onClick={prevWeek}
+              onClick={handlePrevWeek}
               className="p-2 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
               aria-label="Föregående vecka"
             >
@@ -205,14 +219,14 @@ export function HourView({ onBlockClick, onCreateEvent, onCreateEventForDate }: 
             </button>
 
             <button
-              onClick={goToToday}
+              onClick={handleGoToToday}
               className="px-3 py-2 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium hover:bg-[var(--color-accent-hover)] transition-colors"
             >
               Idag
             </button>
 
             <button
-              onClick={nextWeek}
+              onClick={handleNextWeek}
               className="p-2 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
               aria-label="Nästa vecka"
             >

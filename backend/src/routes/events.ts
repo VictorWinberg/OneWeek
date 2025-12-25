@@ -148,7 +148,7 @@ router.post('/', requireAuth, async (req, res) => {
 router.patch('/:calendarId/:eventId', requireAuth, async (req, res) => {
   try {
     const { calendarId, eventId } = req.params;
-    const { title, description, startTime, endTime, allDay } = req.body;
+    const { title, description, startTime, endTime, allDay, recurrenceRule } = req.body;
     const userEmail = req.session?.userEmail!;
 
     // Check update permission
@@ -166,6 +166,23 @@ router.patch('/:calendarId/:eventId', requireAuth, async (req, res) => {
     }
     if (endTime !== undefined) {
       updates.end = allDay ? { date: endTime } : { dateTime: endTime };
+    }
+
+    // Handle recurrence rule updates
+    if (recurrenceRule !== undefined) {
+      if (recurrenceRule === null) {
+        // Remove recurrence
+        updates.recurrence = null;
+      } else {
+        // Add or update recurrence
+        try {
+          const rruleString = recurrenceRuleToRRULE(recurrenceRule as RecurrenceRule);
+          updates.recurrence = [rruleString];
+        } catch (error) {
+          console.error('Error converting recurrence rule:', error);
+          return res.status(400).json({ error: 'Invalid recurrence rule' });
+        }
+      }
     }
 
     const updatedEvent = await updateEvent(calendarId, eventId, updates);
@@ -218,6 +235,7 @@ router.post('/:calendarId/:eventId/move', requireAuth, async (req, res) => {
 router.delete('/:calendarId/:eventId', requireAuth, async (req, res) => {
   try {
     const { calendarId, eventId } = req.params;
+    const { updateMode } = req.query;
     const userEmail = req.session?.userEmail!;
 
     // Check delete permission
@@ -225,7 +243,7 @@ router.delete('/:calendarId/:eventId', requireAuth, async (req, res) => {
       return res.status(403).json({ error: 'No permission to delete events from this calendar' });
     }
 
-    const success = await deleteEvent(calendarId, eventId);
+    const success = await deleteEvent(calendarId, eventId, updateMode as 'this' | 'all' | 'future' | undefined);
 
     if (!success) {
       return res.status(500).json({ error: 'Failed to delete event' });

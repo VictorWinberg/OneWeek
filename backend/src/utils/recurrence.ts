@@ -1,39 +1,40 @@
-/**
- * Converts a RecurrenceRule object to an RRULE string format for Google Calendar API
- */
+import RRule from 'rrule';
+
 export interface RecurrenceRule {
   frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
   interval?: number;
   count?: number;
-  until?: string; // ISO date string
-  byDay?: string[]; // e.g., ['MO', 'WE', 'FR']
+  until?: string;
+  byDay?: string[];
 }
 
 export function recurrenceRuleToRRULE(rule: RecurrenceRule): string {
-  const parts: string[] = [`FREQ=${rule.frequency}`];
+  const frequencyMap: Record<string, any> = {
+    DAILY: 3,
+    WEEKLY: 2,
+    MONTHLY: 1,
+    YEARLY: 0,
+  };
+
+  const options: any = {
+    freq: frequencyMap[rule.frequency] ?? 3,
+  };
 
   if (rule.interval && rule.interval > 1) {
-    parts.push(`INTERVAL=${rule.interval}`);
+    options.interval = rule.interval;
   }
 
   if (rule.byDay && rule.byDay.length > 0) {
-    parts.push(`BYDAY=${rule.byDay.join(',')}`);
+    options.byweekday = rule.byDay.map((day) => RRule.Weekday.fromStr(day as any));
   }
 
   if (rule.count) {
-    parts.push(`COUNT=${rule.count}`);
+    options.count = rule.count + 1;
   } else if (rule.until) {
-    // Convert ISO date to RRULE format (YYYYMMDDTHHMMSSZ)
-    const date = new Date(rule.until);
-    const year = date.getUTCFullYear();
-    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(date.getUTCDate()).padStart(2, '0');
-    const hours = String(date.getUTCHours()).padStart(2, '0');
-    const minutes = String(date.getUTCMinutes()).padStart(2, '0');
-    const seconds = String(date.getUTCSeconds()).padStart(2, '0');
-    const untilStr = `${year}${month}${day}T${hours}${minutes}${seconds}Z`;
-    parts.push(`UNTIL=${untilStr}`);
+    options.until = new Date(rule.until);
   }
 
-  return `RRULE:${parts.join(';')}`;
+  const rrule = new RRule.RRule(options);
+
+  return rrule.toString();
 }

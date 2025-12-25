@@ -26,7 +26,7 @@ export function EventCard({ block, onClick, compact = false, fillHeight = false,
 
   // State for press-and-hold interaction
   const [isDragMode, setIsDragMode] = useState(false);
-  const pressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDraggingRef = useRef(false);
 
   // Setup draggable
@@ -101,7 +101,7 @@ export function EventCard({ block, onClick, compact = false, fillHeight = false,
   };
 
   // Custom touch handlers for press-and-hold
-  const handleTouchStart = (e: React.TouchEvent) => {
+  const handleTouchStart = () => {
     handlePressStart();
     // Don't prevent default to allow native scrolling when not in drag mode
   };

@@ -4,7 +4,14 @@ import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
 import { useWeekEvents, usePrefetchAdjacentWeeks, useUpdateEvent } from '@/hooks/useCalendarQueries';
-import { getWeekDays, formatWeekHeader, getWeekNumber, isToday, formatDayShort, formatDayNumber } from '@/utils/dateUtils';
+import {
+  getWeekDays,
+  formatWeekHeader,
+  getWeekNumber,
+  isToday,
+  formatDayShort,
+  formatDayNumber,
+} from '@/utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
 import { EventCard } from './EventCard';
 import type { Block } from '@/types';

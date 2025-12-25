@@ -263,64 +263,24 @@ export function GridView({
               </div>
             </div>
           ) : (
-            <div className="flex flex-col gap-3 h-full">
-              {/* All-day events row - fixed height with scroll */}
-              {blocks.some((block) => block.allDay) && (
-                <div className="grid grid-cols-4 grid-rows-2 gap-3 h-[60px] flex-shrink-0">
-                  {weekDays.map((date) => {
-                    const allDayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date).filter((b) => b.allDay));
-                    const isCurrentDay = isToday(date);
+            <div className="grid grid-cols-4 grid-rows-2 gap-3 h-full">
+              {weekDays.map((date) => {
+                const dayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date));
+                const isCurrentDay = isToday(date);
 
-                    return (
-                      <div
-                        key={`allday-${date.toISOString()}`}
-                        className={`
-                            rounded-xl border p-2 space-y-1 overflow-y-auto
-                            ${
-                              isCurrentDay
-                                ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/5'
-                                : 'border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)]'
-                            }
-                          `}
-                      >
-                        {allDayBlocks.map((block) => (
-                          <EventCard
-                            key={`${block.calendarId}-${block.id}`}
-                            block={block}
-                            onClick={() => onBlockClick(block)}
-                            compact={true}
-                            isAllDay={true}
-                            draggable={false}
-                          />
-                        ))}
-                      </div>
-                    );
-                  })}
-                  {/* Empty cell for 8th position */}
-                  <div className="rounded-xl border border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)]/30" />
-                </div>
-              )}
-
-              {/* Timed events grid */}
-              <div className="grid grid-cols-4 grid-rows-2 gap-3 flex-1">
-                {weekDays.map((date) => {
-                  const dayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date).filter((b) => !b.allDay));
-                  const isCurrentDay = isToday(date);
-
-                  return (
-                    <DroppableGridDay
-                      key={date.toISOString()}
-                      date={date}
-                      dayBlocks={dayBlocks}
-                      onBlockClick={onBlockClick}
-                      onEmptyClick={handleEmptySpaceClick}
-                      isCurrentDay={isCurrentDay}
-                    />
-                  );
-                })}
-                {/* Empty cell for 8th position */}
-                <div className="rounded-xl border border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)]/30" />
-              </div>
+                return (
+                  <DroppableGridDay
+                    key={date.toISOString()}
+                    date={date}
+                    dayBlocks={dayBlocks}
+                    onBlockClick={onBlockClick}
+                    onEmptyClick={handleEmptySpaceClick}
+                    isCurrentDay={isCurrentDay}
+                  />
+                );
+              })}
+              {/* Empty cell for 8th position */}
+              <div className="rounded-xl border border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)]/30" />
             </div>
           )}
         </div>

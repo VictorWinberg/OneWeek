@@ -101,10 +101,10 @@ export function EventCard({
               truncate
                 ? 'text-[8px] leading-tight whitespace-nowrap overflow-hidden text-ellipsis'
                 : compact && isAllDay
-                ? 'text-[8px] leading-tight break-words'
+                ? 'text-[8px] leading-tight wrap-anywhere'
                 : compact
-                ? 'text-[11px] leading-tight break-words'
-                : 'text-sm break-words'
+                ? 'text-[11px] leading-tight wrap-anywhere'
+                : 'text-sm wrap-anywhere'
             }
           `}
           style={{

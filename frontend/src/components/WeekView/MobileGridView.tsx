@@ -83,70 +83,26 @@ interface MobileGridViewProps {
 }
 
 export function MobileGridView({ weekDays, blocks, onBlockClick }: MobileGridViewProps) {
-  const hasAllDayEvents = blocks.some((block) => block.allDay);
-
   return (
-    <div className="flex flex-col gap-2 p-2">
-      {/* All-day events section - fixed height with scroll */}
-      {hasAllDayEvents && (
-        <div className="grid grid-cols-2 gap-2 h-[60px] flex-shrink-0">
-          {weekDays.map((date) => {
-            const allDayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date).filter((b) => b.allDay));
-            const isCurrentDay = isToday(date);
+    <div className="grid grid-cols-2 gap-2 p-2">
+      {weekDays.map((date) => {
+        const dayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date));
+        const isCurrentDay = isToday(date);
 
-            return (
-              <div
-                key={`allday-${date.toISOString()}`}
-                className={`
-                  rounded-lg border p-1 space-y-1 overflow-y-auto
-                  ${
-                    isCurrentDay
-                      ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/5'
-                      : 'border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)]'
-                  }
-                `}
-              >
-                {allDayBlocks.map((block) => (
-                  <EventCard
-                    key={`${block.calendarId}-${block.id}`}
-                    block={block}
-                    onClick={() => onBlockClick(block)}
-                    compact={true}
-                    isAllDay={true}
-                    draggable={false}
-                  />
-                ))}
-              </div>
-            );
-          })}
-          {/* Empty cell for 8th position if needed */}
-          {weekDays.length % 2 !== 0 && (
-            <div className="rounded-lg border border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)]/50" />
-          )}
-        </div>
+        return (
+          <DroppableGridDay
+            key={date.toISOString()}
+            date={date}
+            dayBlocks={dayBlocks}
+            onBlockClick={onBlockClick}
+            isCurrentDay={isCurrentDay}
+          />
+        );
+      })}
+      {/* Empty cell for 8th position if needed */}
+      {weekDays.length % 2 !== 0 && (
+        <div className="rounded-lg border border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)]/50" />
       )}
-
-      {/* Timed events grid */}
-      <div className="grid grid-cols-2 gap-2">
-        {weekDays.map((date) => {
-          const dayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date).filter((b) => !b.allDay));
-          const isCurrentDay = isToday(date);
-
-          return (
-            <DroppableGridDay
-              key={date.toISOString()}
-              date={date}
-              dayBlocks={dayBlocks}
-              onBlockClick={onBlockClick}
-              isCurrentDay={isCurrentDay}
-            />
-          );
-        })}
-        {/* Empty cell for 8th position if needed */}
-        {weekDays.length % 2 !== 0 && (
-          <div className="rounded-lg border border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)]/50" />
-        )}
-      </div>
     </div>
   );
 }

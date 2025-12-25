@@ -4,6 +4,8 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { getEnv } from './utils/env.js';
 
 import authRoutes from './routes/auth.js';
@@ -11,16 +13,23 @@ import calendarRoutes from './routes/calendars.js';
 import eventRoutes from './routes/events.js';
 import configRoutes from './routes/config.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 const PORT = Number(getEnv('PORT', '3000'));
+const isDevelopment = getEnv('NODE_ENV', 'development') === 'development';
 
 // Middleware
-app.use(
-  cors({
-    origin: getEnv('FRONTEND_URL', 'http://localhost:5173'),
-    credentials: true,
-  })
-);
+if (isDevelopment) {
+  // In development, allow CORS for the Vite dev server
+  app.use(
+    cors({
+      origin: getEnv('FRONTEND_URL', 'http://localhost:5173'),
+      credentials: true,
+    })
+  );
+}
 app.use(express.json());
 app.use(cookieParser());
 app.use(
@@ -36,7 +45,7 @@ app.use(
   })
 );
 
-// Routes
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/calendars', calendarRoutes);
 app.use('/api/events', eventRoutes);
@@ -45,6 +54,13 @@ app.use('/api/config', configRoutes);
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+const staticPath = path.join(__dirname, 'public');
+app.use(express.static(staticPath));
+
+app.get('/*path', (_req, res) => {
+  res.sendFile(path.join(staticPath, 'index.html'));
 });
 
 // Error handling middleware

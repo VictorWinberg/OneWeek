@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
+import { useCreateEvent } from '@/hooks/useCalendarQueries';
 import { getInitial } from '@/types';
 
 interface EventCreatePanelProps {
@@ -11,8 +11,8 @@ interface EventCreatePanelProps {
 }
 
 export function EventCreatePanel({ isOpen, onClose, defaultDate, defaultCalendarId }: EventCreatePanelProps) {
-  const { createBlock } = useCalendarStore();
   const { config, getPersonById } = useConfigStore();
+  const createEvent = useCreateEvent();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -21,10 +21,10 @@ export function EventCreatePanel({ isOpen, onClose, defaultDate, defaultCalendar
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
   const [allDay, setAllDay] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Reset form when opened
+  // Reset form when opened - intentional setState in effect for form reset
+  // eslint-disable-next-line react-compiler/react-compiler
   useEffect(() => {
     if (isOpen) {
       setTitle('');
@@ -81,7 +81,6 @@ export function EventCreatePanel({ isOpen, onClose, defaultDate, defaultCalendar
       return;
     }
 
-    setIsCreating(true);
     setError(null);
 
     try {
@@ -99,12 +98,11 @@ export function EventCreatePanel({ isOpen, onClose, defaultDate, defaultCalendar
         // Validate times
         if (endDateTime <= startDateTime) {
           setError('Sluttid måste vara efter starttid');
-          setIsCreating(false);
           return;
         }
       }
 
-      await createBlock({
+      await createEvent.mutateAsync({
         calendarId,
         title: title.trim(),
         description: description.trim() || undefined,
@@ -117,8 +115,6 @@ export function EventCreatePanel({ isOpen, onClose, defaultDate, defaultCalendar
     } catch (err) {
       setError('Kunde inte skapa event');
       console.error('Failed to create event:', err);
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -302,17 +298,17 @@ export function EventCreatePanel({ isOpen, onClose, defaultDate, defaultCalendar
           <button
             type="button"
             onClick={onClose}
-            disabled={isCreating}
+            disabled={createEvent.isPending}
             className="flex-1 py-2 px-4 rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors disabled:opacity-50"
           >
             Avbryt
           </button>
           <button
             onClick={handleSubmit}
-            disabled={isCreating || !title.trim()}
+            disabled={createEvent.isPending || !title.trim()}
             className="flex-1 py-2 px-4 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-50"
           >
-            {isCreating ? 'Skapar...' : 'Skapa event'}
+            {createEvent.isPending ? 'Skapar...' : 'Skapa event'}
           </button>
         </footer>
       </div>

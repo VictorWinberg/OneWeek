@@ -5,6 +5,7 @@ import { formatBlockTime } from '@/services/calendarNormalizer';
 import { formatDateFull } from '@/utils/dateUtils';
 import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
+import { useMoveEvent, useDeleteEvent } from '@/hooks/useCalendarQueries';
 import { ResponsibilitySelector } from './ResponsibilitySelector';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 
@@ -14,11 +15,12 @@ interface EventDetailPanelProps {
 }
 
 export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
-  const { moveBlock, deleteBlock } = useCalendarStore();
+  const { selectBlock } = useCalendarStore();
   const { getPersonById } = useConfigStore();
-  const [isMoving, setIsMoving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const moveEvent = useMoveEvent();
+  const deleteEvent = useDeleteEvent();
 
   // Close on escape key
   useEffect(() => {
@@ -39,11 +41,17 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
   const handleChangeResponsibility = async (newCalendarId: string) => {
     if (newCalendarId === block.calendarId) return;
 
-    setIsMoving(true);
     try {
-      await moveBlock(block.id, block.calendarId, newCalendarId);
-    } finally {
-      setIsMoving(false);
+      await moveEvent.mutateAsync({
+        blockId: block.id,
+        calendarId: block.calendarId,
+        targetCalendarId: newCalendarId,
+        startTime: block.startTime,
+      });
+      // Update selected block with new calendar ID
+      selectBlock({ ...block, calendarId: newCalendarId });
+    } catch (error) {
+      console.error('Failed to move event:', error);
     }
   };
 
@@ -52,14 +60,16 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
   };
 
   const handleDeleteConfirm = async () => {
-    setIsDeleting(true);
     try {
-      await deleteBlock(block.id, block.calendarId);
+      await deleteEvent.mutateAsync({
+        blockId: block.id,
+        calendarId: block.calendarId,
+        startTime: block.startTime,
+      });
       setShowDeleteConfirm(false);
       onClose();
     } catch (error) {
       console.error('Failed to delete event:', error);
-      setIsDeleting(false);
     }
   };
 
@@ -123,10 +133,10 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
           <ResponsibilitySelector
             currentCalendarId={block.calendarId}
             onSelect={handleChangeResponsibility}
-            disabled={isMoving}
+            disabled={moveEvent.isPending}
           />
 
-          {isMoving && (
+          {moveEvent.isPending && (
             <div className="flex items-center gap-2 text-[var(--color-text-secondary)]">
               <div className="w-4 h-4 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
               <span className="text-sm">Flyttar event...</span>
@@ -138,7 +148,7 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
         <footer className="p-4 border-t border-[var(--color-bg-tertiary)]">
           <button
             onClick={handleDeleteClick}
-            disabled={isDeleting}
+            disabled={deleteEvent.isPending}
             className="w-full py-2 px-4 rounded-lg bg-red-900/30 text-red-300 hover:bg-red-900/50 transition-colors disabled:opacity-50"
           >
             Ta bort event
@@ -156,7 +166,7 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
         confirmText="Ta bort"
         cancelText="Avbryt"
         isDangerous={true}
-        isLoading={isDeleting}
+        isLoading={deleteEvent.isPending}
       />
     </>
   );

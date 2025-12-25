@@ -3,6 +3,7 @@ import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor, useDropp
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
+import { useWeekEvents, usePrefetchAdjacentWeeks, useUpdateEventTime } from '@/hooks/useCalendarQueries';
 import { getWeekDays, formatWeekHeader, getWeekNumber, formatDayShort, isToday } from '@/utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
 import { EventCard } from './EventCard';
@@ -110,25 +111,14 @@ export function GridView({
   onPrevWeek,
   onGoToToday,
 }: GridViewProps) {
-  const {
-    blocks,
-    selectedDate,
-    isLoading,
-    error,
-    fetchBlocks,
-    prefetchAdjacentWeeks,
-    nextWeek,
-    prevWeek,
-    goToToday,
-    updateBlockTime,
-  } = useCalendarStore();
+  const { selectedDate } = useCalendarStore();
   const { isConfigured } = useConfigStore();
   const [activeBlock, setActiveBlock] = useState<Block | null>(null);
 
-  // Use provided navigation functions or fall back to store methods
-  const handleNextWeek = onNextWeek || nextWeek;
-  const handlePrevWeek = onPrevWeek || prevWeek;
-  const handleGoToToday = onGoToToday || goToToday;
+  // Fetch events using React Query
+  const { data: blocks = [], isLoading, error } = useWeekEvents(selectedDate);
+  const { prefetch } = usePrefetchAdjacentWeeks(selectedDate);
+  const updateEventTime = useUpdateEventTime();
 
   // Configure drag sensors
   const sensors = useSensors(
@@ -139,13 +129,12 @@ export function GridView({
     })
   );
 
+  // Prefetch adjacent weeks when data loads
   useEffect(() => {
-    if (isConfigured) {
-      fetchBlocks().then(() => {
-        prefetchAdjacentWeeks();
-      });
+    if (!isLoading && blocks.length >= 0) {
+      prefetch();
     }
-  }, [isConfigured, fetchBlocks, prefetchAdjacentWeeks]);
+  }, [isLoading, prefetch, blocks.length]);
 
   const weekDays = getWeekDays(selectedDate);
   const weekNumber = getWeekNumber(selectedDate);
@@ -179,7 +168,12 @@ export function GridView({
     const newEndTime = new Date(newStartTime.getTime() + duration);
 
     try {
-      await updateBlockTime(block.id, block.calendarId, newStartTime, newEndTime);
+      await updateEventTime.mutateAsync({
+        blockId: block.id,
+        calendarId: block.calendarId,
+        startTime: newStartTime,
+        endTime: newEndTime,
+      });
     } catch (error) {
       console.error('Failed to update block:', error);
     }
@@ -224,7 +218,7 @@ export function GridView({
             </button>
 
             <button
-              onClick={handlePrevWeek}
+              onClick={onPrevWeek}
               className="p-2 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
               aria-label="Föregående vecka"
             >
@@ -234,14 +228,14 @@ export function GridView({
             </button>
 
             <button
-              onClick={handleGoToToday}
+              onClick={onGoToToday}
               className="px-3 py-2 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium hover:bg-[var(--color-accent-hover)] transition-colors"
             >
               Idag
             </button>
 
             <button
-              onClick={handleNextWeek}
+              onClick={onNextWeek}
               className="p-2 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
               aria-label="Nästa vecka"
             >
@@ -253,7 +247,11 @@ export function GridView({
         </header>
 
         {/* Error message */}
-        {error && <div className="p-4 bg-red-900/30 border-b border-red-700 text-red-200">{error}</div>}
+        {error && (
+          <div className="p-4 bg-red-900/30 border-b border-red-700 text-red-200">
+            {error instanceof Error ? error.message : 'Failed to load events'}
+          </div>
+        )}
 
         {/* Grid */}
         <div className="flex-1 overflow-auto p-4">

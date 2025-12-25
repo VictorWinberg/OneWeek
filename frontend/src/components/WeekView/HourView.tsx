@@ -3,6 +3,7 @@ import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor, useDropp
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
+import { useWeekEvents, usePrefetchAdjacentWeeks, useUpdateEventTime } from '@/hooks/useCalendarQueries';
 import { getWeekDays, formatWeekHeader, getWeekNumber, formatDayShort, isToday } from '@/utils/dateUtils';
 import { getBlocksForDay } from '@/services/calendarNormalizer';
 import { EventCard } from './EventCard';
@@ -64,25 +65,15 @@ export function HourView({
   onPrevWeek,
   onGoToToday,
 }: HourViewProps) {
-  const {
-    blocks,
-    selectedDate,
-    isLoading,
-    error,
-    fetchBlocks,
-    prefetchAdjacentWeeks,
-    nextWeek,
-    prevWeek,
-    goToToday,
-    updateBlockTime,
-  } = useCalendarStore();
-
-  const handleNextWeek = onNextWeek || nextWeek;
-  const handlePrevWeek = onPrevWeek || prevWeek;
-  const handleGoToToday = onGoToToday || goToToday;
+  const { selectedDate } = useCalendarStore();
   const { isConfigured } = useConfigStore();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [activeBlock, setActiveBlock] = useState<Block | null>(null);
+
+  // Fetch events using React Query
+  const { data: blocks = [], isLoading, error } = useWeekEvents(selectedDate);
+  const { prefetch } = usePrefetchAdjacentWeeks(selectedDate);
+  const updateEventTime = useUpdateEventTime();
 
   // Configure drag sensors
   const sensors = useSensors(
@@ -93,14 +84,12 @@ export function HourView({
     })
   );
 
+  // Prefetch adjacent weeks when data loads
   useEffect(() => {
-    if (isConfigured) {
-      fetchBlocks().then(() => {
-        // Prefetch adjacent weeks after initial load
-        prefetchAdjacentWeeks();
-      });
+    if (!isLoading && blocks.length >= 0) {
+      prefetch();
     }
-  }, [isConfigured, fetchBlocks, prefetchAdjacentWeeks]);
+  }, [isLoading, prefetch, blocks.length]);
 
   // Auto-scroll to hour 8 (8am) on mount and when changing views
   useEffect(() => {
@@ -178,7 +167,12 @@ export function HourView({
 
     // Update the block
     try {
-      await updateBlockTime(block.id, block.calendarId, newStartTime, newEndTime);
+      await updateEventTime.mutateAsync({
+        blockId: block.id,
+        calendarId: block.calendarId,
+        startTime: newStartTime,
+        endTime: newEndTime,
+      });
     } catch (error) {
       console.error('Failed to update block:', error);
     }
@@ -209,7 +203,7 @@ export function HourView({
             </button>
 
             <button
-              onClick={handlePrevWeek}
+              onClick={onPrevWeek}
               className="p-2 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
               aria-label="Föregående vecka"
             >
@@ -219,14 +213,14 @@ export function HourView({
             </button>
 
             <button
-              onClick={handleGoToToday}
+              onClick={onGoToToday}
               className="px-3 py-2 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium hover:bg-[var(--color-accent-hover)] transition-colors"
             >
               Idag
             </button>
 
             <button
-              onClick={handleNextWeek}
+              onClick={onNextWeek}
               className="p-2 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
               aria-label="Nästa vecka"
             >
@@ -238,7 +232,11 @@ export function HourView({
         </header>
 
         {/* Error message */}
-        {error && <div className="p-4 bg-red-900/30 border-b border-red-700 text-red-200 flex-shrink-0">{error}</div>}
+        {error && (
+          <div className="p-4 bg-red-900/30 border-b border-red-700 text-red-200 flex-shrink-0">
+            {error instanceof Error ? error.message : 'Failed to load events'}
+          </div>
+        )}
 
         {/* Hour Grid */}
         <div ref={scrollContainerRef} className="flex-1 overflow-auto min-h-0">

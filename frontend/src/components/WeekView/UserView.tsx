@@ -3,6 +3,7 @@ import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor, useDropp
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
+import { useWeekEvents, usePrefetchAdjacentWeeks, useUpdateEventTime, useMoveEvent } from '@/hooks/useCalendarQueries';
 import { getWeekDays, formatWeekHeader, getWeekNumber, formatDayShort, isToday } from '@/utils/dateUtils';
 import { EventCard } from './EventCard';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
@@ -59,25 +60,15 @@ export function UserView({
   onPrevWeek,
   onGoToToday,
 }: UserViewProps) {
-  const {
-    blocks,
-    selectedDate,
-    isLoading,
-    error,
-    fetchBlocks,
-    prefetchAdjacentWeeks,
-    nextWeek,
-    prevWeek,
-    goToToday,
-    updateBlockTime,
-    moveBlock,
-  } = useCalendarStore();
-
-  const handleNextWeek = onNextWeek || nextWeek;
-  const handlePrevWeek = onPrevWeek || prevWeek;
-  const handleGoToToday = onGoToToday || goToToday;
+  const { selectedDate } = useCalendarStore();
   const { config, isConfigured } = useConfigStore();
   const [activeBlock, setActiveBlock] = useState<Block | null>(null);
+
+  // Fetch events using React Query
+  const { data: blocks = [], isLoading, error } = useWeekEvents(selectedDate);
+  const { prefetch } = usePrefetchAdjacentWeeks(selectedDate);
+  const updateEventTime = useUpdateEventTime();
+  const moveEvent = useMoveEvent();
 
   // Configure drag sensors
   const sensors = useSensors(
@@ -88,14 +79,12 @@ export function UserView({
     })
   );
 
+  // Prefetch adjacent weeks when data loads
   useEffect(() => {
-    if (isConfigured) {
-      fetchBlocks().then(() => {
-        // Prefetch adjacent weeks after initial load
-        prefetchAdjacentWeeks();
-      });
+    if (!isLoading && blocks.length >= 0) {
+      prefetch();
     }
-  }, [isConfigured, fetchBlocks, prefetchAdjacentWeeks]);
+  }, [isLoading, prefetch, blocks.length]);
 
   const weekDays = getWeekDays(selectedDate);
   const weekNumber = getWeekNumber(selectedDate);
@@ -148,7 +137,12 @@ export function UserView({
     // If calendar changed, move the event
     if (needsMove) {
       try {
-        await moveBlock(block.id, block.calendarId, dropData.calendarId);
+        await moveEvent.mutateAsync({
+          blockId: block.id,
+          calendarId: block.calendarId,
+          targetCalendarId: dropData.calendarId,
+          startTime: block.startTime,
+        });
       } catch (error) {
         console.error('Failed to move block:', error);
         return;
@@ -165,7 +159,12 @@ export function UserView({
 
       try {
         // Use the new calendar ID if moved
-        await updateBlockTime(block.id, needsMove ? dropData.calendarId : block.calendarId, newStartTime, newEndTime);
+        await updateEventTime.mutateAsync({
+          blockId: block.id,
+          calendarId: needsMove ? dropData.calendarId : block.calendarId,
+          startTime: newStartTime,
+          endTime: newEndTime,
+        });
       } catch (error) {
         console.error('Failed to update block time:', error);
       }
@@ -197,7 +196,7 @@ export function UserView({
             </button>
 
             <button
-              onClick={handlePrevWeek}
+              onClick={onPrevWeek}
               className="p-2 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
               aria-label="Föregående vecka"
             >
@@ -207,14 +206,14 @@ export function UserView({
             </button>
 
             <button
-              onClick={handleGoToToday}
+              onClick={onGoToToday}
               className="px-3 py-2 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium hover:bg-[var(--color-accent-hover)] transition-colors"
             >
               Idag
             </button>
 
             <button
-              onClick={handleNextWeek}
+              onClick={onNextWeek}
               className="p-2 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
               aria-label="Nästa vecka"
             >
@@ -226,7 +225,11 @@ export function UserView({
         </header>
 
         {/* Error message */}
-        {error && <div className="p-4 bg-red-900/30 border-b border-red-700 text-red-200">{error}</div>}
+        {error && (
+          <div className="p-4 bg-red-900/30 border-b border-red-700 text-red-200">
+            {error instanceof Error ? error.message : 'Failed to load events'}
+          </div>
+        )}
 
         {/* Calendar Grid */}
         <div className="flex-1 overflow-auto">

@@ -1,5 +1,5 @@
 import { google, calendar_v3 } from 'googleapis';
-import type { Block, BlockMetadata, GoogleCalendarEvent, PersonId } from '../types/index.js';
+import type { Block, BlockMetadata, GoogleCalendarEvent } from '../types/index.js';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 

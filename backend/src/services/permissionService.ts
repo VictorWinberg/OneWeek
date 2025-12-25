@@ -64,13 +64,6 @@ export function getUserIdFromEmail(email: string): string | null {
 }
 
 /**
- * Get all emails for a user
- */
-export function getUserEmails(userId: string): string[] {
-  return config.users[userId]?.emails || [];
-}
-
-/**
  * Check if email is allowed (exists in any user)
  */
 export function isEmailAllowed(email: string): boolean {
@@ -155,26 +148,4 @@ export function getUserPermissionsForCalendar(email: string, calendarId: string)
  */
 export function getCalendarConfig(): Calendar[] {
   return config.calendars;
-}
-
-/**
- * Reload config from disk (useful for development/testing)
- */
-export function reloadConfig(): ConfigFile {
-  // Re-initialize config by re-requiring this module would require clearing require cache
-  // For simplicity, just read and parse again
-  try {
-    const configPath = join(process.cwd(), '..', 'config.json');
-    const configData = readFileSync(configPath, 'utf-8');
-    const newConfig: ConfigFile = JSON.parse(configData);
-
-    // Update the module-level config
-    Object.assign(config, newConfig);
-
-    console.log('✓ Config reloaded');
-    return config;
-  } catch (error) {
-    console.error('❌ Failed to reload config:', error);
-    throw new Error(`Failed to reload config: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
 }

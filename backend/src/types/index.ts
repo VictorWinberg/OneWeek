@@ -1,5 +1,3 @@
-export type PersonId = 'annie' | 'victor' | 'annie-victor' | 'lillen' | 'familjen';
-
 export interface CalendarSource {
   id: string;
   name: string;
@@ -41,18 +39,6 @@ export interface GoogleCalendarEvent {
   extendedProperties?: {
     private?: Record<string, string>;
   };
-}
-
-export interface MoveEventRequest {
-  sourceCalendarId: string;
-  targetCalendarId: string;
-}
-
-export interface UpdateEventRequest {
-  title?: string;
-  description?: string;
-  startTime?: string;
-  endTime?: string;
 }
 
 declare module 'express-session' {

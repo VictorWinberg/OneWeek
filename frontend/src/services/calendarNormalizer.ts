@@ -7,14 +7,6 @@ export function getBlockDuration(block: Block): number {
   return block.endTime.getTime() - block.startTime.getTime();
 }
 
-export function getBlockDurationMinutes(block: Block): number {
-  return getBlockDuration(block) / (1000 * 60);
-}
-
-export function getBlockDurationHours(block: Block): number {
-  return getBlockDuration(block) / (1000 * 60 * 60);
-}
-
 export function isBlockInDay(block: Block, date: Date): boolean {
   // Ensure we're working with Date objects
   const blockStart = block.startTime instanceof Date ? block.startTime : new Date(block.startTime);
@@ -39,32 +31,6 @@ export function sortBlocksByTime(blocks: Block[]): Block[] {
   return [...blocks].sort((a, b) =>
     new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
   );
-}
-
-export function groupBlocksByPerson(blocks: Block[]): Record<string, Block[]> {
-  const grouped: Record<string, Block[]> = {};
-
-  for (const block of blocks) {
-    const calendarId = block.responsiblePersonId;
-    if (!grouped[calendarId]) {
-      grouped[calendarId] = [];
-    }
-    grouped[calendarId]!.push(block);
-  }
-
-  return grouped;
-}
-
-export function createBlockMetadata(
-  category?: string,
-  energy?: number,
-  originalCalendarId?: string
-): BlockMetadata {
-  return {
-    ...(category && { category }),
-    ...(energy !== undefined && { energy }),
-    ...(originalCalendarId && { originalCalendarId }),
-  };
 }
 
 export function formatBlockTime(block: Block): string {
@@ -92,9 +58,5 @@ export function isBlockPast(block: Block): boolean {
 export function isBlockCurrent(block: Block): boolean {
   const now = new Date();
   return new Date(block.startTime) <= now && new Date(block.endTime) >= now;
-}
-
-export function isBlockFuture(block: Block): boolean {
-  return new Date(block.startTime) > new Date();
 }
 

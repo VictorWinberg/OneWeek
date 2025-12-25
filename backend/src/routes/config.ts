@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getCalendarConfig, getUserCalendars, getUserPermissionsForCalendar } from '../services/permissionService.js';
+import { getUserCalendars, getUserPermissionsForCalendar } from '../services/permissionService.js';
 
 const router = Router();
 

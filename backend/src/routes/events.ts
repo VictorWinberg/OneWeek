@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import {
   listEvents,
   getEvent,
@@ -9,17 +10,13 @@ import {
   normalizeEventToBlock,
   blockToGoogleEvent,
 } from '../services/calendarService.js';
-import { hasPermission, getUserCalendars } from '../services/permissionService.js';
-import type { PersonId, CalendarSource } from '../types/index.js';
+import { hasPermission } from '../services/permissionService.js';
+import type { CalendarSource } from '../types/index.js';
 
 const router = Router();
 
 // Middleware to check authentication
-const requireAuth = (
-  req: import('express').Request,
-  res: import('express').Response,
-  next: import('express').NextFunction
-) => {
+const requireAuth = (req: Request, res: Response, next: NextFunction) => {
   if (!req.session.tokens?.access_token || !req.session.userEmail) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
@@ -88,7 +85,7 @@ router.get('/:calendarId/:eventId', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    const block = normalizeEventToBlock(event, calendarId, (personId as PersonId) || 'familjen');
+    const block = normalizeEventToBlock(event, calendarId, (personId as string) || calendarId);
     res.json(block);
   } catch (error) {
     console.error('Error fetching event:', error);

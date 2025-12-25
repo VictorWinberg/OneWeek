@@ -7,7 +7,3 @@ export interface CalendarSource {
 export interface CalendarConfig {
   calendars: CalendarSource[];
 }
-
-export const DEFAULT_CALENDAR_CONFIG: CalendarConfig = {
-  calendars: [],
-};

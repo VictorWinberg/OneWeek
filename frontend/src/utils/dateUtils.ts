@@ -1,12 +1,4 @@
-import {
-  format,
-  startOfWeek,
-  endOfWeek,
-  eachDayOfInterval,
-  isToday,
-  isSameDay,
-  addDays,
-} from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay, addDays } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
 export function getWeekDays(date: Date): Date[] {
@@ -50,17 +42,7 @@ export function formatDateFull(date: Date): string {
   return format(date, 'd MMMM yyyy', { locale: sv });
 }
 
-export function formatDateTime(date: Date): string {
-  return format(date, 'd MMM HH:mm', { locale: sv });
-}
-
 export { isToday, isSameDay, addDays };
-
-export function getTodayAndTomorrow(): { today: Date; tomorrow: Date } {
-  const today = new Date();
-  const tomorrow = addDays(today, 1);
-  return { today, tomorrow };
-}
 
 export function getWeekNumber(date: Date): number {
   const start = startOfWeek(date, { weekStartsOn: 1 });
@@ -68,4 +50,3 @@ export function getWeekNumber(date: Date): number {
   const pastDaysOfYear = (start.getTime() - firstDayOfYear.getTime()) / 86400000;
   return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
 }
-

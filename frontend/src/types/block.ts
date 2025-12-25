@@ -16,26 +16,3 @@ export interface Block {
   metadata: BlockMetadata;
 }
 
-export interface BlockCreateInput {
-  title: string;
-  description?: string;
-  startTime: Date;
-  endTime: Date;
-  allDay?: boolean;
-  personId: string; // Calendar ID
-  metadata?: BlockMetadata;
-}
-
-export interface BlockUpdateInput {
-  title?: string;
-  description?: string;
-  startTime?: Date;
-  endTime?: Date;
-}
-
-export interface MoveBlockInput {
-  blockId: string;
-  sourceCalendarId: string;
-  targetPersonId: string; // Calendar ID
-}
-

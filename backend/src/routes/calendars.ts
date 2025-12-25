@@ -1,15 +1,11 @@
 import { Router } from 'express';
-import { createOAuth2Client, setCredentials } from '../services/googleAuth.js';
+import type { Request, Response, NextFunction } from 'express';
 import { listCalendars } from '../services/calendarService.js';
 
 const router = Router();
 
 // Middleware to check authentication
-const requireAuth = (
-  req: import('express').Request,
-  res: import('express').Response,
-  next: import('express').NextFunction
-) => {
+const requireAuth = (req: Request, res: Response, next: NextFunction) => {
   if (!req.session.tokens?.access_token) {
     return res.status(401).json({ error: 'Not authenticated' });
   }

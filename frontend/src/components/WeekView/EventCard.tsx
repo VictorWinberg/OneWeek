@@ -16,7 +16,16 @@ interface EventCardProps {
   extraCompact?: boolean;
 }
 
-export function EventCard({ block, onClick, compact = false, fillHeight = false, draggable = false, isAllDay = false, hideTime = false, extraCompact = false }: EventCardProps) {
+export function EventCard({
+  block,
+  onClick,
+  compact = false,
+  fillHeight = false,
+  draggable = false,
+  isAllDay = false,
+  hideTime = false,
+  extraCompact = false,
+}: EventCardProps) {
   const { getPersonById } = useConfigStore();
   const person = getPersonById(block.calendarId);
   const isPast = isBlockPast(block);
@@ -88,10 +97,10 @@ export function EventCard({ block, onClick, compact = false, fillHeight = false,
             font-medium text-[var(--color-text-primary)]
             ${
               compact && isAllDay
-                ? 'text-[8px] leading-tight whitespace-nowrap overflow-hidden text-ellipsis'
+                ? 'text-[8px] leading-tight break-words'
                 : compact
-                  ? 'text-[11px] leading-tight break-words'
-                  : 'text-sm break-words'
+                ? 'text-[11px] leading-tight break-words'
+                : 'text-sm break-words'
             }
           `}
           style={{

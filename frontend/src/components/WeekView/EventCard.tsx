@@ -28,12 +28,22 @@ export function EventCard({ block, onClick, compact = false, fillHeight = false,
   const [isDragMode, setIsDragMode] = useState(false);
   const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDraggingRef = useRef(false);
+  const elementRef = useRef<HTMLButtonElement | null>(null);
 
-  // Setup draggable
+  // Setup draggable - disable until drag mode is active
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `${block.calendarId}-${block.id}`,
     disabled: !draggable || !person || !isDragMode,
   });
+
+  // Combined ref handler
+  const setRefs = useCallback(
+    (node: HTMLButtonElement | null) => {
+      elementRef.current = node;
+      setNodeRef(node);
+    },
+    [setNodeRef]
+  );
 
   // Track dragging state
   useEffect(() => {
@@ -54,14 +64,22 @@ export function EventCard({ block, onClick, compact = false, fillHeight = false,
   }, []);
 
   // Handle press start (touch or mouse)
-  const handlePressStart = useCallback(() => {
-    if (!draggable || !person) return;
+  const handlePressStart = useCallback(
+    (event: React.PointerEvent) => {
+      if (!draggable || !person) return;
 
-    pressTimerRef.current = setTimeout(() => {
-      setIsDragMode(true);
-      triggerVibration();
-    }, PRESS_HOLD_DELAY);
-  }, [draggable, person, triggerVibration]);
+      pressTimerRef.current = setTimeout(() => {
+        setIsDragMode(true);
+        triggerVibration();
+
+        // Manually trigger the drag start by dispatching the event to dnd-kit listeners
+        if (elementRef.current && listeners?.onPointerDown) {
+          listeners.onPointerDown(event as any);
+        }
+      }, PRESS_HOLD_DELAY);
+    },
+    [draggable, person, triggerVibration, listeners]
+  );
 
   // Handle press end
   const handlePressEnd = useCallback(() => {
@@ -85,6 +103,9 @@ export function EventCard({ block, onClick, compact = false, fillHeight = false,
     opacity: isDragging ? 0.5 : 1,
     backgroundColor: person ? `color-mix(in srgb, ${person.color} 25%, var(--color-bg-secondary))` : 'transparent',
     borderLeft: person ? `4px solid ${person.color}` : 'none',
+    touchAction: draggable ? ('none' as const) : ('auto' as const), // Prevent default touch actions
+    WebkitUserSelect: 'none' as const, // Prevent text selection
+    userSelect: 'none' as const,
   };
 
   if (!person) {
@@ -95,40 +116,30 @@ export function EventCard({ block, onClick, compact = false, fillHeight = false,
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering parent click handlers
-    // Only trigger onClick if we're not in drag mode or currently dragging
-    if (!isDragMode || isDragging) return;
+    // Only trigger onClick if we're not in drag mode
+    if (isDragMode || isDragging) return;
     onClick();
   };
 
-  // Custom touch handlers for press-and-hold
-  const handleTouchStart = () => {
-    handlePressStart();
-    // Don't prevent default to allow native scrolling when not in drag mode
+  // Pointer down handler - works for both touch and mouse
+  const handlePointerDown = (e: React.PointerEvent) => {
+    // Prevent default behaviors (text selection, context menu)
+    e.preventDefault();
+    handlePressStart(e);
   };
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
+  // Pointer up handler
+  const handlePointerUp = () => {
     handlePressEnd();
-    // If we're not in drag mode, allow the click to propagate
+
+    // If not in drag mode and not dragging, trigger click
     if (!isDragMode && !isDraggingRef.current) {
-      handleClick(e as any);
+      onClick();
     }
   };
 
-  const handleTouchCancel = () => {
-    handlePressEnd();
-    setIsDragMode(false);
-  };
-
-  // Mouse handlers for desktop
-  const handleMouseDown = () => {
-    handlePressStart();
-  };
-
-  const handleMouseUp = () => {
-    handlePressEnd();
-  };
-
-  const handleMouseLeave = () => {
+  // Pointer cancel/leave handler
+  const handlePointerCancel = () => {
     handlePressEnd();
     if (!isDragging) {
       setIsDragMode(false);
@@ -137,16 +148,15 @@ export function EventCard({ block, onClick, compact = false, fillHeight = false,
 
   return (
     <button
-      ref={setNodeRef}
+      ref={setRefs}
       style={style}
       onClick={handleClick}
-      onTouchStart={draggable ? handleTouchStart : undefined}
-      onTouchEnd={draggable ? handleTouchEnd : undefined}
-      onTouchCancel={draggable ? handleTouchCancel : undefined}
-      onMouseDown={draggable ? handleMouseDown : undefined}
-      onMouseUp={draggable ? handleMouseUp : undefined}
-      onMouseLeave={draggable ? handleMouseLeave : undefined}
-      {...(isDragMode ? { ...listeners, ...attributes } : {})}
+      onPointerDown={draggable ? handlePointerDown : undefined}
+      onPointerUp={draggable ? handlePointerUp : undefined}
+      onPointerCancel={draggable ? handlePointerCancel : undefined}
+      onPointerLeave={draggable ? handlePointerCancel : undefined}
+      onContextMenu={(e) => draggable && e.preventDefault()} // Prevent context menu
+      {...(isDragMode ? { ...listeners, ...attributes } : attributes)}
       className={`
         group relative w-full text-left rounded-lg transition-all duration-200
         flex flex-col items-start justify-start

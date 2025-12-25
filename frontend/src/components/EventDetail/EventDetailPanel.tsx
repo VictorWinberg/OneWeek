@@ -31,13 +31,13 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
 
   if (!block) return null;
 
-  const person = getPersonById(block.responsiblePersonId);
+  const person = getPersonById(block.calendarId);
   if (!person) return null;
 
   const initial = getInitial(person.name);
 
   const handleChangeResponsibility = async (newCalendarId: string) => {
-    if (newCalendarId === block.responsiblePersonId) return;
+    if (newCalendarId === block.calendarId) return;
 
     setIsMoving(true);
     try {
@@ -121,7 +121,7 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
 
           {/* Change Responsibility */}
           <ResponsibilitySelector
-            currentCalendarId={block.responsiblePersonId}
+            currentCalendarId={block.calendarId}
             onSelect={handleChangeResponsibility}
             disabled={isMoving}
           />

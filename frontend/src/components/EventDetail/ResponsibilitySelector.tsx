@@ -1,5 +1,5 @@
-import type { Person } from '@/types';
-import { getInitial } from '@/types';
+import type { Calendar } from '@/types';
+import { getInitial } from '@/types/calendar';
 import { useConfigStore } from '@/stores/configStore';
 
 interface ResponsibilitySelectorProps {
@@ -8,21 +8,15 @@ interface ResponsibilitySelectorProps {
   disabled?: boolean;
 }
 
-export function ResponsibilitySelector({
-  currentCalendarId,
-  onSelect,
-  disabled = false,
-}: ResponsibilitySelectorProps) {
+export function ResponsibilitySelector({ currentCalendarId, onSelect, disabled = false }: ResponsibilitySelectorProps) {
   const { persons } = useConfigStore();
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-[var(--color-text-secondary)]">
-        Ansvarig
-      </label>
+      <label className="block text-sm font-medium text-[var(--color-text-secondary)]">Ansvarig</label>
       <div className="grid grid-cols-2 gap-2">
         {persons.map((person) => (
-          <PersonButton
+          <CalendarButton
             key={person.id}
             person={person}
             isSelected={person.id === currentCalendarId}
@@ -35,14 +29,14 @@ export function ResponsibilitySelector({
   );
 }
 
-interface PersonButtonProps {
-  person: Person;
+interface CalendarButtonProps {
+  person: Calendar;
   isSelected: boolean;
   onClick: () => void;
   disabled: boolean;
 }
 
-function PersonButton({ person, isSelected, onClick, disabled }: PersonButtonProps) {
+function CalendarButton({ person, isSelected, onClick, disabled }: CalendarButtonProps) {
   const initial = getInitial(person.name);
 
   return (
@@ -51,9 +45,10 @@ function PersonButton({ person, isSelected, onClick, disabled }: PersonButtonPro
       disabled={disabled}
       className={`
         flex items-center gap-2 p-3 rounded-lg transition-all duration-200
-        ${isSelected
-          ? 'bg-[var(--color-bg-tertiary)] ring-2 ring-white/30'
-          : 'bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)]'
+        ${
+          isSelected
+            ? 'bg-[var(--color-bg-tertiary)] ring-2 ring-white/30'
+            : 'bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)]'
         }
         ${disabled && !isSelected ? 'opacity-50 cursor-not-allowed' : ''}
         focus:outline-none focus:ring-2 focus:ring-white/50
@@ -68,15 +63,16 @@ function PersonButton({ person, isSelected, onClick, disabled }: PersonButtonPro
       >
         {initial.charAt(0)}
       </div>
-      <span className="text-sm font-medium text-[var(--color-text-primary)]">
-        {person.name}
-      </span>
+      <span className="text-sm font-medium text-[var(--color-text-primary)]">{person.name}</span>
       {isSelected && (
         <svg className="w-4 h-4 ml-auto text-[var(--color-accent)]" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          <path
+            fillRule="evenodd"
+            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+            clipRule="evenodd"
+          />
         </svg>
       )}
     </button>
   );
 }
-

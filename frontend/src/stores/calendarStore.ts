@@ -239,7 +239,7 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
     const { blocks, selectedBlock } = get();
     const updatedBlocks = blocks.map((b) =>
       b.id === blockId && b.calendarId === calendarId
-        ? { ...b, responsiblePersonId: targetCalendarId, calendarId: targetCalendarId }
+        ? { ...b, calendarId: targetCalendarId }
         : b
     );
     set({ blocks: updatedBlocks });
@@ -249,7 +249,6 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
       set({
         selectedBlock: {
           ...selectedBlock,
-          responsiblePersonId: targetCalendarId,
           calendarId: targetCalendarId,
         },
       });

@@ -1,22 +1,22 @@
 import { create } from 'zustand';
-import type { CalendarConfig, CalendarSource, Person } from '@/types';
+import type { CalendarConfig, Calendar } from '@/types';
 import { configApi } from '@/services/api';
 
 interface ConfigState {
   config: CalendarConfig;
-  persons: Person[]; // Dynamic list based on calendars
+  persons: Calendar[]; // Dynamic list based on calendars
   isConfigured: boolean;
   isLoading: boolean;
   error: string | null;
 
   // Actions
   loadConfig: () => Promise<void>;
-  setCalendarConfig: (calendars: CalendarSource[]) => void;
-  addCalendar: (calendar: CalendarSource) => void;
+  setCalendarConfig: (calendars: Calendar[]) => void;
+  addCalendar: (calendar: Calendar) => void;
   removeCalendar: (calendarId: string) => void;
-  updateCalendar: (calendarId: string, updates: Partial<CalendarSource>) => void;
-  getCalendarById: (calendarId: string) => CalendarSource | undefined;
-  getPersonById: (calendarId: string) => Person | undefined;
+  updateCalendar: (calendarId: string, updates: Partial<Calendar>) => void;
+  getCalendarById: (calendarId: string) => Calendar | undefined;
+  getPersonById: (calendarId: string) => Calendar | undefined;
   clearConfig: () => void;
 }
 

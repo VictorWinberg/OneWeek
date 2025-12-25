@@ -153,7 +153,7 @@ export async function moveEventBetweenCalendars(
 }
 
 /** Convert a Google Calendar event to internal Block format */
-export function normalizeEventToBlock(event: calendar_v3.Schema$Event, calendarId: string, personId: string): Block {
+export function normalizeEventToBlock(event: calendar_v3.Schema$Event, calendarId: string): Block {
   const isAllDay = !event.start?.dateTime;
   const startTime = event.start?.dateTime || event.start?.date || '';
   const endTime = event.end?.dateTime || event.end?.date || '';
@@ -161,7 +161,6 @@ export function normalizeEventToBlock(event: calendar_v3.Schema$Event, calendarI
 
   const metadata: BlockMetadata = {
     category: privateProps.category,
-    energy: privateProps.energy ? parseInt(privateProps.energy, 10) : undefined,
     originalCalendarId: privateProps.originalCalendarId,
   };
 
@@ -173,7 +172,6 @@ export function normalizeEventToBlock(event: calendar_v3.Schema$Event, calendarI
     startTime,
     endTime,
     allDay: isAllDay,
-    responsiblePersonId: personId,
     metadata,
   };
 }
@@ -201,7 +199,6 @@ export function blockToGoogleEvent(
     event.extendedProperties = {
       private: {
         ...(metadata.category && { category: metadata.category }),
-        ...(metadata.energy !== undefined && { energy: String(metadata.energy) }),
         ...(metadata.originalCalendarId && { originalCalendarId: metadata.originalCalendarId }),
       },
     };

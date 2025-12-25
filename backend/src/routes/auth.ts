@@ -26,7 +26,9 @@ router.get('/login', (req, res) => {
     }
 
     // Store redirect URL in session
-    req.session.redirectUrl = redirectUrl;
+    if (req.session) {
+      req.session.redirectUrl = redirectUrl;
+    }
 
     const redirectUri = getRedirectUri(req);
     const oauth2Client = createOAuth2Client(redirectUri);
@@ -59,22 +61,28 @@ router.get('/callback', async (req, res) => {
     if (!userInfo.email || !isEmailAllowed(userInfo.email)) {
       console.warn(`Unauthorized login attempt from: ${userInfo.email}`);
       // Get redirect URL from session or default to root
-      const redirectUrl = req.session.redirectUrl || '/';
-      delete req.session.redirectUrl; // Clean up session
+      const redirectUrl = req.session?.redirectUrl || '/';
+      if (req.session) {
+        delete req.session.redirectUrl; // Clean up session
+      }
       return res.redirect(`${redirectUrl}${redirectUrl.includes('?') ? '&' : '?'}error=unauthorized`);
     }
 
     // Store tokens and user email in session
-    req.session.tokens = {
-      access_token: tokens.access_token ?? undefined,
-      refresh_token: tokens.refresh_token ?? undefined,
-      expiry_date: tokens.expiry_date ?? undefined,
-    };
-    req.session.userEmail = userInfo.email;
+    if (req.session) {
+      req.session.tokens = {
+        access_token: tokens.access_token ?? undefined,
+        refresh_token: tokens.refresh_token ?? undefined,
+        expiry_date: tokens.expiry_date ?? undefined,
+      };
+      req.session.userEmail = userInfo.email;
+    }
 
     // Get redirect URL from session or default to root
-    const redirectUrl = req.session.redirectUrl || '/';
-    delete req.session.redirectUrl; // Clean up session
+    const redirectUrl = req.session?.redirectUrl || '/';
+    if (req.session) {
+      delete req.session.redirectUrl; // Clean up session
+    }
 
     // Redirect to the original URL or frontend
     res.redirect(redirectUrl);
@@ -86,7 +94,7 @@ router.get('/callback', async (req, res) => {
 
 // GET /api/auth/me - Get current user info
 router.get('/me', async (req, res) => {
-  const tokens = req.session.tokens;
+  const tokens = req.session?.tokens;
 
   if (!tokens?.access_token) {
     return res.status(401).json({ error: 'Not authenticated' });
@@ -109,19 +117,14 @@ router.get('/me', async (req, res) => {
 
 // POST /api/auth/logout - Clear session
 router.post('/logout', (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      console.error('Error destroying session:', err);
-      return res.status(500).json({ error: 'Logout failed' });
-    }
-    res.clearCookie('connect.sid');
-    res.json({ success: true });
-  });
+  // Clear the session (cookie-session stores everything in the cookie)
+  (req as any).session = null;
+  res.json({ success: true });
 });
 
 // GET /api/auth/status - Check authentication status
 router.get('/status', (req, res) => {
-  const isAuthenticated = !!req.session.tokens?.access_token;
+  const isAuthenticated = !!req.session?.tokens?.access_token;
   res.json({ isAuthenticated });
 });
 

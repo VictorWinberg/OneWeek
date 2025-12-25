@@ -16,6 +16,9 @@ credentials.json
 # Config
 config.json
 
+# Sessions
+backend/sessions/
+
 # Logs
 logs
 *.log

@@ -127,9 +127,7 @@ export function useMoveEvent() {
         queryClient.setQueryData<Block[]>(
           calendarKeys.week(weekKey),
           previousData.map((block) =>
-            block.id === blockId && block.calendarId === calendarId
-              ? { ...block, calendarId: targetCalendarId }
-              : block
+            block.id === blockId && block.calendarId === calendarId ? { ...block, calendarId: targetCalendarId } : block
           )
         );
       }
@@ -143,7 +141,7 @@ export function useMoveEvent() {
       }
     },
     onSuccess: (result, variables, context) => {
-      // Update with new event ID from server
+      // Update cache with complete block data including new event ID and calendar ID
       if (context) {
         const data = queryClient.getQueryData<Block[]>(calendarKeys.week(context.weekKey));
         if (data) {
@@ -151,7 +149,7 @@ export function useMoveEvent() {
             calendarKeys.week(context.weekKey),
             data.map((block) =>
               block.id === variables.blockId && block.calendarId === variables.targetCalendarId
-                ? { ...block, id: result.newEventId }
+                ? { ...block, id: result.newEventId, calendarId: variables.targetCalendarId }
                 : block
             )
           );
@@ -162,26 +160,30 @@ export function useMoveEvent() {
 }
 
 /**
- * Hook to update event time
+ * Hook to update event details (title, description, time)
  */
-export function useUpdateEventTime() {
+export function useUpdateEvent() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({
       blockId,
       calendarId,
+      title,
+      description,
       startTime,
       endTime,
     }: {
       blockId: string;
       calendarId: string;
+      title?: string;
+      description?: string;
       startTime: Date;
       endTime: Date;
     }) => {
-      return eventsApi.updateEvent(calendarId, blockId, { startTime, endTime });
+      return eventsApi.updateEvent(calendarId, blockId, { title, description, startTime, endTime });
     },
-    onMutate: async ({ blockId, calendarId, startTime, endTime }) => {
+    onMutate: async ({ blockId, calendarId, title, description, startTime, endTime }) => {
       const weekKey = getWeekKey(startTime);
       await queryClient.cancelQueries({ queryKey: calendarKeys.week(weekKey) });
 
@@ -193,7 +195,13 @@ export function useUpdateEventTime() {
           calendarKeys.week(weekKey),
           previousData.map((block) =>
             block.id === blockId && block.calendarId === calendarId
-              ? { ...block, startTime, endTime }
+              ? {
+                  ...block,
+                  ...(title !== undefined && { title }),
+                  ...(description !== undefined && { description }),
+                  startTime,
+                  endTime,
+                }
               : block
           )
         );
@@ -223,14 +231,7 @@ export function useDeleteEvent() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      blockId,
-      calendarId,
-    }: {
-      blockId: string;
-      calendarId: string;
-      startTime: Date;
-    }) => {
+    mutationFn: async ({ blockId, calendarId }: { blockId: string; calendarId: string; startTime: Date }) => {
       return eventsApi.deleteEvent(calendarId, blockId);
     },
     onMutate: async ({ blockId, calendarId, startTime }) => {
@@ -263,4 +264,3 @@ export function useDeleteEvent() {
     },
   });
 }
-

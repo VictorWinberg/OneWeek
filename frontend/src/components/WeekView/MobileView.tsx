@@ -3,7 +3,7 @@ import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor } from '@
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
-import { useWeekEvents, usePrefetchAdjacentWeeks, useUpdateEventTime, useMoveEvent } from '@/hooks/useCalendarQueries';
+import { useWeekEvents, usePrefetchAdjacentWeeks, useUpdateEvent, useMoveEvent } from '@/hooks/useCalendarQueries';
 import { getWeekDays, formatWeekHeader, getWeekNumber } from '@/utils/dateUtils';
 import { EventCard } from './EventCard';
 import { MobileListView } from './MobileListView';
@@ -73,7 +73,7 @@ export function MobileView({
   // Fetch events using React Query
   const { data: blocks = [], isLoading, error } = useWeekEvents(selectedDate);
   const { prefetch } = usePrefetchAdjacentWeeks(selectedDate);
-  const updateEventTime = useUpdateEventTime();
+  const updateEventTime = useUpdateEvent();
   const moveEvent = useMoveEvent();
 
   const weekDays = getWeekDays(selectedDate);

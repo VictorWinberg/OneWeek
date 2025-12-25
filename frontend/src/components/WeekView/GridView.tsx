@@ -3,7 +3,7 @@ import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor, useDropp
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
-import { useWeekEvents, usePrefetchAdjacentWeeks, useUpdateEventTime } from '@/hooks/useCalendarQueries';
+import { useWeekEvents, usePrefetchAdjacentWeeks, useUpdateEvent } from '@/hooks/useCalendarQueries';
 import { getWeekDays, formatWeekHeader, getWeekNumber, formatDayShort, isToday } from '@/utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
 import { EventCard } from './EventCard';
@@ -118,7 +118,7 @@ export function GridView({
   // Fetch events using React Query
   const { data: blocks = [], isLoading, error } = useWeekEvents(selectedDate);
   const { prefetch } = usePrefetchAdjacentWeeks(selectedDate);
-  const updateEventTime = useUpdateEventTime();
+  const updateEventTime = useUpdateEvent();
 
   // Configure drag sensors
   const sensors = useSensors(

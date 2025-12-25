@@ -55,7 +55,7 @@ export function EventCard({ block, onClick, compact = false, fillHeight = false,
         group relative w-full text-left rounded-lg transition-all duration-200
         flex flex-col items-start justify-start select-none
         ${fillHeight ? 'h-full' : ''}
-        ${compact && isAllDay ? 'p-1 py-0.5' : compact ? 'p-1.5' : 'p-3'}
+        ${compact && isAllDay ? 'p-0.5 py-0.5' : compact ? 'p-1.5' : 'p-3'}
         ${isPast ? 'opacity-60' : ''}
         ${isCurrent ? 'ring-2 ring-white/30 shadow-lg' : ''}
         ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}
@@ -66,9 +66,9 @@ export function EventCard({ block, onClick, compact = false, fillHeight = false,
       {/* Avatar */}
       <div
         className={`
-          absolute -top-1.5 -right-1.5 rounded-full flex items-center justify-center
+          absolute -top-1 -right-1 rounded-full flex items-center justify-center
           font-bold shadow-md
-          ${compact && isAllDay ? 'w-3.5 h-3.5 text-[7px]' : compact ? 'w-4 h-4 text-[8px]' : 'w-6 h-6 text-xs'}
+          ${compact && isAllDay ? 'w-3 h-3 text-[6px]' : compact ? 'w-4 h-4 text-[8px]' : 'w-6 h-6 text-xs'}
         `}
         style={{
           backgroundColor: person.color,
@@ -87,7 +87,7 @@ export function EventCard({ block, onClick, compact = false, fillHeight = false,
             font-medium text-[var(--color-text-primary)]
             ${
               compact && isAllDay
-                ? 'text-[9px] leading-tight whitespace-nowrap overflow-hidden text-ellipsis'
+                ? 'text-[8px] leading-tight whitespace-nowrap overflow-hidden text-ellipsis'
                 : compact
                   ? 'text-[11px] leading-tight break-words'
                   : 'text-sm break-words'

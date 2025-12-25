@@ -77,8 +77,8 @@ export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: 
         </div>
         {/* All-day events spacer */}
         {hasAllDayEvents && (
-          <div className="sticky top-[40px] z-30 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)] h-[20px] flex items-center justify-center px-0.5">
-            <span className="text-[6px] text-[var(--color-text-secondary)] text-center">Hela</span>
+          <div className="sticky top-[40px] z-30 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)] min-h-[15px] flex items-center justify-center px-0.5">
+            <span className="text-[6px] text-[var(--color-text-secondary)] text-center leading-none">Hela</span>
           </div>
         )}
         {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
@@ -139,7 +139,7 @@ export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: 
 
             {/* All-day events row */}
             {allDayBlocks.length > 0 && (
-              <div className="sticky top-[40px] z-10 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)] p-0.5 h-[20px] flex flex-col gap-0.5 overflow-hidden">
+              <div className="sticky top-[40px] z-10 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)] p-0.5 flex flex-col gap-0.5">
                 {allDayBlocks.map((block) => (
                   <EventCard
                     key={`${block.calendarId}-${block.id}`}

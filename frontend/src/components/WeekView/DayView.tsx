@@ -29,7 +29,7 @@ function DroppableDayEvents({ date, blocks, onBlockClick, onCreateEventForDate }
     <div
       ref={setNodeRef}
       className={`
-        flex-1 min-w-[150px] p-2 space-y-2 overflow-y-auto cursor-pointer border-r border-[var(--color-bg-tertiary)] last:border-r-0
+        flex-1 min-w-[80px] p-2 space-y-2 overflow-y-auto cursor-pointer border-r border-[var(--color-bg-tertiary)] last:border-r-0
         ${today ? 'bg-[var(--color-bg-tertiary)]/30' : ''}
         ${isOver ? 'ring-2 ring-[var(--color-accent)] ring-inset' : 'hover:bg-[var(--color-bg-tertiary)]/20'}
         transition-colors
@@ -228,7 +228,7 @@ export function DayView({
                     <div
                       key={`header-${date.toISOString()}`}
                       className={`
-                        flex-1 p-3 text-center border-r border-[var(--color-bg-tertiary)] last:border-r-0 min-w-[150px] relative
+                        flex-1 p-3 text-center border-r border-[var(--color-bg-tertiary)] last:border-r-0 min-w-[80px] relative
                         ${today ? 'before:absolute before:inset-0 before:bg-[var(--color-accent)]/10' : ''}
                       `}
                     >
@@ -258,7 +258,7 @@ export function DayView({
                     <div
                       key={`allday-${date.toISOString()}`}
                       className={`
-                        flex-1 border-r border-[var(--color-bg-tertiary)] last:border-r-0 p-2 space-y-1 min-w-[150px] min-h-[60px]
+                        flex-1 border-r border-[var(--color-bg-tertiary)] last:border-r-0 p-2 space-y-1 min-w-[80px] min-h-[60px]
                         ${today ? 'bg-[var(--color-accent)]/5' : ''}
                       `}
                     >

@@ -259,7 +259,7 @@ export function HourView({
                   return (
                     <div
                       key={`header-${date.toISOString()}`}
-                      className={`flex-1 border-r border-[var(--color-bg-tertiary)] last:border-r-0 border-b border-[var(--color-bg-tertiary)] flex flex-col items-center justify-center h-[60px] min-w-[150px] relative ${
+                      className={`flex-1 border-r border-[var(--color-bg-tertiary)] last:border-r-0 border-b border-[var(--color-bg-tertiary)] flex flex-col items-center justify-center h-[60px] min-w-[80px] relative ${
                         today ? 'before:absolute before:inset-0 before:bg-[var(--color-accent)]/10' : ''
                       }`}
                     >
@@ -293,7 +293,7 @@ export function HourView({
                   return (
                     <div
                       key={`allday-${date.toISOString()}`}
-                      className={`flex-1 border-r border-[var(--color-bg-tertiary)] last:border-r-0 border-b border-[var(--color-bg-tertiary)] p-1 min-h-[40px] flex flex-col gap-1 min-w-[150px] ${
+                      className={`flex-1 border-r border-[var(--color-bg-tertiary)] last:border-r-0 border-b border-[var(--color-bg-tertiary)] p-1 min-h-[40px] flex flex-col gap-1 min-w-[80px] ${
                         today ? 'bg-[var(--color-accent)]/5' : ''
                       }`}
                     >
@@ -339,7 +339,7 @@ export function HourView({
                   return (
                     <div
                       key={date.toISOString()}
-                      className={`flex-1 border-r border-[var(--color-bg-tertiary)] last:border-r-0 min-w-[150px] relative ${
+                      className={`flex-1 border-r border-[var(--color-bg-tertiary)] last:border-r-0 min-w-[80px] relative ${
                         today ? 'bg-[var(--color-accent)]/5' : ''
                       }`}
                     >
@@ -359,7 +359,9 @@ export function HourView({
                               hour={hour}
                               minute={minute}
                               activeBlockDuration={
-                                activeBlock ? activeBlock.endTime.getTime() - activeBlock.startTime.getTime() : undefined
+                                activeBlock
+                                  ? activeBlock.endTime.getTime() - activeBlock.startTime.getTime()
+                                  : undefined
                               }
                             >
                               <div

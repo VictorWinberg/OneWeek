@@ -376,6 +376,15 @@ function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEventForDat
             onPrevWeek={handlePrevWeek}
             onGoToToday={handleGoToToday}
           />
+        ) : viewMode === 'grid' ? (
+          <GridView
+            onBlockClick={onBlockClick}
+            onCreateEvent={onCreateEvent}
+            onCreateEventForDate={onCreateEventForDate}
+            onNextWeek={handleNextWeek}
+            onPrevWeek={handlePrevWeek}
+            onGoToToday={handleGoToToday}
+          />
         ) : viewMode === 'hour' ? (
           <HourView
             onBlockClick={onBlockClick}

@@ -100,6 +100,17 @@ export const eventsApi = {
     return blocks;
   },
 
+  getEvent: async (calendarId: string, eventId: string): Promise<Block> => {
+    const rawBlock = await fetchJson<Block>(`${API_BASE}/events/${calendarId}/${eventId}`);
+
+    // Convert date strings to Date objects
+    return {
+      ...rawBlock,
+      startTime: new Date(rawBlock.startTime),
+      endTime: new Date(rawBlock.endTime),
+    };
+  },
+
   createEvent: async (data: {
     calendarId: string;
     title: string;
@@ -141,6 +152,14 @@ export const eventsApi = {
       startTime?: Date;
       endTime?: Date;
       allDay?: boolean;
+      recurrenceRule?: {
+        frequency: string;
+        interval?: number;
+        count?: number;
+        until?: Date;
+        byDay?: string[];
+      } | null;
+      updateMode?: 'this' | 'all' | 'future';
     }
   ): Promise<{ success: boolean }> => {
     const isAllDay = data.allDay ?? false;
@@ -150,6 +169,15 @@ export const eventsApi = {
         ...data,
         startTime: data.startTime ? formatDateForAPI(data.startTime, isAllDay) : undefined,
         endTime: data.endTime ? formatDateForAPI(data.endTime, isAllDay) : undefined,
+        recurrenceRule:
+          data.recurrenceRule === null
+            ? null
+            : data.recurrenceRule
+            ? {
+                ...data.recurrenceRule,
+                until: data.recurrenceRule.until?.toISOString(),
+              }
+            : undefined,
       }),
     });
   },
@@ -165,8 +193,19 @@ export const eventsApi = {
     });
   },
 
-  deleteEvent: async (calendarId: string, eventId: string): Promise<{ success: boolean }> => {
-    return fetchJson(`${API_BASE}/events/${calendarId}/${eventId}`, {
+  deleteEvent: async (
+    calendarId: string,
+    eventId: string,
+    updateMode?: 'this' | 'all' | 'future'
+  ): Promise<{ success: boolean }> => {
+    const params = new URLSearchParams();
+    if (updateMode) {
+      params.append('updateMode', updateMode);
+    }
+    const queryString = params.toString();
+    const url = `${API_BASE}/events/${calendarId}/${eventId}${queryString ? `?${queryString}` : ''}`;
+
+    return fetchJson(url, {
       method: 'DELETE',
     });
   },

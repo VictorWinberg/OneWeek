@@ -18,6 +18,7 @@ type UrlViewMode = 'day' | 'grid' | 'user' | 'hour';
 interface MobileViewProps {
   onBlockClick: (block: Block) => void;
   onCreateEvent: () => void;
+  onCreateEventForDate?: (date: Date, calendarId?: string, hour?: number, minute?: number) => void;
   viewMode?: UrlViewMode;
   onNextWeek?: () => void;
   onPrevWeek?: () => void;
@@ -62,6 +63,7 @@ function mobileToUrlViewMode(mobileMode: MobileViewMode): UrlViewMode {
 export function MobileView({
   onBlockClick,
   onCreateEvent,
+  onCreateEventForDate,
   viewMode: urlViewMode,
   onNextWeek,
   onPrevWeek,

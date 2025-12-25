@@ -167,7 +167,7 @@ export function useMoveEvent() {
 }
 
 /**
- * Hook to update event details (title, description, time)
+ * Hook to update event details (title, description, time, recurrence)
  */
 export function useUpdateEvent() {
   const queryClient = useQueryClient();
@@ -181,6 +181,8 @@ export function useUpdateEvent() {
       startTime,
       endTime,
       allDay,
+      recurrenceRule,
+      updateMode,
     }: {
       blockId: string;
       calendarId: string;
@@ -189,8 +191,24 @@ export function useUpdateEvent() {
       startTime: Date;
       endTime: Date;
       allDay?: boolean;
+      recurrenceRule?: {
+        frequency: string;
+        interval?: number;
+        count?: number;
+        until?: Date;
+        byDay?: string[];
+      } | null;
+      updateMode?: 'this' | 'all' | 'future';
     }) => {
-      return eventsApi.updateEvent(calendarId, blockId, { title, description, startTime, endTime, allDay });
+      return eventsApi.updateEvent(calendarId, blockId, {
+        title,
+        description,
+        startTime,
+        endTime,
+        allDay,
+        recurrenceRule,
+        updateMode,
+      });
     },
     onMutate: async ({ blockId, calendarId, title, description, startTime, endTime }) => {
       const weekKey = getWeekKey(startTime);
@@ -224,9 +242,12 @@ export function useUpdateEvent() {
         queryClient.setQueryData(calendarKeys.week(context.weekKey), context.previousData);
       }
     },
-    onSettled: (_data, _error, _variables, context) => {
-      // Refetch to ensure consistency
-      if (context) {
+    onSettled: (_data, _error, variables, context) => {
+      // If recurrence was updated, invalidate all weeks since it affects multiple events
+      if (variables.recurrenceRule !== undefined) {
+        queryClient.invalidateQueries({ queryKey: calendarKeys.events() });
+      } else if (context) {
+        // Otherwise just refetch the specific week
         queryClient.invalidateQueries({ queryKey: calendarKeys.week(context.weekKey) });
       }
     },
@@ -240,8 +261,17 @@ export function useDeleteEvent() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ blockId, calendarId }: { blockId: string; calendarId: string; startTime: Date }) => {
-      return eventsApi.deleteEvent(calendarId, blockId);
+    mutationFn: async ({
+      blockId,
+      calendarId,
+      updateMode,
+    }: {
+      blockId: string;
+      calendarId: string;
+      startTime: Date;
+      updateMode?: 'this' | 'all' | 'future';
+    }) => {
+      return eventsApi.deleteEvent(calendarId, blockId, updateMode);
     },
     onMutate: async ({ blockId, calendarId, startTime }) => {
       const weekKey = getWeekKey(startTime);
@@ -265,9 +295,12 @@ export function useDeleteEvent() {
         queryClient.setQueryData(calendarKeys.week(context.weekKey), context.previousData);
       }
     },
-    onSettled: (_data, _error, _variables, context) => {
-      // Refetch to ensure consistency
-      if (context) {
+    onSettled: (_data, _error, variables, context) => {
+      // If deleting 'all' or 'future', invalidate all weeks since it affects multiple events
+      if (variables.updateMode === 'all' || variables.updateMode === 'future') {
+        queryClient.invalidateQueries({ queryKey: calendarKeys.events() });
+      } else if (context) {
+        // Otherwise just refetch the specific week
         queryClient.invalidateQueries({ queryKey: calendarKeys.week(context.weekKey) });
       }
     },

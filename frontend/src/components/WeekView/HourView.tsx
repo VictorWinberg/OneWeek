@@ -318,6 +318,9 @@ export function HourView({
                             compact={true}
                             fillHeight={false}
                             draggable={false}
+                            isAllDay={true}
+                            hideTime={true}
+                            truncate={true}
                           />
                         ))}
                       </div>

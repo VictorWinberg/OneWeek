@@ -147,6 +147,7 @@ export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: 
                     fillHeight={false}
                     draggable={false}
                     isAllDay={true}
+                    hideTime={true}
                     truncate={true}
                   />
                 ))}

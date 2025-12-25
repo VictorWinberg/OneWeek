@@ -65,6 +65,9 @@ export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: 
     return { top, height };
   };
 
+  // Check if any day has all-day events
+  const hasAllDayEvents = blocks.some((block) => block.allDay);
+
   return (
     <div className="flex min-w-max">
       {/* Time column */}
@@ -72,6 +75,12 @@ export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: 
         <div className="sticky top-0 z-30 bg-[var(--color-bg-secondary)] h-[50px] border-b border-[var(--color-bg-tertiary)] flex items-center justify-center px-2">
           <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Tid</span>
         </div>
+        {/* All-day events spacer */}
+        {hasAllDayEvents && (
+          <div className="sticky top-[50px] z-30 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)] min-h-[35px] flex items-center justify-center px-1">
+            <span className="text-[8px] text-[var(--color-text-secondary)] text-center">Hela</span>
+          </div>
+        )}
         {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
           <div
             key={hour}
@@ -88,6 +97,7 @@ export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: 
       {weekDays.map((date) => {
         const today = isToday(date);
         const dayBlocks = getBlocksForDay(blocks, date).filter((block) => !block.allDay);
+        const allDayBlocks = getBlocksForDay(blocks, date).filter((block) => block.allDay);
 
         return (
           <div
@@ -117,6 +127,22 @@ export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: 
                 {date.getDate()}
               </div>
             </div>
+
+            {/* All-day events row */}
+            {allDayBlocks.length > 0 && (
+              <div className="sticky top-[50px] z-10 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)] p-0.5 min-h-[35px] flex flex-col gap-0.5">
+                {allDayBlocks.map((block) => (
+                  <EventCard
+                    key={`${block.calendarId}-${block.id}`}
+                    block={block}
+                    onClick={() => onBlockClick(block)}
+                    compact={true}
+                    fillHeight={false}
+                    draggable={false}
+                  />
+                ))}
+              </div>
+            )}
 
             {/* Hour grid and events */}
             <div className="relative">

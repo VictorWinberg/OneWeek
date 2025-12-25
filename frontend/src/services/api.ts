@@ -1,4 +1,4 @@
-import type { Block, CalendarSource } from '@/types';
+import type { Block, Calendar } from '@/types';
 
 const API_BASE = '/api';
 
@@ -57,15 +57,15 @@ export const calendarApi = {
 
 // Config API
 export const configApi = {
-  getCalendars: async (): Promise<CalendarSource[]> => {
-    const response = await fetchJson<{ calendars: CalendarSource[] }>(`${API_BASE}/config/calendars`);
+  getCalendars: async (): Promise<Calendar[]> => {
+    const response = await fetchJson<{ calendars: Calendar[] }>(`${API_BASE}/config/calendars`);
     return response.calendars;
   },
 };
 
 // Events API
 export const eventsApi = {
-  getEvents: async (startDate: Date, endDate: Date, calendars: CalendarSource[]): Promise<Block[]> => {
+  getEvents: async (startDate: Date, endDate: Date, calendars: Calendar[]): Promise<Block[]> => {
     const params = new URLSearchParams({
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),

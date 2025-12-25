@@ -12,9 +12,19 @@ interface DayViewProps {
   onBlockClick: (block: Block) => void;
   onCreateEvent: () => void;
   onCreateEventForDate?: (date: Date) => void;
+  onNextWeek?: () => void;
+  onPrevWeek?: () => void;
+  onGoToToday?: () => void;
 }
 
-export function DayView({ onBlockClick, onCreateEvent, onCreateEventForDate }: DayViewProps) {
+export function DayView({
+  onBlockClick,
+  onCreateEvent,
+  onCreateEventForDate,
+  onNextWeek,
+  onPrevWeek,
+  onGoToToday,
+}: DayViewProps) {
   const {
     blocks,
     selectedDate,
@@ -27,6 +37,10 @@ export function DayView({ onBlockClick, onCreateEvent, onCreateEventForDate }: D
     goToToday,
     updateBlockTime,
   } = useCalendarStore();
+
+  const handleNextWeek = onNextWeek || nextWeek;
+  const handlePrevWeek = onPrevWeek || prevWeek;
+  const handleGoToToday = onGoToToday || goToToday;
   const { isConfigured } = useConfigStore();
   const [activeBlock, setActiveBlock] = useState<Block | null>(null);
 
@@ -120,7 +134,7 @@ export function DayView({ onBlockClick, onCreateEvent, onCreateEventForDate }: D
             </button>
 
             <button
-              onClick={prevWeek}
+              onClick={handlePrevWeek}
               className="p-2 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
               aria-label="Föregående vecka"
             >
@@ -130,14 +144,14 @@ export function DayView({ onBlockClick, onCreateEvent, onCreateEventForDate }: D
             </button>
 
             <button
-              onClick={goToToday}
+              onClick={handleGoToToday}
               className="px-3 py-2 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium hover:bg-[var(--color-accent-hover)] transition-colors"
             >
               Idag
             </button>
 
             <button
-              onClick={nextWeek}
+              onClick={handleNextWeek}
               className="p-2 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
               aria-label="Nästa vecka"
             >

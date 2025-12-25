@@ -124,7 +124,7 @@ select:focus-visible {
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
-  
+
   /* Allow text selection in input fields and textareas */
   input, textarea, [contenteditable] {
     -webkit-user-select: text;

@@ -69,16 +69,16 @@ export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: 
   const hasAllDayEvents = blocks.some((block) => block.allDay);
 
   return (
-    <div className="flex min-w-max select-none">
+    <div className="flex w-full select-none">
       {/* Time column */}
-      <div className="sticky left-0 z-20 bg-[var(--color-bg-secondary)] border-r border-[var(--color-bg-tertiary)]">
-        <div className="sticky top-0 z-30 bg-[var(--color-bg-secondary)] h-[40px] border-b border-[var(--color-bg-tertiary)] flex items-center justify-center px-1">
-          <span className="text-[9px] font-semibold text-[var(--color-text-secondary)]">Tid</span>
+      <div className="sticky left-0 z-20 bg-[var(--color-bg-secondary)] border-r border-[var(--color-bg-tertiary)] w-[35px] flex-shrink-0">
+        <div className="sticky top-0 z-30 bg-[var(--color-bg-secondary)] h-[40px] border-b border-[var(--color-bg-tertiary)] flex items-center justify-center px-0.5">
+          <span className="text-[8px] font-semibold text-[var(--color-text-secondary)]">Tid</span>
         </div>
         {/* All-day events spacer */}
         {hasAllDayEvents && (
           <div className="sticky top-[40px] z-30 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)] h-[20px] flex items-center justify-center px-0.5">
-            <span className="text-[7px] text-[var(--color-text-secondary)] text-center">Hela</span>
+            <span className="text-[6px] text-[var(--color-text-secondary)] text-center">Hela</span>
           </div>
         )}
         {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
@@ -86,8 +86,8 @@ export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: 
             key={hour}
             className="h-[50px] border-b border-[var(--color-bg-tertiary)] flex items-start justify-end pr-0.5 pt-0.5"
           >
-            <span className="text-[8px] text-[var(--color-text-secondary)]">
-              {hour.toString().padStart(2, '0')}:00
+            <span className="text-[7px] text-[var(--color-text-secondary)]">
+              {hour.toString().padStart(2, '0')}
             </span>
           </div>
         ))}
@@ -102,9 +102,10 @@ export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: 
         return (
           <div
             key={date.toISOString()}
-            className={`flex-1 min-w-[48px] border-r border-[var(--color-bg-tertiary)] last:border-r-0 ${
+            className={`flex-1 border-r border-[var(--color-bg-tertiary)] last:border-r-0 ${
               today ? 'bg-[var(--color-accent)]/5' : ''
             }`}
+            style={{ minWidth: '42px' }}
           >
             {/* Day header */}
             <div
@@ -113,7 +114,7 @@ export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: 
               }`}
             >
               <div
-                className={`text-[8px] uppercase tracking-wide relative ${
+                className={`text-[7px] uppercase tracking-wide relative ${
                   today ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-secondary)]'
                 }`}
                 style={{
@@ -124,7 +125,7 @@ export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: 
                 {formatDayShort(date).substring(0, 2)}
               </div>
               <div
-                className={`text-xs font-bold relative ${
+                className={`text-[11px] font-bold relative ${
                   today ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'
                 }`}
                 style={{

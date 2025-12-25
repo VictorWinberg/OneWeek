@@ -93,7 +93,7 @@ export function EventCard({ block, onClick, compact = false, fillHeight = false,
           {block.title}
         </h4>
 
-        <p 
+        <p
           className={`mt-0.5 text-[var(--color-text-secondary)] ${compact ? 'text-[8px]' : 'text-xs'}`}
           style={{
             WebkitTouchCallout: 'none',

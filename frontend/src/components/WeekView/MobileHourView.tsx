@@ -200,6 +200,7 @@ export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: 
                         compact={true}
                         fillHeight={true}
                         draggable={true}
+                        hideTime={true}
                       />
                     </div>
                   );

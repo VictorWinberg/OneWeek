@@ -12,9 +12,10 @@ interface EventCardProps {
   fillHeight?: boolean;
   draggable?: boolean;
   isAllDay?: boolean;
+  hideTime?: boolean;
 }
 
-export function EventCard({ block, onClick, compact = false, fillHeight = false, draggable = false, isAllDay = false }: EventCardProps) {
+export function EventCard({ block, onClick, compact = false, fillHeight = false, draggable = false, isAllDay = false, hideTime = false }: EventCardProps) {
   const { getPersonById } = useConfigStore();
   const person = getPersonById(block.calendarId);
   const isPast = isBlockPast(block);
@@ -100,7 +101,7 @@ export function EventCard({ block, onClick, compact = false, fillHeight = false,
           {block.title}
         </h4>
 
-        {!isAllDay && (
+        {!isAllDay && !hideTime && (
           <p
             className={`mt-0.5 text-[var(--color-text-secondary)] ${compact ? 'text-[9px] leading-tight' : 'text-xs'}`}
             style={{

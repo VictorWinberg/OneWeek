@@ -113,3 +113,23 @@ select:focus-visible {
   background: var(--color-accent);
   color: var(--color-bg-primary);
 }
+
+/* Prevent text selection on mobile */
+@media (max-width: 768px) {
+  * {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Allow text selection in input fields and textareas */
+  input, textarea, [contenteditable] {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+  }
+}

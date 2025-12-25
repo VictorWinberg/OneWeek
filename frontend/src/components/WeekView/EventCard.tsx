@@ -51,9 +51,9 @@ export function EventCard({ block, onClick, compact = false, fillHeight = false,
       {...(draggable ? { ...listeners, ...attributes } : {})}
       className={`
         group relative w-full text-left rounded-lg transition-all duration-200
-        flex flex-col items-start justify-start
+        flex flex-col items-start justify-start select-none
         ${fillHeight ? 'h-full' : ''}
-        ${compact ? 'p-2' : 'p-3'}
+        ${compact ? 'p-1.5' : 'p-3'}
         ${isPast ? 'opacity-60' : ''}
         ${isCurrent ? 'ring-2 ring-white/30 shadow-lg' : ''}
         ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}
@@ -64,30 +64,42 @@ export function EventCard({ block, onClick, compact = false, fillHeight = false,
       {/* Avatar */}
       <div
         className={`
-          absolute -top-2 -right-2 rounded-full flex items-center justify-center
-          font-bold text-xs shadow-md
-          ${compact ? 'w-5 h-5' : 'w-6 h-6'}
+          absolute -top-1.5 -right-1.5 rounded-full flex items-center justify-center
+          font-bold shadow-md
+          ${compact ? 'w-4 h-4 text-[8px]' : 'w-6 h-6 text-xs'}
         `}
         style={{
           backgroundColor: person.color,
           color: 'var(--color-bg-primary)',
+          WebkitTouchCallout: 'none',
+          WebkitUserSelect: 'none',
         }}
       >
         {initial.charAt(0)}
       </div>
 
       {/* Content */}
-      <div className="pr-4 overflow-hidden w-full">
+      <div className="pr-3 overflow-hidden w-full">
         <h4
           className={`
-            font-medium text-[var(--color-text-primary)] wrap-anywhere
-            ${compact ? 'text-xs' : 'text-sm'}
+            font-medium text-[var(--color-text-primary)]
+            ${compact ? 'text-[10px] leading-tight whitespace-nowrap overflow-hidden text-ellipsis' : 'text-sm wrap-anywhere'}
           `}
+          style={{
+            WebkitTouchCallout: 'none',
+            WebkitUserSelect: 'none',
+          }}
         >
           {block.title}
         </h4>
 
-        <p className={`text-[var(--color-text-secondary)] mt-1 ${compact ? 'text-[10px]' : 'text-xs'}`}>
+        <p 
+          className={`mt-0.5 text-[var(--color-text-secondary)] ${compact ? 'text-[8px]' : 'text-xs'}`}
+          style={{
+            WebkitTouchCallout: 'none',
+            WebkitUserSelect: 'none',
+          }}
+        >
           {formatBlockTime(block)}
         </p>
       </div>

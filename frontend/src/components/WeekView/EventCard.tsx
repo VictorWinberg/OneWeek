@@ -14,6 +14,7 @@ interface EventCardProps {
   isAllDay?: boolean;
   hideTime?: boolean;
   extraCompact?: boolean;
+  truncate?: boolean;
 }
 
 export function EventCard({
@@ -25,6 +26,7 @@ export function EventCard({
   isAllDay = false,
   hideTime = false,
   extraCompact = false,
+  truncate = false,
 }: EventCardProps) {
   const { getPersonById } = useConfigStore();
   const person = getPersonById(block.calendarId);
@@ -96,7 +98,9 @@ export function EventCard({
           className={`
             font-medium text-[var(--color-text-primary)]
             ${
-              compact && isAllDay
+              truncate
+                ? 'text-[8px] leading-tight whitespace-nowrap overflow-hidden text-ellipsis'
+                : compact && isAllDay
                 ? 'text-[8px] leading-tight break-words'
                 : compact
                 ? 'text-[11px] leading-tight break-words'

@@ -38,13 +38,13 @@ function DroppableCell({ id, date, calendarId, children, onClick, isToday }: Dro
   );
 }
 
-interface CalendarViewProps {
+interface UserViewProps {
   onBlockClick: (block: Block) => void;
   onCreateEvent: () => void;
   onCreateEventForDate?: (date: Date, calendarId?: string) => void;
 }
 
-export function CalendarView({ onBlockClick, onCreateEvent, onCreateEventForDate }: CalendarViewProps) {
+export function UserView({ onBlockClick, onCreateEvent, onCreateEventForDate }: UserViewProps) {
   const { blocks, selectedDate, isLoading, error, fetchBlocks, prefetchAdjacentWeeks, nextWeek, prevWeek, goToToday, updateBlockTime, moveBlock } = useCalendarStore();
   const { config, isConfigured } = useConfigStore();
   const [activeBlock, setActiveBlock] = useState<Block | null>(null);

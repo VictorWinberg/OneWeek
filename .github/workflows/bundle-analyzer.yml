@@ -36,4 +36,4 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           pattern: './backend/dist/public/**/*.{js,css}'
-          strip-hash: "\\b-\\w{8}"
+          strip-hash: "-[^.]+(?=\\.)"

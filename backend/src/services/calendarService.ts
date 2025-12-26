@@ -2,6 +2,8 @@ import { google, calendar_v3 } from 'googleapis';
 import type { Block, BlockMetadata, GoogleCalendarEvent } from '../types/index.js';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import { calculateUntilDate, getDateOnly } from '../utils/date.js';
+import { updateRecurrenceWithUntil } from '../utils/rrule.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -115,17 +117,17 @@ export async function deleteEvent(
     const currentEvent = await getEvent(calendarId, eventId);
 
     if (!updateMode || updateMode === 'this') {
-      if (currentEvent?.recurringEventId) {
-        await calendar.events.delete({ calendarId, eventId });
-        return true;
-      }
       await calendar.events.delete({ calendarId, eventId });
       return true;
-    } else if (updateMode === 'all') {
+    }
+
+    if (updateMode === 'all') {
       const masterEventId = currentEvent?.recurringEventId || eventId;
       await calendar.events.delete({ calendarId, eventId: masterEventId });
       return true;
-    } else if (updateMode === 'future') {
+    }
+
+    if (updateMode === 'future') {
       const masterEventId = currentEvent?.recurringEventId || eventId;
 
       if (!currentEvent?.start?.dateTime && !currentEvent?.start?.date) {
@@ -145,37 +147,9 @@ export async function deleteEvent(
         currentEvent.start.dateTime ||
         currentEvent.start.date!;
 
-      let untilDate: Date;
-
-      if (currentEvent.start.dateTime) {
-        const instanceStartDate = new Date(instanceStartStr);
-        untilDate = new Date(instanceStartDate);
-        untilDate.setDate(untilDate.getDate() - 1);
-        untilDate.setHours(23, 59, 59, 0);
-      } else {
-        const dateOnly = instanceStartStr.split('T')[0];
-        const parts = dateOnly.split('-');
-        const year = parseInt(parts[0]);
-        const month = parseInt(parts[1]) - 1;
-        const day = parseInt(parts[2]);
-
-        untilDate = new Date(Date.UTC(year, month, day - 1, 23, 59, 59, 0));
-      }
-
-      const updatedRecurrence = masterEvent.recurrence.map((rule) => {
-        if (rule.startsWith('RRULE:')) {
-          let rrule = rule.replace(/;UNTIL=[^;]+/g, '').replace(/;COUNT=\d+/g, '');
-
-          const untilStr = untilDate
-            .toISOString()
-            .replace(/[-:]/g, '')
-            .replace(/\.\d{3}/, '');
-          rrule += `;UNTIL=${untilStr}`;
-
-          return rrule;
-        }
-        return rule;
-      });
+      const isAllDay = !currentEvent.start.dateTime;
+      const untilDate = calculateUntilDate(instanceStartStr, isAllDay);
+      const updatedRecurrence = updateRecurrenceWithUntil(masterEvent.recurrence, untilDate);
 
       await calendar.events.patch({
         calendarId,
@@ -284,8 +258,8 @@ export function blockToGoogleEvent(
   const event: GoogleCalendarEvent = { summary: title, description: description || undefined };
 
   if (allDay) {
-    event.start = { date: startTime.split('T')[0] };
-    event.end = { date: endTime.split('T')[0] };
+    event.start = { date: getDateOnly(startTime) };
+    event.end = { date: getDateOnly(endTime) };
   } else {
     event.start = { dateTime: startTime, timeZone: 'Europe/Stockholm' };
     event.end = { dateTime: endTime, timeZone: 'Europe/Stockholm' };

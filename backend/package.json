@@ -9,7 +9,8 @@
     "start": "node dist/server.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "test:tasks": "tsx scripts/test-tasks-api.ts"
   },
   "keywords": [],
   "author": "",

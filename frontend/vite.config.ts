@@ -18,7 +18,8 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    VitePWA({
+    // Only include PWA plugin in production builds
+    ...(process.env.VITE_ENABLE_PWA === 'true' ? [VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['calendar.svg', 'vite.svg'],
       manifest: {
@@ -82,7 +83,7 @@ export default defineConfig({
           },
         ],
       },
-    }),
+    })] : []),
   ],
   server: {
     port: 5173,

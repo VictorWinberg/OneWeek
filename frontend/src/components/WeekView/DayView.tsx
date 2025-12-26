@@ -13,7 +13,7 @@ interface DroppableDayEventsProps {
   date: Date;
   blocks: Block[];
   onBlockClick: (block: Block) => void;
-  onCreateEventForDate?: (date: Date) => void;
+  onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
 }
 
 function DroppableDayEvents({ date, blocks, onBlockClick, onCreateEventForDate }: DroppableDayEventsProps) {
@@ -58,7 +58,7 @@ function DroppableDayEvents({ date, blocks, onBlockClick, onCreateEventForDate }
 interface DayViewProps {
   onBlockClick: (block: Block) => void;
   onCreateEvent: () => void;
-  onCreateEventForDate?: (date: Date) => void;
+  onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
   onNextWeek?: () => void;
   onPrevWeek?: () => void;
   onGoToToday?: () => void;

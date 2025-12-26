@@ -46,7 +46,7 @@ function DroppableCell({ id, date, calendarId, children, onClick, isToday }: Dro
 interface UserViewProps {
   onBlockClick: (block: Block) => void;
   onCreateEvent: () => void;
-  onCreateEventForDate?: (date: Date, calendarId?: string) => void;
+  onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
   onNextWeek?: () => void;
   onPrevWeek?: () => void;
   onGoToToday?: () => void;

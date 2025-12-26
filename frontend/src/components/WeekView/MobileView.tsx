@@ -23,7 +23,7 @@ interface MobileViewProps {
   onPrevWeek?: () => void;
   onGoToToday?: () => void;
   onViewModeChange?: (mode: UrlViewMode) => void;
-  onCreateEventForDate?: (date: Date, calendarId?: string) => void;
+  onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
 }
 
 // Map URL view modes to mobile view modes

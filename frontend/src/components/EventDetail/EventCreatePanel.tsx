@@ -9,9 +9,18 @@ interface EventCreatePanelProps {
   onClose: () => void;
   defaultDate?: Date;
   defaultCalendarId?: string;
+  defaultStartTime?: string; // Format: "HH:MM"
+  defaultEndTime?: string; // Format: "HH:MM"
 }
 
-export function EventCreatePanel({ isOpen, onClose, defaultDate, defaultCalendarId }: EventCreatePanelProps) {
+export function EventCreatePanel({
+  isOpen,
+  onClose,
+  defaultDate,
+  defaultCalendarId,
+  defaultStartTime,
+  defaultEndTime,
+}: EventCreatePanelProps) {
   const { config, getPersonById } = useConfigStore();
   const { user } = useAuthStore();
   const createEvent = useCreateEvent();
@@ -36,6 +45,35 @@ export function EventCreatePanel({ isOpen, onClose, defaultDate, defaultCalendar
   const [allDay, setAllDay] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Helper function to calculate time in minutes from "HH:MM" string
+  const timeToMinutes = (time: string): number => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+
+  // Helper function to convert minutes to "HH:MM" string
+  const minutesToTime = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60) % 24;
+    const mins = minutes % 60;
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+  };
+
+  // Handler for start time change that maintains duration
+  const handleStartTimeChange = (newStartTime: string) => {
+    // Calculate current duration in minutes
+    const oldStartMinutes = timeToMinutes(startTime);
+    const oldEndMinutes = timeToMinutes(endTime);
+    const duration = oldEndMinutes - oldStartMinutes;
+
+    // Update start time
+    setStartTime(newStartTime);
+
+    // Calculate and set new end time to maintain duration
+    const newStartMinutes = timeToMinutes(newStartTime);
+    const newEndMinutes = newStartMinutes + duration;
+    setEndTime(minutesToTime(newEndMinutes));
+  };
+
   // Reset form when opened - intentional setState in effect for form reset
   // eslint-disable-next-line react-compiler/react-compiler
   useEffect(() => {
@@ -47,29 +85,35 @@ export function EventCreatePanel({ isOpen, onClose, defaultDate, defaultCalendar
       const dateToUse = defaultDate || new Date();
       setDate(dateToUse);
 
-      // Calculate smart default times based on current time if today, otherwise 09:00
-      const now = new Date();
-      const isToday = dateToUse.toDateString() === now.toDateString();
-
-      if (isToday) {
-        // Round up to next hour
-        const nextHour = new Date(now);
-        nextHour.setHours(now.getHours() + 1, 0, 0, 0);
-        const hours = nextHour.getHours();
-        const startHourStr = hours.toString().padStart(2, '0');
-        const endHourStr = ((hours + 1) % 24).toString().padStart(2, '0');
-        setStartTime(`${startHourStr}:00`);
-        setEndTime(`${endHourStr}:00`);
+      // Use provided default times if available, otherwise calculate smart defaults
+      if (defaultStartTime && defaultEndTime) {
+        setStartTime(defaultStartTime);
+        setEndTime(defaultEndTime);
       } else {
-        setStartTime('09:00');
-        setEndTime('10:00');
+        // Calculate smart default times based on current time if today, otherwise 09:00
+        const now = new Date();
+        const isToday = dateToUse.toDateString() === now.toDateString();
+
+        if (isToday) {
+          // Round up to next hour
+          const nextHour = new Date(now);
+          nextHour.setHours(now.getHours() + 1, 0, 0, 0);
+          const hours = nextHour.getHours();
+          const startHourStr = hours.toString().padStart(2, '0');
+          const endHourStr = ((hours + 1) % 24).toString().padStart(2, '0');
+          setStartTime(`${startHourStr}:00`);
+          setEndTime(`${endHourStr}:00`);
+        } else {
+          setStartTime('09:00');
+          setEndTime('10:00');
+        }
       }
 
       setAllDay(false);
       setError(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, defaultDate, defaultCalendarId, config.calendars, user?.email]);
+  }, [isOpen, defaultDate, defaultCalendarId, defaultStartTime, defaultEndTime, config.calendars, user?.email]);
 
   // Close on escape key
   useEffect(() => {
@@ -282,7 +326,7 @@ export function EventCreatePanel({ isOpen, onClose, defaultDate, defaultCalendar
                   id="startTime"
                   type="time"
                   value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
+                  onChange={(e) => handleStartTimeChange(e.target.value)}
                   className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded-lg border border-[var(--color-bg-tertiary)] focus:border-[var(--color-accent)] focus:outline-none"
                 />
               </div>

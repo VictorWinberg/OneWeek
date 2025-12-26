@@ -51,7 +51,7 @@ function DroppableTimeSlot({ id, date, hour, minute, children, activeBlockDurati
 interface HourViewProps {
   onBlockClick: (block: Block) => void;
   onCreateEvent: () => void;
-  onCreateEventForDate?: (date: Date) => void;
+  onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
   onNextWeek?: () => void;
   onPrevWeek?: () => void;
   onGoToToday?: () => void;

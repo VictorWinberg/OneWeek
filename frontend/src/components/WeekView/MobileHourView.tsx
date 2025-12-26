@@ -49,7 +49,7 @@ interface MobileHourViewProps {
   blocks: Block[];
   onBlockClick: (block: Block) => void;
   activeBlock: Block | null;
-  onCreateEventForDate?: (date: Date) => void;
+  onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
 }
 
 export function MobileHourView({
@@ -217,23 +217,36 @@ export function MobileHourView({
                 {/* 15-minute droppable time slots overlay */}
                 <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none">
                   {Array.from({ length: 24 }, (_, i) => i).map((hour) =>
-                    [0, 15, 30, 45].map((minute) => (
-                      <DroppableTimeSlot
-                        key={`${date.toISOString()}-${hour}-${minute}`}
-                        id={`${date.toISOString()}-${hour}-${minute}`}
-                        date={date}
-                        hour={hour}
-                        minute={minute}
-                        activeBlockDuration={
-                          activeBlock ? activeBlock.endTime.getTime() - activeBlock.startTime.getTime() : undefined
-                        }
-                      >
-                        <div
-                          className="h-[12.5px] cursor-pointer hover:bg-[var(--color-bg-tertiary)]/10 transition-colors pointer-events-auto"
-                          onClick={() => onCreateEventForDate && onCreateEventForDate(date)}
-                        />
-                      </DroppableTimeSlot>
-                    ))
+                    [0, 15, 30, 45].map((minute) => {
+                      // Create date with the clicked time
+                      const clickedDateTime = new Date(date);
+                      clickedDateTime.setHours(hour, minute, 0, 0);
+
+                      // Calculate end time (1 hour later)
+                      const endDateTime = new Date(clickedDateTime);
+                      endDateTime.setHours(hour + 1, minute, 0, 0);
+
+                      const startTimeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                      const endTimeStr = `${endDateTime.getHours().toString().padStart(2, '0')}:${endDateTime.getMinutes().toString().padStart(2, '0')}`;
+
+                      return (
+                        <DroppableTimeSlot
+                          key={`${date.toISOString()}-${hour}-${minute}`}
+                          id={`${date.toISOString()}-${hour}-${minute}`}
+                          date={date}
+                          hour={hour}
+                          minute={minute}
+                          activeBlockDuration={
+                            activeBlock ? activeBlock.endTime.getTime() - activeBlock.startTime.getTime() : undefined
+                          }
+                        >
+                          <div
+                            className="h-[12.5px] cursor-pointer hover:bg-[var(--color-bg-tertiary)]/10 transition-colors pointer-events-auto"
+                            onClick={() => onCreateEventForDate && onCreateEventForDate(clickedDateTime, undefined, startTimeStr, endTimeStr)}
+                          />
+                        </DroppableTimeSlot>
+                      );
+                    })
                   )}
                 </div>
 

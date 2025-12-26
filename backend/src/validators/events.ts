@@ -2,6 +2,14 @@ import { ValidationError } from '../middleware/errorHandler.js';
 import type { RecurrenceRule } from '../utils/recurrence.js';
 
 /**
+ * Event metadata
+ */
+export interface EventMetadata {
+  category?: string;
+  originalCalendarId?: string;
+}
+
+/**
  * Event creation request body
  */
 export interface CreateEventBody {
@@ -11,10 +19,7 @@ export interface CreateEventBody {
   startTime: string;
   endTime: string;
   allDay?: boolean;
-  metadata?: {
-    category?: string;
-    originalCalendarId?: string;
-  };
+  metadata?: EventMetadata;
   recurrenceRule?: RecurrenceRule;
 }
 
@@ -37,6 +42,51 @@ export interface MoveEventBody {
   targetCalendarId: string;
 }
 
+// Type guards for safer validation
+
+function isString(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
+function isBoolean(value: unknown): value is boolean {
+  return typeof value === 'boolean';
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Validate and extract metadata from request body
+ */
+function validateMetadata(metadata: unknown): EventMetadata | undefined {
+  if (metadata === undefined || metadata === null) {
+    return undefined;
+  }
+
+  if (!isObject(metadata)) {
+    throw new ValidationError('metadata must be an object');
+  }
+
+  const result: EventMetadata = {};
+
+  if (metadata.category !== undefined) {
+    if (!isString(metadata.category)) {
+      throw new ValidationError('metadata.category must be a string');
+    }
+    result.category = metadata.category;
+  }
+
+  if (metadata.originalCalendarId !== undefined) {
+    if (!isString(metadata.originalCalendarId)) {
+      throw new ValidationError('metadata.originalCalendarId must be a string');
+    }
+    result.originalCalendarId = metadata.originalCalendarId;
+  }
+
+  return Object.keys(result).length > 0 ? result : undefined;
+}
+
 /**
  * Validate event creation request body
  * @throws ValidationError if required fields are missing
@@ -44,28 +94,33 @@ export interface MoveEventBody {
 export function validateCreateEventBody(body: Record<string, unknown>): CreateEventBody {
   const { calendarId, title, startTime, endTime } = body;
 
-  if (!calendarId || typeof calendarId !== 'string') {
+  if (!calendarId || !isString(calendarId)) {
     throw new ValidationError('Missing required field: calendarId');
   }
-  if (!title || typeof title !== 'string') {
+  if (!title || !isString(title)) {
     throw new ValidationError('Missing required field: title');
   }
-  if (!startTime || typeof startTime !== 'string') {
+  if (!startTime || !isString(startTime)) {
     throw new ValidationError('Missing required field: startTime');
   }
-  if (!endTime || typeof endTime !== 'string') {
+  if (!endTime || !isString(endTime)) {
     throw new ValidationError('Missing required field: endTime');
   }
+
+  // Validate recurrence rule if provided
+  const recurrenceRule = body.recurrenceRule !== undefined 
+    ? validateRecurrenceRule(body.recurrenceRule) 
+    : undefined;
 
   return {
     calendarId,
     title,
-    description: typeof body.description === 'string' ? body.description : undefined,
+    description: isString(body.description) ? body.description : undefined,
     startTime,
     endTime,
-    allDay: typeof body.allDay === 'boolean' ? body.allDay : false,
-    metadata: body.metadata as CreateEventBody['metadata'],
-    recurrenceRule: body.recurrenceRule as RecurrenceRule | undefined,
+    allDay: isBoolean(body.allDay) ? body.allDay : false,
+    metadata: validateMetadata(body.metadata),
+    recurrenceRule,
   };
 }
 
@@ -79,42 +134,43 @@ export function validateUpdateEventBody(body: Record<string, unknown>): UpdateEv
   const update: UpdateEventBody = {};
 
   if (title !== undefined) {
-    if (typeof title !== 'string') {
+    if (!isString(title)) {
       throw new ValidationError('title must be a string');
     }
     update.title = title;
   }
 
   if (description !== undefined) {
-    if (typeof description !== 'string') {
+    if (!isString(description)) {
       throw new ValidationError('description must be a string');
     }
     update.description = description;
   }
 
   if (startTime !== undefined) {
-    if (typeof startTime !== 'string') {
+    if (!isString(startTime)) {
       throw new ValidationError('startTime must be a string');
     }
     update.startTime = startTime;
   }
 
   if (endTime !== undefined) {
-    if (typeof endTime !== 'string') {
+    if (!isString(endTime)) {
       throw new ValidationError('endTime must be a string');
     }
     update.endTime = endTime;
   }
 
   if (allDay !== undefined) {
-    if (typeof allDay !== 'boolean') {
+    if (!isBoolean(allDay)) {
       throw new ValidationError('allDay must be a boolean');
     }
     update.allDay = allDay;
   }
 
   if (recurrenceRule !== undefined) {
-    update.recurrenceRule = recurrenceRule as RecurrenceRule | null;
+    // null explicitly clears recurrence, otherwise validate the rule
+    update.recurrenceRule = recurrenceRule === null ? null : validateRecurrenceRule(recurrenceRule);
   }
 
   return update;
@@ -127,11 +183,21 @@ export function validateUpdateEventBody(body: Record<string, unknown>): UpdateEv
 export function validateMoveEventBody(body: Record<string, unknown>): MoveEventBody {
   const { targetCalendarId } = body;
 
-  if (!targetCalendarId || typeof targetCalendarId !== 'string') {
+  if (!targetCalendarId || !isString(targetCalendarId)) {
     throw new ValidationError('Missing targetCalendarId');
   }
 
   return { targetCalendarId };
+}
+
+const VALID_FREQUENCIES = ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as const;
+const VALID_WEEKDAYS = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'] as const;
+
+/**
+ * Type guard to check if a value is a valid frequency
+ */
+function isValidFrequency(value: unknown): value is RecurrenceRule['frequency'] {
+  return isString(value) && VALID_FREQUENCIES.includes(value as (typeof VALID_FREQUENCIES)[number]);
 }
 
 /**
@@ -139,16 +205,55 @@ export function validateMoveEventBody(body: Record<string, unknown>): MoveEventB
  * @throws ValidationError if rule is invalid
  */
 export function validateRecurrenceRule(rule: unknown): RecurrenceRule {
-  if (!rule || typeof rule !== 'object') {
-    throw new ValidationError('Invalid recurrence rule');
+  if (!isObject(rule)) {
+    throw new ValidationError('Invalid recurrence rule: must be an object');
   }
 
-  const r = rule as Record<string, unknown>;
-
-  if (!r.frequency || !['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'].includes(r.frequency as string)) {
+  if (!isValidFrequency(rule.frequency)) {
     throw new ValidationError('Invalid recurrence frequency. Must be: DAILY, WEEKLY, MONTHLY, or YEARLY');
   }
 
-  return rule as RecurrenceRule;
+  const result: RecurrenceRule = {
+    frequency: rule.frequency,
+  };
+
+  // Validate optional interval
+  if (rule.interval !== undefined) {
+    if (typeof rule.interval !== 'number' || rule.interval < 1 || !Number.isInteger(rule.interval)) {
+      throw new ValidationError('interval must be a positive integer');
+    }
+    result.interval = rule.interval;
+  }
+
+  // Validate optional count
+  if (rule.count !== undefined) {
+    if (typeof rule.count !== 'number' || rule.count < 1 || !Number.isInteger(rule.count)) {
+      throw new ValidationError('count must be a positive integer');
+    }
+    result.count = rule.count;
+  }
+
+  // Validate optional until
+  if (rule.until !== undefined) {
+    if (!isString(rule.until)) {
+      throw new ValidationError('until must be a date string');
+    }
+    result.until = rule.until;
+  }
+
+  // Validate optional byDay
+  if (rule.byDay !== undefined) {
+    if (!Array.isArray(rule.byDay)) {
+      throw new ValidationError('byDay must be an array');
+    }
+    for (const day of rule.byDay) {
+      if (!isString(day) || !VALID_WEEKDAYS.includes(day as (typeof VALID_WEEKDAYS)[number])) {
+        throw new ValidationError(`Invalid day in byDay: ${day}. Must be: ${VALID_WEEKDAYS.join(', ')}`);
+      }
+    }
+    result.byDay = rule.byDay as string[];
+  }
+
+  return result;
 }
 

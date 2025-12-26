@@ -52,11 +52,6 @@ export default defineConfig({
               sizes: '512x512',
               type: 'image/png',
             },
-            {
-              src: 'icons/oneweek-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-            },
           ],
         },
         workbox: {

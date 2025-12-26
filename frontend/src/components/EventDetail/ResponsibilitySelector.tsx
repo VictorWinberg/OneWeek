@@ -16,7 +16,7 @@ export function ResponsibilitySelector({ currentCalendarId, onSelect, disabled =
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-[var(--color-text-secondary)]">Ansvarig</label>
-      <div className={isMobile ? "flex gap-2 overflow-x-auto" : "grid grid-cols-2 gap-2"}>
+      <div className={isMobile ? 'flex gap-2 overflow-x-auto' : 'grid grid-cols-2 gap-2'}>
         {persons.map((person) => (
           <CalendarButton
             key={person.id}

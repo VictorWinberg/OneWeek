@@ -6,8 +6,6 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:test": "tsc -b && VITE_ENABLE_PWA=false vite build",
-    "build:prod": "tsc -b && VITE_ENABLE_PWA=true vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },

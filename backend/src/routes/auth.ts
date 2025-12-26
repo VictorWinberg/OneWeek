@@ -89,7 +89,6 @@ router.get(
 
 // POST /api/auth/logout - Clear session
 router.post('/logout', (req, res) => {
-  // cookie-session: setting session to null destroys the session
   req.session = null;
   res.json({ success: true });
 });

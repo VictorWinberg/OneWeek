@@ -52,7 +52,13 @@ interface MobileHourViewProps {
   onCreateEventForDate?: (date: Date) => void;
 }
 
-export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock, onCreateEventForDate }: MobileHourViewProps) {
+export function MobileHourView({
+  weekDays,
+  blocks,
+  onBlockClick,
+  activeBlock,
+  onCreateEventForDate,
+}: MobileHourViewProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

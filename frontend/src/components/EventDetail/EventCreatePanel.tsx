@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useConfigStore } from '@/stores/configStore';
+import { useAuthStore } from '@/stores/authStore';
 import { useCreateEvent } from '@/hooks/useCalendarQueries';
 import { getInitial } from '@/types';
 
@@ -12,11 +13,23 @@ interface EventCreatePanelProps {
 
 export function EventCreatePanel({ isOpen, onClose, defaultDate, defaultCalendarId }: EventCreatePanelProps) {
   const { config, getPersonById } = useConfigStore();
+  const { user } = useAuthStore();
   const createEvent = useCreateEvent();
+
+  // Get the default calendar: use logged-in user's email, or defaultCalendarId, or first calendar
+  const getDefaultCalendarId = () => {
+    if (defaultCalendarId) return defaultCalendarId;
+    if (user?.email) {
+      // Check if user's email exists as a calendar
+      const userCalendar = config.calendars.find((cal) => cal.id === user.email);
+      if (userCalendar) return user.email;
+    }
+    return config.calendars[0]?.id || '';
+  };
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [calendarId, setCalendarId] = useState(defaultCalendarId || config.calendars[0]?.id || '');
+  const [calendarId, setCalendarId] = useState(getDefaultCalendarId());
   const [date, setDate] = useState(defaultDate || new Date());
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
@@ -29,7 +42,7 @@ export function EventCreatePanel({ isOpen, onClose, defaultDate, defaultCalendar
     if (isOpen) {
       setTitle('');
       setDescription('');
-      setCalendarId(defaultCalendarId || config.calendars[0]?.id || '');
+      setCalendarId(getDefaultCalendarId());
 
       const dateToUse = defaultDate || new Date();
       setDate(dateToUse);
@@ -55,7 +68,8 @@ export function EventCreatePanel({ isOpen, onClose, defaultDate, defaultCalendar
       setAllDay(false);
       setError(null);
     }
-  }, [isOpen, defaultDate, defaultCalendarId, config.calendars]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, defaultDate, defaultCalendarId, config.calendars, user?.email]);
 
   // Close on escape key
   useEffect(() => {

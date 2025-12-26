@@ -127,7 +127,7 @@ router.post('/', requireAuth, async (req, res) => {
 router.patch('/:calendarId/:eventId', requireAuth, async (req, res) => {
   try {
     const { calendarId, eventId } = req.params;
-    const { title, description, startTime, endTime } = req.body;
+    const { title, description, startTime, endTime, allDay } = req.body;
     const userEmail = req.session?.userEmail!;
 
     // Check update permission
@@ -138,8 +138,14 @@ router.patch('/:calendarId/:eventId', requireAuth, async (req, res) => {
     const updates: Record<string, unknown> = {};
     if (title !== undefined) updates.summary = title;
     if (description !== undefined) updates.description = description;
-    if (startTime !== undefined) updates.start = { dateTime: startTime };
-    if (endTime !== undefined) updates.end = { dateTime: endTime };
+
+    // For all-day events, use 'date' field; for timed events, use 'dateTime'
+    if (startTime !== undefined) {
+      updates.start = allDay ? { date: startTime } : { dateTime: startTime };
+    }
+    if (endTime !== undefined) {
+      updates.end = allDay ? { date: endTime } : { dateTime: endTime };
+    }
 
     const updatedEvent = await updateEvent(calendarId, eventId, updates);
 

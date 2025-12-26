@@ -46,7 +46,7 @@ function DroppableCell({ id, date, calendarId, children, onClick, isToday }: Dro
 interface UserViewProps {
   onBlockClick: (block: Block) => void;
   onCreateEvent: () => void;
-  onCreateEventForDate?: (date: Date, calendarId?: string) => void;
+  onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
   onNextWeek?: () => void;
   onPrevWeek?: () => void;
   onGoToToday?: () => void;
@@ -130,6 +130,51 @@ export function UserView({
 
     const block = blocks.find((b) => `${b.calendarId}-${b.id}` === blockId);
     if (!block) return;
+
+    // Handle all-day events - preserve all-day status
+    if (block.allDay) {
+      const needsMove = block.calendarId !== dropData.calendarId;
+      const needsTimeUpdate = block.startTime.toDateString() !== dropData.date.toDateString();
+
+      // If calendar changed, move the event
+      if (needsMove) {
+        try {
+          await moveEvent.mutateAsync({
+            blockId: block.id,
+            calendarId: block.calendarId,
+            targetCalendarId: dropData.calendarId,
+            startTime: block.startTime,
+          });
+        } catch (error) {
+          console.error('Failed to move block:', error);
+          return;
+        }
+      }
+
+      // If day changed, update the time preserving all-day status
+      if (needsTimeUpdate) {
+        const newStartTime = new Date(dropData.date);
+        newStartTime.setHours(0, 0, 0, 0);
+
+        // For all-day events, end time is midnight of the NEXT day
+        const newEndTime = new Date(dropData.date);
+        newEndTime.setDate(newEndTime.getDate() + 1);
+        newEndTime.setHours(0, 0, 0, 0);
+
+        try {
+          await updateEventTime.mutateAsync({
+            blockId: block.id,
+            calendarId: needsMove ? dropData.calendarId : block.calendarId,
+            startTime: newStartTime,
+            endTime: newEndTime,
+            allDay: true,
+          });
+        } catch (error) {
+          console.error('Failed to update block time:', error);
+        }
+      }
+      return;
+    }
 
     const needsMove = block.calendarId !== dropData.calendarId;
     const needsTimeUpdate = block.startTime.toDateString() !== dropData.date.toDateString();

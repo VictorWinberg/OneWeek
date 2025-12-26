@@ -14,7 +14,7 @@ interface DayColumnProps {
 }
 
 export function DayColumn({ date, blocks, onBlockClick, onEmptySpaceClick, compact = false, draggable = false }: DayColumnProps) {
-  const dayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date));
+  const dayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date).filter((b) => !b.allDay));
   const today = isToday(date);
 
   const { setNodeRef, isOver } = useDroppable({

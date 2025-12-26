@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
+import { useState, useEffect } from 'react';
+import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor, TouchSensor } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
@@ -23,6 +23,7 @@ interface MobileViewProps {
   onPrevWeek?: () => void;
   onGoToToday?: () => void;
   onViewModeChange?: (mode: UrlViewMode) => void;
+  onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
 }
 
 // Map URL view modes to mobile view modes
@@ -66,6 +67,7 @@ export function MobileView({
   onPrevWeek,
   onGoToToday,
   onViewModeChange,
+  onCreateEventForDate,
 }: MobileViewProps) {
   const { selectedDate } = useCalendarStore();
   const { config } = useConfigStore();
@@ -91,13 +93,20 @@ export function MobileView({
     }
   };
   const [activeBlock, setActiveBlock] = useState<Block | null>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Configure drag sensors
+  // Configure drag sensors for mobile - use separate mouse and touch sensors
+  // PointerSensor with low distance for mouse/trackpad on tablets
+  // TouchSensor with delay to prevent accidental drags and allow scroll
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 3,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 150, // Delay before drag activates, allows scroll to work
+        tolerance: 5, // Movement tolerance during delay
       },
     })
   );
@@ -108,14 +117,6 @@ export function MobileView({
       prefetch();
     }
   }, [isLoading, prefetch, blocks.length]);
-
-  // Auto-scroll to hour 8 (8am) on mount when in hour view
-  useEffect(() => {
-    if (mobileViewMode === 'hour' && scrollContainerRef.current && !isLoading) {
-      const targetScrollPosition = 8 * 60;
-      scrollContainerRef.current.scrollTop = targetScrollPosition;
-    }
-  }, [mobileViewMode, isLoading]);
 
   const handleDragStart = (event: DragStartEvent) => {
     const blockId = String(event.active.id);
@@ -140,8 +141,88 @@ export function MobileView({
     const block = blocks.find((b) => `${b.calendarId}-${b.id}` === blockId);
     if (!block) return;
 
-    // Handle hour view (time slot change)
-    if (dropData.date && dropData.hour !== undefined && dropData.minute !== undefined) {
+    // Handle all-day events - preserve all-day status
+    if (block.allDay && dropData.date) {
+      // For all-day events, just change the date (and calendar if provided)
+      const needsMove = dropData.calendarId && block.calendarId !== dropData.calendarId;
+
+      if (needsMove && dropData.calendarId) {
+        try {
+          await moveEvent.mutateAsync({
+            blockId: block.id,
+            calendarId: block.calendarId,
+            targetCalendarId: dropData.calendarId,
+            startTime: block.startTime,
+          });
+        } catch (error) {
+          console.error('Failed to move block:', error);
+          return;
+        }
+      }
+
+      const needsTimeUpdate = block.startTime.toDateString() !== dropData.date.toDateString();
+      if (needsTimeUpdate) {
+        const newStartTime = new Date(dropData.date);
+        newStartTime.setHours(0, 0, 0, 0);
+
+        // For all-day events, end time is midnight of the NEXT day
+        const newEndTime = new Date(dropData.date);
+        newEndTime.setDate(newEndTime.getDate() + 1);
+        newEndTime.setHours(0, 0, 0, 0);
+
+        try {
+          await updateEventTime.mutateAsync({
+            blockId: block.id,
+            calendarId: needsMove && dropData.calendarId ? dropData.calendarId : block.calendarId,
+            startTime: newStartTime,
+            endTime: newEndTime,
+            allDay: true,
+          });
+        } catch (error) {
+          console.error('Failed to update block time:', error);
+        }
+      }
+      return;
+    }
+
+    // Handle user view with time slots (calendar + day + time change)
+    if (dropData.date && dropData.calendarId && dropData.hour !== undefined && dropData.minute !== undefined) {
+      const needsMove = block.calendarId !== dropData.calendarId;
+      const newStartTime = new Date(dropData.date);
+      newStartTime.setHours(dropData.hour, dropData.minute, 0, 0);
+
+      const duration = block.endTime.getTime() - block.startTime.getTime();
+      const newEndTime = new Date(newStartTime.getTime() + duration);
+
+      // If calendar changed, move the event first
+      if (needsMove) {
+        try {
+          await moveEvent.mutateAsync({
+            blockId: block.id,
+            calendarId: block.calendarId,
+            targetCalendarId: dropData.calendarId,
+            startTime: block.startTime,
+          });
+        } catch (error) {
+          console.error('Failed to move block:', error);
+          return;
+        }
+      }
+
+      // Update the time (always needed in this case)
+      try {
+        await updateEventTime.mutateAsync({
+          blockId: block.id,
+          calendarId: needsMove ? dropData.calendarId : block.calendarId,
+          startTime: newStartTime,
+          endTime: newEndTime,
+        });
+      } catch (error) {
+        console.error('Failed to update block time:', error);
+      }
+    }
+    // Handle hour view (time slot change only, no calendar)
+    else if (dropData.date && dropData.hour !== undefined && dropData.minute !== undefined) {
       const newStartTime = new Date(dropData.date);
       newStartTime.setHours(dropData.hour, dropData.minute, 0, 0);
 
@@ -159,7 +240,7 @@ export function MobileView({
         console.error('Failed to update block time:', error);
       }
     }
-    // Handle calendar view (day + calendar change)
+    // Handle user view cell drop (day + calendar change, no specific time)
     else if (dropData.date && dropData.calendarId) {
       const needsMove = block.calendarId !== dropData.calendarId;
       const needsTimeUpdate = block.startTime.toDateString() !== dropData.date.toDateString();
@@ -332,23 +413,58 @@ export function MobileView({
         )}
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto" ref={mobileViewMode === 'hour' ? scrollContainerRef : null}>
+        <div className="flex-1 overflow-hidden">
           {mobileViewMode === 'list' ? (
-            <MobileListView weekDays={weekDays} blocks={blocks} onBlockClick={onBlockClick} />
+            <MobileListView weekDays={weekDays} blocks={blocks} onBlockClick={onBlockClick} activeBlock={activeBlock} />
           ) : mobileViewMode === 'grid' ? (
-            <MobileGridView weekDays={weekDays} blocks={blocks} onBlockClick={onBlockClick} />
+            <MobileGridView weekDays={weekDays} blocks={blocks} onBlockClick={onBlockClick} activeBlock={activeBlock} />
           ) : mobileViewMode === 'hour' ? (
-            <MobileHourView weekDays={weekDays} blocks={blocks} onBlockClick={onBlockClick} activeBlock={activeBlock} />
+            <MobileHourView
+              weekDays={weekDays}
+              blocks={blocks}
+              onBlockClick={onBlockClick}
+              activeBlock={activeBlock}
+              onCreateEventForDate={onCreateEventForDate}
+            />
           ) : (
-            <MobileUserView weekDays={weekDays} blocks={blocks} calendars={calendars} onBlockClick={onBlockClick} />
+            <MobileUserView
+              weekDays={weekDays}
+              blocks={blocks}
+              calendars={calendars}
+              onBlockClick={onBlockClick}
+              activeBlock={activeBlock}
+            />
           )}
         </div>
 
         {/* Drag Overlay */}
         <DragOverlay>
           {activeBlock ? (
-            <div className="opacity-90">
-              <EventCard block={activeBlock} onClick={() => {}} compact={true} fillHeight={false} />
+            <div
+              className="opacity-90"
+              style={
+                mobileViewMode === 'hour' && !activeBlock.allDay
+                  ? {
+                      // Calculate height based on event duration to match the original size
+                      height: `${Math.max(
+                        ((activeBlock.endTime.getTime() - activeBlock.startTime.getTime()) / (1000 * 60 * 60)) * 50,
+                        25
+                      )}px`,
+                      width: '100%',
+                      minWidth: '42px',
+                    }
+                  : undefined
+              }
+            >
+              <EventCard
+                block={activeBlock}
+                onClick={() => {}}
+                compact={true}
+                fillHeight={mobileViewMode === 'hour' ? true : false}
+                hideTime={mobileViewMode === 'hour'}
+                extraCompact={mobileViewMode === 'hour'}
+                isAllDay={activeBlock.allDay}
+              />
             </div>
           ) : null}
         </DragOverlay>

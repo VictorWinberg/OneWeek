@@ -1,3 +1,4 @@
+import { startOfDay, endOfDay, isBefore, isAfter } from 'date-fns';
 import type { Block } from '@/types';
 
 // This file contains utility functions for working with Block data
@@ -12,15 +13,23 @@ export function isBlockInDay(block: Block, date: Date): boolean {
   const blockStart = block.startTime instanceof Date ? block.startTime : new Date(block.startTime);
   const blockEnd = block.endTime instanceof Date ? block.endTime : new Date(block.endTime);
 
-  // Create day boundaries in local timezone
-  const dayStart = new Date(date);
-  dayStart.setHours(0, 0, 0, 0);
+  // For all-day events, endTime is exclusive (midnight of next day)
+  // and dates should be compared without time components
+  if (block.allDay) {
+    const dayStart = startOfDay(date);
+    const blockStartDay = startOfDay(blockStart);
+    const blockEndDay = startOfDay(blockEnd);
 
-  const dayEnd = new Date(date);
-  dayEnd.setHours(23, 59, 59, 999);
+    // Check if this day falls within the event's date range (end is exclusive)
+    return !isBefore(dayStart, blockStartDay) && isBefore(dayStart, blockEndDay);
+  }
 
-  // Block overlaps with day if it starts before day ends and ends after day starts
-  return blockStart <= dayEnd && blockEnd >= dayStart;
+  // For timed events, check if the block overlaps with the day
+  const dayStart = startOfDay(date);
+  const dayEnd = endOfDay(date);
+
+  // Block overlaps if it starts before day ends and ends after day starts
+  return !isAfter(blockStart, dayEnd) && !isBefore(blockEnd, dayStart);
 }
 
 export function getBlocksForDay(blocks: Block[], date: Date): Block[] {

@@ -1,6 +1,7 @@
 import type { Calendar } from '@/types';
 import { getInitial } from '@/types/calendar';
 import { useConfigStore } from '@/stores/configStore';
+import { useIsMobile } from '@/hooks/useMediaQuery';
 
 interface ResponsibilitySelectorProps {
   currentCalendarId: string;
@@ -10,11 +11,12 @@ interface ResponsibilitySelectorProps {
 
 export function ResponsibilitySelector({ currentCalendarId, onSelect, disabled = false }: ResponsibilitySelectorProps) {
   const { persons } = useConfigStore();
+  const isMobile = useIsMobile();
 
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-[var(--color-text-secondary)]">Ansvarig</label>
-      <div className="grid grid-cols-2 gap-2">
+      <div className={isMobile ? 'flex gap-2 overflow-x-auto' : 'grid grid-cols-2 gap-2'}>
         {persons.map((person) => (
           <CalendarButton
             key={person.id}
@@ -22,6 +24,7 @@ export function ResponsibilitySelector({ currentCalendarId, onSelect, disabled =
             isSelected={person.id === currentCalendarId}
             onClick={() => onSelect(person.id)}
             disabled={disabled || person.id === currentCalendarId}
+            compact={isMobile}
           />
         ))}
       </div>
@@ -34,10 +37,52 @@ interface CalendarButtonProps {
   isSelected: boolean;
   onClick: () => void;
   disabled: boolean;
+  compact?: boolean;
 }
 
-function CalendarButton({ person, isSelected, onClick, disabled }: CalendarButtonProps) {
+function CalendarButton({ person, isSelected, onClick, disabled, compact = false }: CalendarButtonProps) {
   const initial = getInitial(person.name);
+
+  if (compact) {
+    return (
+      <button
+        onClick={onClick}
+        disabled={disabled}
+        title={person.name}
+        className={`
+          flex items-center justify-center p-2 rounded-lg transition-all duration-200 flex-shrink-0
+          ${
+            isSelected
+              ? 'bg-[var(--color-bg-tertiary)] ring-2 ring-white/30'
+              : 'bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-tertiary)]'
+          }
+          ${disabled && !isSelected ? 'opacity-50 cursor-not-allowed' : ''}
+          focus:outline-none focus:ring-2 focus:ring-white/50
+        `}
+      >
+        <div
+          className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm relative"
+          style={{
+            backgroundColor: person.color,
+            color: 'var(--color-bg-primary)',
+          }}
+        >
+          {initial.charAt(0)}
+          {isSelected && (
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--color-accent)] rounded-full flex items-center justify-center">
+              <svg className="w-3 h-3 text-[var(--color-bg-primary)]" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+          )}
+        </div>
+      </button>
+    );
+  }
 
   return (
     <button

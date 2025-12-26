@@ -45,6 +45,8 @@ function App() {
   const [isCreatePanelOpen, setIsCreatePanelOpen] = useState(false);
   const [createEventDate, setCreateEventDate] = useState<Date | undefined>(undefined);
   const [createEventCalendarId, setCreateEventCalendarId] = useState<string | undefined>(undefined);
+  const [createEventStartTime, setCreateEventStartTime] = useState<string | undefined>(undefined);
+  const [createEventEndTime, setCreateEventEndTime] = useState<string | undefined>(undefined);
 
   // Check authentication on mount
   useEffect(() => {
@@ -69,12 +71,16 @@ function App() {
   const handleOpenCreatePanel = () => {
     setCreateEventDate(undefined);
     setCreateEventCalendarId(undefined);
+    setCreateEventStartTime(undefined);
+    setCreateEventEndTime(undefined);
     setIsCreatePanelOpen(true);
   };
 
-  const handleOpenCreatePanelWithDate = (date: Date, calendarId?: string) => {
+  const handleOpenCreatePanelWithDate = (date: Date, calendarId?: string, startTime?: string, endTime?: string) => {
     setCreateEventDate(date);
     setCreateEventCalendarId(calendarId);
+    setCreateEventStartTime(startTime);
+    setCreateEventEndTime(endTime);
     setIsCreatePanelOpen(true);
   };
 
@@ -82,6 +88,8 @@ function App() {
     setIsCreatePanelOpen(false);
     setCreateEventDate(undefined);
     setCreateEventCalendarId(undefined);
+    setCreateEventStartTime(undefined);
+    setCreateEventEndTime(undefined);
   };
 
   // Render routes for authenticated users
@@ -229,6 +237,8 @@ function App() {
         onClose={handleCloseCreatePanel}
         defaultDate={createEventDate}
         defaultCalendarId={createEventCalendarId}
+        defaultStartTime={createEventStartTime}
+        defaultEndTime={createEventEndTime}
       />
     </>
   );
@@ -239,7 +249,7 @@ interface MainLayoutProps {
   viewMode: ViewMode;
   onBlockClick: (block: Block) => void;
   onCreateEvent: () => void;
-  onCreateEventForDate: (date: Date, calendarId?: string) => void;
+  onCreateEventForDate: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
 }
 
 function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEventForDate }: MainLayoutProps) {
@@ -361,6 +371,7 @@ function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEventForDat
           <MobileView
             onBlockClick={onBlockClick}
             onCreateEvent={onCreateEvent}
+            onCreateEventForDate={onCreateEventForDate}
             viewMode={viewMode}
             onNextWeek={handleNextWeek}
             onPrevWeek={handlePrevWeek}

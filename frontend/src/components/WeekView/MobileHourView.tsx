@@ -1,4 +1,5 @@
 import { useDroppable } from '@dnd-kit/core';
+import { useEffect, useRef } from 'react';
 import { formatDayShort, isToday } from '@/utils/dateUtils';
 import { getBlocksForDay } from '@/services/calendarNormalizer';
 import { EventCard } from './EventCard';
@@ -24,7 +25,7 @@ function DroppableTimeSlot({ id, date, hour, minute, children, activeBlockDurati
   });
 
   // Calculate the height of the outline based on the active block's duration
-  const outlineHeight = activeBlockDuration ? Math.max((activeBlockDuration / (1000 * 60 * 60)) * 60, 30) : 0;
+  const outlineHeight = activeBlockDuration ? Math.max((activeBlockDuration / (1000 * 60 * 60)) * 50, 25) : 0;
 
   return (
     <div ref={setNodeRef} className="relative">
@@ -48,157 +49,272 @@ interface MobileHourViewProps {
   blocks: Block[];
   onBlockClick: (block: Block) => void;
   activeBlock: Block | null;
+  onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
 }
 
-export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: MobileHourViewProps) {
-  // Calculate position and size for a block in hour view
+export function MobileHourView({
+  weekDays,
+  blocks,
+  onBlockClick,
+  activeBlock,
+  onCreateEventForDate,
+}: MobileHourViewProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
+
+  // Disable scrolling when dragging
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    if (activeBlock) {
+      isDraggingRef.current = true;
+      // Disable scroll during drag - use important styles to override
+      container.style.overflow = 'hidden';
+      container.style.touchAction = 'none';
+
+      // Store current scroll position to prevent any scroll drift
+      const scrollTop = container.scrollTop;
+
+      // Prevent scroll on the container - be very aggressive
+      const preventScroll = (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+        // Force scroll position to stay fixed
+        container.scrollTop = scrollTop;
+        return false;
+      };
+
+      container.addEventListener('touchmove', preventScroll, { passive: false, capture: true });
+      container.addEventListener('scroll', preventScroll, { passive: false });
+      container.addEventListener('wheel', preventScroll, { passive: false });
+
+      return () => {
+        container.removeEventListener('touchmove', preventScroll, true);
+        container.removeEventListener('scroll', preventScroll);
+        container.removeEventListener('wheel', preventScroll);
+        isDraggingRef.current = false;
+      };
+    } else {
+      // Re-enable scroll after drag
+      container.style.overflow = 'auto';
+      container.style.touchAction = 'pan-y';
+    }
+  }, [activeBlock]);
+
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      const targetScrollPosition = 8 * 50;
+      scrollContainerRef.current.scrollTop = targetScrollPosition;
+    }
+  }, []);
+
   const getBlockPosition = (block: Block) => {
     const startHour = block.startTime.getHours();
     const startMinute = block.startTime.getMinutes();
     const endHour = block.endTime.getHours();
     const endMinute = block.endTime.getMinutes();
 
-    const top = (startHour + startMinute / 60) * 60; // 60px per hour
+    const top = (startHour + startMinute / 60) * 50; // 50px per hour
     const duration = endHour - startHour + (endMinute - startMinute) / 60;
-    const height = Math.max(duration * 60, 30); // Minimum 30px height
+    const height = Math.max(duration * 50, 25); // Minimum 25px height
 
     return { top, height };
   };
 
-  // Check if any day has all-day events
-  const hasAllDayEvents = blocks.some((block) => block.allDay);
-
   return (
-    <div className="flex min-w-max">
-      {/* Time column */}
-      <div className="sticky left-0 z-20 bg-[var(--color-bg-secondary)] border-r border-[var(--color-bg-tertiary)]">
-        <div className="sticky top-0 z-30 bg-[var(--color-bg-secondary)] h-[50px] border-b border-[var(--color-bg-tertiary)] flex items-center justify-center px-2">
-          <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Tid</span>
+    <div className="flex flex-col w-full h-full overflow-hidden">
+      {/* Day Headers Section */}
+      <div className="flex flex-shrink-0 w-full bg-[var(--color-bg-secondary)]">
+        <div className="w-[35px] flex-shrink-0 border-r border-[var(--color-bg-tertiary)] border-b border-[var(--color-bg-tertiary)] h-[40px] flex items-center justify-center px-0.5">
+          <span className="text-[8px] font-semibold text-[var(--color-text-secondary)]">Tid</span>
         </div>
-        {/* All-day events spacer */}
-        {hasAllDayEvents && (
-          <div className="sticky top-[50px] z-30 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)] min-h-[35px] flex items-center justify-center px-1">
-            <span className="text-[8px] text-[var(--color-text-secondary)] text-center">Hela</span>
-          </div>
-        )}
-        {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
-          <div
-            key={hour}
-            className="h-[60px] border-b border-[var(--color-bg-tertiary)] flex items-start justify-end pr-1 pt-1"
-          >
-            <span className="text-[10px] text-[var(--color-text-secondary)]">
-              {hour.toString().padStart(2, '0')}:00
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Day columns */}
-      {weekDays.map((date) => {
-        const today = isToday(date);
-        const dayBlocks = getBlocksForDay(blocks, date).filter((block) => !block.allDay);
-        const allDayBlocks = getBlocksForDay(blocks, date).filter((block) => block.allDay);
-
-        return (
-          <div
-            key={date.toISOString()}
-            className={`flex-1 min-w-[40px] border-r border-[var(--color-bg-tertiary)] last:border-r-0 ${
-              today ? 'bg-[var(--color-accent)]/5' : ''
-            }`}
-          >
-            {/* Day header */}
+        {weekDays.map((date) => {
+          const today = isToday(date);
+          return (
             <div
-              className={`sticky top-0 z-10 h-[50px] border-b border-[var(--color-bg-tertiary)] flex flex-col items-center justify-center px-0.5 relative bg-[var(--color-bg-secondary)] ${
+              key={`header-${date.toISOString()}`}
+              className={`flex-1 border-r border-[var(--color-bg-tertiary)] last:border-r-0 border-b border-[var(--color-bg-tertiary)] h-[40px] flex flex-col items-center justify-center px-0.5 relative select-none ${
                 today ? 'before:absolute before:inset-0 before:bg-[var(--color-accent)]/10' : ''
               }`}
+              style={{ minWidth: '42px' }}
             >
               <div
-                className={`text-[9px] uppercase tracking-wide relative ${
+                className={`text-[7px] uppercase tracking-wide relative ${
                   today ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-secondary)]'
                 }`}
+                style={{
+                  WebkitTouchCallout: 'none',
+                  WebkitUserSelect: 'none',
+                }}
               >
                 {formatDayShort(date).substring(0, 2)}
               </div>
               <div
-                className={`text-sm font-bold relative ${
+                className={`text-[11px] font-bold relative ${
                   today ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'
                 }`}
+                style={{
+                  WebkitTouchCallout: 'none',
+                  WebkitUserSelect: 'none',
+                }}
               >
                 {date.getDate()}
               </div>
             </div>
+          );
+        })}
+      </div>
 
-            {/* All-day events row */}
-            {allDayBlocks.length > 0 && (
-              <div className="sticky top-[50px] z-10 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)] p-0.5 min-h-[35px] flex flex-col gap-0.5">
-                {allDayBlocks.map((block) => (
-                  <EventCard
-                    key={`${block.calendarId}-${block.id}`}
-                    block={block}
-                    onClick={() => onBlockClick(block)}
-                    compact={true}
-                    fillHeight={false}
-                    draggable={false}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Hour grid and events */}
-            <div className="relative">
-              {/* Hour grid lines */}
-              {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
-                <div key={hour} className="h-[60px] border-b border-[var(--color-bg-tertiary)]" />
+      {/* All-day Events Section */}
+      <div className="flex flex-shrink-0 w-full bg-[var(--color-bg-secondary)]">
+        <div className="w-[35px] flex-shrink-0 border-r border-[var(--color-bg-tertiary)] border-b border-[var(--color-bg-tertiary)] min-h-[24px] flex items-center justify-center px-0.5">
+          <span className="text-[6px] text-[var(--color-text-secondary)] text-center leading-none">Hela</span>
+        </div>
+        {weekDays.map((date) => {
+          const allDayBlocks = getBlocksForDay(blocks, date).filter((block) => block.allDay);
+          const today = isToday(date);
+          return (
+            <div
+              key={`allday-${date.toISOString()}`}
+              className={`flex-1 border-r border-[var(--color-bg-tertiary)] last:border-r-0 border-b border-[var(--color-bg-tertiary)] p-0.5 flex flex-col gap-0.5 min-h-[24px] ${
+                today ? 'bg-[var(--color-accent)]/5' : ''
+              }`}
+              style={{ minWidth: '42px' }}
+            >
+              {allDayBlocks.map((block) => (
+                <EventCard
+                  key={`${block.calendarId}-${block.id}`}
+                  block={block}
+                  onClick={() => onBlockClick(block)}
+                  compact={true}
+                  fillHeight={false}
+                  draggable={false}
+                  isAllDay={true}
+                  hideTime={true}
+                  truncate={true}
+                />
               ))}
-
-              {/* 15-minute droppable time slots overlay */}
-              <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none">
-                {Array.from({ length: 24 }, (_, i) => i).map((hour) =>
-                  [0, 15, 30, 45].map((minute) => (
-                    <DroppableTimeSlot
-                      key={`${date.toISOString()}-${hour}-${minute}`}
-                      id={`${date.toISOString()}-${hour}-${minute}`}
-                      date={date}
-                      hour={hour}
-                      minute={minute}
-                      activeBlockDuration={
-                        activeBlock ? activeBlock.endTime.getTime() - activeBlock.startTime.getTime() : undefined
-                      }
-                    >
-                      <div className="h-[15px] cursor-pointer hover:bg-[var(--color-bg-tertiary)]/10 transition-colors pointer-events-auto" />
-                    </DroppableTimeSlot>
-                  ))
-                )}
-              </div>
-
-              {/* Events overlay */}
-              <div className="absolute top-0 left-0 right-0 pointer-events-none z-0">
-                {dayBlocks.map((block) => {
-                  const { top, height } = getBlockPosition(block);
-                  return (
-                    <div
-                      key={`${block.calendarId}-${block.id}`}
-                      className="absolute left-0.5 right-0.5 pointer-events-auto"
-                      style={{
-                        top: `${top}px`,
-                        height: `${height}px`,
-                      }}
-                    >
-                      <EventCard
-                        block={block}
-                        onClick={() => onBlockClick(block)}
-                        compact={true}
-                        fillHeight={true}
-                        draggable={true}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
             </div>
+          );
+        })}
+      </div>
+
+      {/* Hourly Events Section - Scrollable */}
+      <div
+        ref={scrollContainerRef}
+        className="flex flex-1 w-full overflow-y-auto overflow-x-hidden"
+        style={{ touchAction: 'pan-y' }}
+      >
+        <div className="flex w-full">
+          {/* Time column */}
+          <div
+            className="w-[35px] flex-shrink-0 sticky left-0 z-10 bg-[var(--color-bg-secondary)] border-r border-[var(--color-bg-tertiary)]"
+            style={{ height: '1200px' }}
+          >
+            {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
+              <div
+                key={hour}
+                className="h-[50px] border-b border-[var(--color-bg-tertiary)] flex items-start justify-end pr-0.5 pt-0.5"
+              >
+                <span className="text-[7px] text-[var(--color-text-secondary)]">
+                  {hour.toString().padStart(2, '0')}
+                </span>
+              </div>
+            ))}
           </div>
-        );
-      })}
+
+          {/* Day columns with events */}
+          {weekDays.map((date) => {
+            const today = isToday(date);
+            const dayBlocks = getBlocksForDay(blocks, date).filter((block) => !block.allDay);
+
+            return (
+              <div
+                key={date.toISOString()}
+                className={`flex-1 border-r border-[var(--color-bg-tertiary)] last:border-r-0 relative ${
+                  today ? 'bg-[var(--color-accent)]/5' : ''
+                }`}
+                style={{ minWidth: '42px', height: '1200px' }}
+              >
+                {/* Hour grid lines */}
+                {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
+                  <div key={hour} className="h-[50px] border-b border-[var(--color-bg-tertiary)]" />
+                ))}
+
+                {/* 15-minute droppable time slots overlay */}
+                <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none">
+                  {Array.from({ length: 24 }, (_, i) => i).map((hour) =>
+                    [0, 15, 30, 45].map((minute) => {
+                      // Create date with the clicked time
+                      const clickedDateTime = new Date(date);
+                      clickedDateTime.setHours(hour, minute, 0, 0);
+
+                      // Calculate end time (1 hour later)
+                      const endDateTime = new Date(clickedDateTime);
+                      endDateTime.setHours(hour + 1, minute, 0, 0);
+
+                      const startTimeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                      const endTimeStr = `${endDateTime.getHours().toString().padStart(2, '0')}:${endDateTime
+                        .getMinutes()
+                        .toString()
+                        .padStart(2, '0')}`;
+
+                      return (
+                        <DroppableTimeSlot
+                          key={`${date.toISOString()}-${hour}-${minute}`}
+                          id={`${date.toISOString()}-${hour}-${minute}`}
+                          date={date}
+                          hour={hour}
+                          minute={minute}
+                          activeBlockDuration={
+                            activeBlock ? activeBlock.endTime.getTime() - activeBlock.startTime.getTime() : undefined
+                          }
+                        >
+                          <div
+                            className="h-[12.5px] cursor-pointer hover:bg-[var(--color-bg-tertiary)]/10 transition-colors pointer-events-auto"
+                            onClick={() =>
+                              onCreateEventForDate &&
+                              onCreateEventForDate(clickedDateTime, undefined, startTimeStr, endTimeStr)
+                            }
+                          />
+                        </DroppableTimeSlot>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Events overlay */}
+                <div className="absolute top-0 left-0 right-0 pointer-events-none z-0">
+                  {dayBlocks.map((block) => {
+                    const { top, height } = getBlockPosition(block);
+                    return (
+                      <div
+                        key={`${block.calendarId}-${block.id}`}
+                        className="absolute left-0.5 right-0.5 pointer-events-auto"
+                        style={{
+                          top: `${top}px`,
+                          height: `${height}px`,
+                        }}
+                      >
+                        <EventCard
+                          block={block}
+                          onClick={() => onBlockClick(block)}
+                          compact={true}
+                          fillHeight={true}
+                          draggable={true}
+                          hideTime={true}
+                          extraCompact={true}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

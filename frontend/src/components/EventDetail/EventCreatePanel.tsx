@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useConfigStore } from '@/stores/configStore';
+import { useAuthStore } from '@/stores/authStore';
 import { useCreateEvent } from '@/hooks/useCalendarQueries';
 import { getInitial } from '@/types';
 
@@ -8,20 +9,70 @@ interface EventCreatePanelProps {
   onClose: () => void;
   defaultDate?: Date;
   defaultCalendarId?: string;
+  defaultStartTime?: string; // Format: "HH:MM"
+  defaultEndTime?: string; // Format: "HH:MM"
 }
 
-export function EventCreatePanel({ isOpen, onClose, defaultDate, defaultCalendarId }: EventCreatePanelProps) {
+export function EventCreatePanel({
+  isOpen,
+  onClose,
+  defaultDate,
+  defaultCalendarId,
+  defaultStartTime,
+  defaultEndTime,
+}: EventCreatePanelProps) {
   const { config, getPersonById } = useConfigStore();
+  const { user } = useAuthStore();
   const createEvent = useCreateEvent();
+
+  // Get the default calendar: use logged-in user's email, or defaultCalendarId, or first calendar
+  const getDefaultCalendarId = () => {
+    if (defaultCalendarId) return defaultCalendarId;
+    if (user?.email) {
+      // Check if user's email exists as a calendar
+      const userCalendar = config.calendars.find((cal) => cal.id === user.email);
+      if (userCalendar) return user.email;
+    }
+    return config.calendars[0]?.id || '';
+  };
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [calendarId, setCalendarId] = useState(defaultCalendarId || config.calendars[0]?.id || '');
+  const [calendarId, setCalendarId] = useState(getDefaultCalendarId());
   const [date, setDate] = useState(defaultDate || new Date());
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
   const [allDay, setAllDay] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Helper function to calculate time in minutes from "HH:MM" string
+  const timeToMinutes = (time: string): number => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+
+  // Helper function to convert minutes to "HH:MM" string
+  const minutesToTime = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60) % 24;
+    const mins = minutes % 60;
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+  };
+
+  // Handler for start time change that maintains duration
+  const handleStartTimeChange = (newStartTime: string) => {
+    // Calculate current duration in minutes
+    const oldStartMinutes = timeToMinutes(startTime);
+    const oldEndMinutes = timeToMinutes(endTime);
+    const duration = oldEndMinutes - oldStartMinutes;
+
+    // Update start time
+    setStartTime(newStartTime);
+
+    // Calculate and set new end time to maintain duration
+    const newStartMinutes = timeToMinutes(newStartTime);
+    const newEndMinutes = newStartMinutes + duration;
+    setEndTime(minutesToTime(newEndMinutes));
+  };
 
   // Reset form when opened - intentional setState in effect for form reset
   // eslint-disable-next-line react-compiler/react-compiler
@@ -29,33 +80,40 @@ export function EventCreatePanel({ isOpen, onClose, defaultDate, defaultCalendar
     if (isOpen) {
       setTitle('');
       setDescription('');
-      setCalendarId(defaultCalendarId || config.calendars[0]?.id || '');
+      setCalendarId(getDefaultCalendarId());
 
       const dateToUse = defaultDate || new Date();
       setDate(dateToUse);
 
-      // Calculate smart default times based on current time if today, otherwise 09:00
-      const now = new Date();
-      const isToday = dateToUse.toDateString() === now.toDateString();
-
-      if (isToday) {
-        // Round up to next hour
-        const nextHour = new Date(now);
-        nextHour.setHours(now.getHours() + 1, 0, 0, 0);
-        const hours = nextHour.getHours();
-        const startHourStr = hours.toString().padStart(2, '0');
-        const endHourStr = ((hours + 1) % 24).toString().padStart(2, '0');
-        setStartTime(`${startHourStr}:00`);
-        setEndTime(`${endHourStr}:00`);
+      // Use provided default times if available, otherwise calculate smart defaults
+      if (defaultStartTime && defaultEndTime) {
+        setStartTime(defaultStartTime);
+        setEndTime(defaultEndTime);
       } else {
-        setStartTime('09:00');
-        setEndTime('10:00');
+        // Calculate smart default times based on current time if today, otherwise 09:00
+        const now = new Date();
+        const isToday = dateToUse.toDateString() === now.toDateString();
+
+        if (isToday) {
+          // Round up to next hour
+          const nextHour = new Date(now);
+          nextHour.setHours(now.getHours() + 1, 0, 0, 0);
+          const hours = nextHour.getHours();
+          const startHourStr = hours.toString().padStart(2, '0');
+          const endHourStr = ((hours + 1) % 24).toString().padStart(2, '0');
+          setStartTime(`${startHourStr}:00`);
+          setEndTime(`${endHourStr}:00`);
+        } else {
+          setStartTime('09:00');
+          setEndTime('10:00');
+        }
       }
 
       setAllDay(false);
       setError(null);
     }
-  }, [isOpen, defaultDate, defaultCalendarId, config.calendars]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, defaultDate, defaultCalendarId, defaultStartTime, defaultEndTime, config.calendars, user?.email]);
 
   // Close on escape key
   useEffect(() => {
@@ -268,7 +326,7 @@ export function EventCreatePanel({ isOpen, onClose, defaultDate, defaultCalendar
                   id="startTime"
                   type="time"
                   value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
+                  onChange={(e) => handleStartTimeChange(e.target.value)}
                   className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded-lg border border-[var(--color-bg-tertiary)] focus:border-[var(--color-accent)] focus:outline-none"
                 />
               </div>

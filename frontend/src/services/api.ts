@@ -2,6 +2,22 @@ import type { Block, Calendar } from '@/types';
 
 const API_BASE = '/api';
 
+/**
+ * Format date for API requests
+ * - All-day events: YYYY-MM-DD format
+ * - Timed events: ISO timestamp
+ */
+function formatDateForAPI(date: Date, isAllDay: boolean): string {
+  if (isAllDay) {
+    // Format as YYYY-MM-DD
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  return date.toISOString();
+}
+
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     ...options,
@@ -92,12 +108,13 @@ export const eventsApi = {
     endTime: Date;
     allDay?: boolean;
   }): Promise<{ success: boolean; eventId: string }> => {
+    const isAllDay = data.allDay ?? false;
     return fetchJson(`${API_BASE}/events`, {
       method: 'POST',
       body: JSON.stringify({
         ...data,
-        startTime: data.startTime.toISOString(),
-        endTime: data.endTime.toISOString(),
+        startTime: formatDateForAPI(data.startTime, isAllDay),
+        endTime: formatDateForAPI(data.endTime, isAllDay),
       }),
     });
   },
@@ -110,14 +127,16 @@ export const eventsApi = {
       description?: string;
       startTime?: Date;
       endTime?: Date;
+      allDay?: boolean;
     }
   ): Promise<{ success: boolean }> => {
+    const isAllDay = data.allDay ?? false;
     return fetchJson(`${API_BASE}/events/${calendarId}/${eventId}`, {
       method: 'PATCH',
       body: JSON.stringify({
         ...data,
-        startTime: data.startTime?.toISOString(),
-        endTime: data.endTime?.toISOString(),
+        startTime: data.startTime ? formatDateForAPI(data.startTime, isAllDay) : undefined,
+        endTime: data.endTime ? formatDateForAPI(data.endTime, isAllDay) : undefined,
       }),
     });
   },

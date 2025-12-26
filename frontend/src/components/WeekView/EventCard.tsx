@@ -44,7 +44,8 @@ export function EventCard({
     opacity: isDragging ? 0.5 : 1,
     backgroundColor: person ? `color-mix(in srgb, ${person.color} 25%, var(--color-bg-secondary))` : 'transparent',
     borderLeft: person ? `4px solid ${person.color}` : 'none',
-  };
+    touchAction: draggable ? 'none' : 'auto',
+  } as React.CSSProperties;
 
   if (!person) {
     return null; // Don't render if person/calendar not found

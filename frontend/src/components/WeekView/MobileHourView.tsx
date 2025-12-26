@@ -60,34 +60,45 @@ export function MobileHourView({
   onCreateEventForDate,
 }: MobileHourViewProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
 
   // Disable scrolling when dragging
   useEffect(() => {
-    if (scrollContainerRef.current) {
-      if (activeBlock) {
-        // Disable scroll during drag - use important styles to override
-        const container = scrollContainerRef.current;
-        container.style.overflow = 'hidden';
-        container.style.touchAction = 'none';
+    const container = scrollContainerRef.current;
+    if (!container) return;
 
-        // Prevent scroll on the container
-        const preventScroll = (e: Event) => {
-          e.preventDefault();
-          e.stopPropagation();
-        };
-
-        container.addEventListener('touchmove', preventScroll, { passive: false });
-        container.addEventListener('scroll', preventScroll, { passive: false });
-
-        return () => {
-          container.removeEventListener('touchmove', preventScroll);
-          container.removeEventListener('scroll', preventScroll);
-        };
-      } else {
-        // Re-enable scroll after drag
-        scrollContainerRef.current.style.overflow = 'auto';
-        scrollContainerRef.current.style.touchAction = 'auto';
-      }
+    if (activeBlock) {
+      isDraggingRef.current = true;
+      // Disable scroll during drag - use important styles to override
+      container.style.overflow = 'hidden';
+      container.style.touchAction = 'none';
+      
+      // Store current scroll position to prevent any scroll drift
+      const scrollTop = container.scrollTop;
+      
+      // Prevent scroll on the container - be very aggressive
+      const preventScroll = (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+        // Force scroll position to stay fixed
+        container.scrollTop = scrollTop;
+        return false;
+      };
+      
+      container.addEventListener('touchmove', preventScroll, { passive: false, capture: true });
+      container.addEventListener('scroll', preventScroll, { passive: false });
+      container.addEventListener('wheel', preventScroll, { passive: false });
+      
+      return () => {
+        container.removeEventListener('touchmove', preventScroll, true);
+        container.removeEventListener('scroll', preventScroll);
+        container.removeEventListener('wheel', preventScroll);
+        isDraggingRef.current = false;
+      };
+    } else {
+      // Re-enable scroll after drag
+      container.style.overflow = 'auto';
+      container.style.touchAction = 'pan-y';
     }
   }, [activeBlock]);
 
@@ -190,7 +201,11 @@ export function MobileHourView({
       </div>
 
       {/* Hourly Events Section - Scrollable */}
-      <div ref={scrollContainerRef} className="flex flex-1 w-full overflow-y-auto overflow-x-hidden">
+      <div
+        ref={scrollContainerRef}
+        className="flex flex-1 w-full overflow-y-auto overflow-x-hidden"
+        style={{ touchAction: 'pan-y' }}
+      >
         <div className="flex w-full">
           {/* Time column */}
           <div

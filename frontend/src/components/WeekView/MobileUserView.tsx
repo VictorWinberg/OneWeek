@@ -5,15 +5,47 @@ import { EventCard } from './EventCard';
 import type { Block } from '@/types';
 import type { Calendar } from '@/types/calendar';
 
+interface DroppableTimeSlotProps {
+  id: string;
+  date: Date;
+  hour: number;
+  minute: number;
+  calendarId: string;
+  children: React.ReactNode;
+  activeBlockDuration?: number;
+}
+
+function DroppableTimeSlot({ id, date, hour, minute, calendarId, children, activeBlockDuration }: DroppableTimeSlotProps) {
+  const { setNodeRef, isOver } = useDroppable({
+    id,
+    data: {
+      date,
+      hour,
+      minute,
+      calendarId,
+    },
+  });
+
+  return (
+    <div ref={setNodeRef} className="relative h-full">
+      {children}
+      {isOver && activeBlockDuration && (
+        <div className="absolute inset-0 border-2 border-[var(--color-accent)] bg-[var(--color-accent)]/10 rounded pointer-events-none z-10" />
+      )}
+    </div>
+  );
+}
+
 interface DroppableMobileCellProps {
   id: string;
   date: Date;
   calendarId: string;
   children: React.ReactNode;
   isToday: boolean;
+  activeBlock: Block | null;
 }
 
-function DroppableMobileCell({ id, date, calendarId, children, isToday }: DroppableMobileCellProps) {
+function DroppableMobileCell({ id, date, calendarId, children, isToday, activeBlock }: DroppableMobileCellProps) {
   const { setNodeRef, isOver } = useDroppable({
     id,
     data: { date, calendarId },
@@ -23,12 +55,36 @@ function DroppableMobileCell({ id, date, calendarId, children, isToday }: Droppa
     <td
       ref={setNodeRef}
       className={`
-        p-0.5 border-b border-r border-[var(--color-bg-tertiary)] last:border-r-0 align-top h-full flex-1
+        p-0.5 border-b border-r border-[var(--color-bg-tertiary)] last:border-r-0 align-top h-full flex-1 relative
         ${isToday ? 'bg-[var(--color-accent)]/5' : ''}
         ${isOver ? 'bg-[var(--color-accent)]/20 ring-2 ring-[var(--color-accent)] ring-inset' : ''}
       `}
     >
-      {children}
+      {/* Time slot overlay for vertical dragging */}
+      <div className="absolute inset-0 pointer-events-none">
+        {Array.from({ length: 24 }, (_, i) => i).map((hour) =>
+          [0, 15, 30, 45].map((minute) => (
+            <DroppableTimeSlot
+              key={`${date.toISOString()}-${calendarId}-${hour}-${minute}`}
+              id={`user-${date.toISOString()}-${calendarId}-${hour}-${minute}`}
+              date={date}
+              hour={hour}
+              minute={minute}
+              calendarId={calendarId}
+              activeBlockDuration={
+                activeBlock ? activeBlock.endTime.getTime() - activeBlock.startTime.getTime() : undefined
+              }
+            >
+              <div className="h-2 pointer-events-auto" />
+            </DroppableTimeSlot>
+          ))
+        )}
+      </div>
+
+      {/* Events */}
+      <div className="relative z-10">
+        {children}
+      </div>
     </td>
   );
 }
@@ -38,9 +94,10 @@ interface MobileUserViewProps {
   blocks: Block[];
   calendars: Calendar[];
   onBlockClick: (block: Block) => void;
+  activeBlock?: Block | null;
 }
 
-export function MobileUserView({ weekDays, blocks, calendars, onBlockClick }: MobileUserViewProps) {
+export function MobileUserView({ weekDays, blocks, calendars, onBlockClick, activeBlock }: MobileUserViewProps) {
   // Get blocks for a specific day and calendar
   const getBlocksForDayAndCalendar = (date: Date, calendarId: string) => {
     const dayBlocks = getBlocksForDay(blocks, date);
@@ -107,6 +164,7 @@ export function MobileUserView({ weekDays, blocks, calendars, onBlockClick }: Mo
                         date={date}
                         calendarId={calendar.id}
                         isToday={today}
+                        activeBlock={activeBlock || null}
                       >
                         <div className="space-y-0.5 h-full flex flex-col">
                           {dayCalendarBlocks.length === 0 ? (

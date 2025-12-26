@@ -4,14 +4,44 @@ import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer
 import { EventCard } from './EventCard';
 import type { Block } from '@/types';
 
+interface DroppableTimeSlotProps {
+  id: string;
+  date: Date;
+  hour: number;
+  minute: number;
+  children: React.ReactNode;
+  activeBlockDuration?: number;
+}
+
+function DroppableTimeSlot({ id, date, hour, minute, children, activeBlockDuration }: DroppableTimeSlotProps) {
+  const { setNodeRef, isOver } = useDroppable({
+    id,
+    data: {
+      date,
+      hour,
+      minute,
+    },
+  });
+
+  return (
+    <div ref={setNodeRef} className="relative h-full">
+      {children}
+      {isOver && activeBlockDuration && (
+        <div className="absolute inset-0 border-2 border-[var(--color-accent)] bg-[var(--color-accent)]/10 rounded pointer-events-none z-10" />
+      )}
+    </div>
+  );
+}
+
 interface DroppableGridDayProps {
   date: Date;
   dayBlocks: Block[];
   onBlockClick: (block: Block) => void;
   isCurrentDay: boolean;
+  activeBlock: Block | null;
 }
 
-function DroppableGridDay({ date, dayBlocks, onBlockClick, isCurrentDay }: DroppableGridDayProps) {
+function DroppableGridDay({ date, dayBlocks, onBlockClick, isCurrentDay, activeBlock }: DroppableGridDayProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `grid-day-${date.toISOString()}`,
     data: { date },
@@ -57,20 +87,43 @@ function DroppableGridDay({ date, dayBlocks, onBlockClick, isCurrentDay }: Dropp
       </div>
 
       {/* Events */}
-      <div className="p-2 space-y-2 min-h-[120px] max-h-[200px] overflow-y-auto">
-        {dayBlocks.length === 0 ? (
-          <p className="text-center text-[var(--color-text-secondary)] text-xs py-8 opacity-60">Inga events</p>
-        ) : (
-          dayBlocks.map((block) => (
-            <EventCard
-              key={`${block.calendarId}-${block.id}`}
-              block={block}
-              onClick={() => onBlockClick(block)}
-              compact={true}
-              draggable={true}
-            />
-          ))
-        )}
+      <div className="p-2 min-h-[120px] max-h-[200px] overflow-y-auto relative">
+        {/* Time slot overlay for vertical dragging */}
+        <div className="absolute inset-0 pointer-events-none">
+          {Array.from({ length: 24 }, (_, i) => i).map((hour) =>
+            [0, 15, 30, 45].map((minute) => (
+              <DroppableTimeSlot
+                key={`${date.toISOString()}-${hour}-${minute}`}
+                id={`grid-${date.toISOString()}-${hour}-${minute}`}
+                date={date}
+                hour={hour}
+                minute={minute}
+                activeBlockDuration={
+                  activeBlock ? activeBlock.endTime.getTime() - activeBlock.startTime.getTime() : undefined
+                }
+              >
+                <div className="h-2 pointer-events-auto" />
+              </DroppableTimeSlot>
+            ))
+          )}
+        </div>
+
+        {/* Events */}
+        <div className="space-y-2 relative z-10">
+          {dayBlocks.length === 0 ? (
+            <p className="text-center text-[var(--color-text-secondary)] text-xs py-8 opacity-60">Inga events</p>
+          ) : (
+            dayBlocks.map((block) => (
+              <EventCard
+                key={`${block.calendarId}-${block.id}`}
+                block={block}
+                onClick={() => onBlockClick(block)}
+                compact={true}
+                draggable={true}
+              />
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
@@ -80,9 +133,10 @@ interface MobileGridViewProps {
   weekDays: Date[];
   blocks: Block[];
   onBlockClick: (block: Block) => void;
+  activeBlock?: Block | null;
 }
 
-export function MobileGridView({ weekDays, blocks, onBlockClick }: MobileGridViewProps) {
+export function MobileGridView({ weekDays, blocks, onBlockClick, activeBlock }: MobileGridViewProps) {
   return (
     <div className="overflow-y-auto h-full">
       <div className="grid grid-cols-2 gap-2 p-2">
@@ -97,6 +151,7 @@ export function MobileGridView({ weekDays, blocks, onBlockClick }: MobileGridVie
               dayBlocks={dayBlocks}
               onBlockClick={onBlockClick}
               isCurrentDay={isCurrentDay}
+              activeBlock={activeBlock || null}
             />
           );
         })}

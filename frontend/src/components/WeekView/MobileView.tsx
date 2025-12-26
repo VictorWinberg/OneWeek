@@ -96,7 +96,7 @@ export function MobileView({
 
   // Configure drag sensors for mobile - use separate mouse and touch sensors
   // PointerSensor with low distance for mouse/trackpad on tablets
-  // TouchSensor with delay to prevent scroll conflicts on phones
+  // TouchSensor with no delay for immediate drag response
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -105,8 +105,7 @@ export function MobileView({
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 150, // Press delay before drag activates
-        tolerance: 5, // Allow 5px of movement during delay
+        distance: 8, // Small distance threshold for immediate drag
       },
     })
   );
@@ -335,13 +334,25 @@ export function MobileView({
         {/* Content */}
         <div className="flex-1 overflow-hidden">
           {mobileViewMode === 'list' ? (
-            <MobileListView weekDays={weekDays} blocks={blocks} onBlockClick={onBlockClick} />
+            <MobileListView weekDays={weekDays} blocks={blocks} onBlockClick={onBlockClick} activeBlock={activeBlock} />
           ) : mobileViewMode === 'grid' ? (
-            <MobileGridView weekDays={weekDays} blocks={blocks} onBlockClick={onBlockClick} />
+            <MobileGridView weekDays={weekDays} blocks={blocks} onBlockClick={onBlockClick} activeBlock={activeBlock} />
           ) : mobileViewMode === 'hour' ? (
-            <MobileHourView weekDays={weekDays} blocks={blocks} onBlockClick={onBlockClick} activeBlock={activeBlock} onCreateEventForDate={onCreateEventForDate} />
+            <MobileHourView
+              weekDays={weekDays}
+              blocks={blocks}
+              onBlockClick={onBlockClick}
+              activeBlock={activeBlock}
+              onCreateEventForDate={onCreateEventForDate}
+            />
           ) : (
-            <MobileUserView weekDays={weekDays} blocks={blocks} calendars={calendars} onBlockClick={onBlockClick} />
+            <MobileUserView
+              weekDays={weekDays}
+              blocks={blocks}
+              calendars={calendars}
+              onBlockClick={onBlockClick}
+              activeBlock={activeBlock}
+            />
           )}
         </div>
 

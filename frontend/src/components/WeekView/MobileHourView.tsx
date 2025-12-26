@@ -65,11 +65,28 @@ export function MobileHourView({
   useEffect(() => {
     if (scrollContainerRef.current) {
       if (activeBlock) {
-        // Disable scroll during drag
-        scrollContainerRef.current.style.overflow = 'hidden';
+        // Disable scroll during drag - use important styles to override
+        const container = scrollContainerRef.current;
+        container.style.overflow = 'hidden';
+        container.style.touchAction = 'none';
+
+        // Prevent scroll on the container
+        const preventScroll = (e: Event) => {
+          e.preventDefault();
+          e.stopPropagation();
+        };
+
+        container.addEventListener('touchmove', preventScroll, { passive: false });
+        container.addEventListener('scroll', preventScroll, { passive: false });
+
+        return () => {
+          container.removeEventListener('touchmove', preventScroll);
+          container.removeEventListener('scroll', preventScroll);
+        };
       } else {
         // Re-enable scroll after drag
         scrollContainerRef.current.style.overflow = 'auto';
+        scrollContainerRef.current.style.touchAction = 'auto';
       }
     }
   }, [activeBlock]);
@@ -173,11 +190,7 @@ export function MobileHourView({
       </div>
 
       {/* Hourly Events Section - Scrollable */}
-      <div
-        ref={scrollContainerRef}
-        className="flex flex-1 w-full overflow-y-auto overflow-x-hidden"
-        style={{ touchAction: activeBlock ? 'none' : 'auto' }}
-      >
+      <div ref={scrollContainerRef} className="flex flex-1 w-full overflow-y-auto overflow-x-hidden">
         <div className="flex w-full">
           {/* Time column */}
           <div
@@ -227,7 +240,10 @@ export function MobileHourView({
                       endDateTime.setHours(hour + 1, minute, 0, 0);
 
                       const startTimeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                      const endTimeStr = `${endDateTime.getHours().toString().padStart(2, '0')}:${endDateTime.getMinutes().toString().padStart(2, '0')}`;
+                      const endTimeStr = `${endDateTime.getHours().toString().padStart(2, '0')}:${endDateTime
+                        .getMinutes()
+                        .toString()
+                        .padStart(2, '0')}`;
 
                       return (
                         <DroppableTimeSlot
@@ -242,7 +258,10 @@ export function MobileHourView({
                         >
                           <div
                             className="h-[12.5px] cursor-pointer hover:bg-[var(--color-bg-tertiary)]/10 transition-colors pointer-events-auto"
-                            onClick={() => onCreateEventForDate && onCreateEventForDate(clickedDateTime, undefined, startTimeStr, endTimeStr)}
+                            onClick={() =>
+                              onCreateEventForDate &&
+                              onCreateEventForDate(clickedDateTime, undefined, startTimeStr, endTimeStr)
+                            }
                           />
                         </DroppableTimeSlot>
                       );

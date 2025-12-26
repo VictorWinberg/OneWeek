@@ -96,7 +96,7 @@ export function MobileView({
 
   // Configure drag sensors for mobile - use separate mouse and touch sensors
   // PointerSensor with low distance for mouse/trackpad on tablets
-  // TouchSensor with no delay for immediate drag response
+  // TouchSensor with delay to prevent accidental drags and allow scroll
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -105,7 +105,8 @@ export function MobileView({
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        distance: 8, // Small distance threshold for immediate drag
+        delay: 150, // Delay before drag activates, allows scroll to work
+        tolerance: 5, // Movement tolerance during delay
       },
     })
   );

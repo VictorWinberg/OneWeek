@@ -3,6 +3,8 @@ import { useConfigStore } from '@/stores/configStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useCreateEvent } from '@/hooks/useCalendarQueries';
 import { getInitial } from '@/types';
+import { RecurrenceSelector } from './RecurrenceSelector';
+import type { RecurrenceRule } from '@/types/block';
 
 interface EventCreatePanelProps {
   isOpen: boolean;
@@ -39,10 +41,12 @@ export function EventCreatePanel({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [calendarId, setCalendarId] = useState(getDefaultCalendarId());
-  const [date, setDate] = useState(defaultDate || new Date());
+  const [startDate, setStartDate] = useState(defaultDate || new Date());
+  const [endDate, setEndDate] = useState(defaultDate || new Date());
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
   const [allDay, setAllDay] = useState(false);
+  const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Helper function to calculate time in minutes from "HH:MM" string
@@ -83,7 +87,8 @@ export function EventCreatePanel({
       setCalendarId(getDefaultCalendarId());
 
       const dateToUse = defaultDate || new Date();
-      setDate(dateToUse);
+      setStartDate(dateToUse);
+      setEndDate(dateToUse);
 
       // Use provided default times if available, otherwise calculate smart defaults
       if (defaultStartTime && defaultEndTime) {
@@ -110,6 +115,7 @@ export function EventCreatePanel({
       }
 
       setAllDay(false);
+      setRecurrenceRule(null);
       setError(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -142,9 +148,9 @@ export function EventCreatePanel({
     setError(null);
 
     try {
-      // Combine date with time
-      const startDateTime = new Date(date);
-      const endDateTime = new Date(date);
+      // Combine dates with times
+      const startDateTime = new Date(startDate);
+      const endDateTime = new Date(endDate);
 
       if (!allDay) {
         const [startHour, startMinute] = startTime.split(':').map(Number);
@@ -158,6 +164,10 @@ export function EventCreatePanel({
           setError('Sluttid måste vara efter starttid');
           return;
         }
+      } else {
+        // For all-day events, ensure proper date boundaries
+        startDateTime.setHours(0, 0, 0, 0);
+        endDateTime.setHours(23, 59, 59, 999);
       }
 
       await createEvent.mutateAsync({
@@ -167,6 +177,7 @@ export function EventCreatePanel({
         startTime: startDateTime,
         endTime: endDateTime,
         allDay,
+        recurrenceRule,
       });
 
       onClose();
@@ -284,18 +295,40 @@ export function EventCreatePanel({
             </div>
           </div>
 
-          {/* Date */}
-          <div>
-            <label htmlFor="date" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-              Datum *
-            </label>
-            <input
-              id="date"
-              type="date"
-              value={new Intl.DateTimeFormat('sv-SE').format(date)}
-              onChange={(e) => setDate(new Date(e.target.value + 'T12:00:00'))}
-              className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded-lg border border-[var(--color-bg-tertiary)] focus:border-[var(--color-accent)] focus:outline-none"
-            />
+          {/* Date Range */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="startDate" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                Startdatum *
+              </label>
+              <input
+                id="startDate"
+                type="date"
+                value={new Intl.DateTimeFormat('sv-SE').format(startDate)}
+                onChange={(e) => {
+                  const newStartDate = new Date(e.target.value + 'T12:00:00');
+                  setStartDate(newStartDate);
+                  // If end date is before start date, update it
+                  if (endDate < newStartDate) {
+                    setEndDate(newStartDate);
+                  }
+                }}
+                className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded-lg border border-[var(--color-bg-tertiary)] focus:border-[var(--color-accent)] focus:outline-none"
+              />
+            </div>
+            <div>
+              <label htmlFor="endDate" className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                Slutdatum *
+              </label>
+              <input
+                id="endDate"
+                type="date"
+                value={new Intl.DateTimeFormat('sv-SE').format(endDate)}
+                onChange={(e) => setEndDate(new Date(e.target.value + 'T12:00:00'))}
+                min={new Intl.DateTimeFormat('sv-SE').format(startDate)}
+                className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded-lg border border-[var(--color-bg-tertiary)] focus:border-[var(--color-accent)] focus:outline-none"
+              />
+            </div>
           </div>
 
           {/* All Day Toggle */}
@@ -344,6 +377,9 @@ export function EventCreatePanel({
               </div>
             </div>
           )}
+
+          {/* Recurrence */}
+          <RecurrenceSelector value={recurrenceRule} onChange={setRecurrenceRule} disabled={createEvent.isPending} />
 
           {/* Error message */}
           {error && (

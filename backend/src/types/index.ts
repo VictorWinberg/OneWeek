@@ -18,6 +18,8 @@ export interface Block {
   endTime: string; // ISO string
   allDay: boolean;
   metadata: BlockMetadata;
+  recurrence?: string[]; // RRULE strings from Google Calendar
+  recurringEventId?: string; // ID of the recurring event series
 }
 
 export interface GoogleCalendarEvent {
@@ -37,4 +39,5 @@ export interface GoogleCalendarEvent {
   extendedProperties?: {
     private?: Record<string, string>;
   };
+  recurrence?: string[];
 }

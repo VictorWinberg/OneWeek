@@ -130,9 +130,12 @@ export function HourView({
     return { top, height };
   };
 
-  const handleEmptySpaceClick = (date: Date) => {
+  const handleEmptySpaceClick = (date: Date, hour: number, minute: number) => {
+    const startTimeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+    const endHour = hour + 1;
+    const endTimeStr = `${(endHour % 24).toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
     if (onCreateEventForDate) {
-      onCreateEventForDate(date);
+      onCreateEventForDate(date, undefined, startTimeStr, endTimeStr);
     }
   };
 
@@ -366,7 +369,7 @@ export function HourView({
                               >
                                 <div
                                   className="h-[15px] cursor-pointer hover:bg-[var(--color-bg-tertiary)]/10 transition-colors pointer-events-auto"
-                                  onClick={() => handleEmptySpaceClick(date)}
+                                  onClick={() => handleEmptySpaceClick(date, hour, minute)}
                                 />
                               </DroppableTimeSlot>
                             ))

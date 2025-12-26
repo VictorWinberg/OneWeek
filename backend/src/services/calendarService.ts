@@ -83,6 +83,18 @@ export async function updateEvent(
 ): Promise<calendar_v3.Schema$Event | null> {
   const calendar = getServiceAccountClient();
   try {
+    const currentEvent = await getEvent(calendarId, eventId);
+
+    if (currentEvent?.recurringEventId) {
+      const exceptionEvent = {
+        ...currentEvent,
+        ...event,
+        id: undefined,
+      };
+      const response = await calendar.events.insert({ calendarId, requestBody: exceptionEvent });
+      return response.data;
+    }
+
     const response = await calendar.events.patch({ calendarId, eventId, requestBody: event });
     return response.data;
   } catch (error) {
@@ -92,11 +104,91 @@ export async function updateEvent(
 }
 
 /** Delete an event */
-export async function deleteEvent(calendarId: string, eventId: string): Promise<boolean> {
+export async function deleteEvent(
+  calendarId: string,
+  eventId: string,
+  updateMode?: 'this' | 'all' | 'future'
+): Promise<boolean> {
   const calendar = getServiceAccountClient();
+
   try {
-    await calendar.events.delete({ calendarId, eventId });
-    return true;
+    const currentEvent = await getEvent(calendarId, eventId);
+
+    if (!updateMode || updateMode === 'this') {
+      if (currentEvent?.recurringEventId) {
+        await calendar.events.delete({ calendarId, eventId });
+        return true;
+      }
+      await calendar.events.delete({ calendarId, eventId });
+      return true;
+    } else if (updateMode === 'all') {
+      const masterEventId = currentEvent?.recurringEventId || eventId;
+      await calendar.events.delete({ calendarId, eventId: masterEventId });
+      return true;
+    } else if (updateMode === 'future') {
+      const masterEventId = currentEvent?.recurringEventId || eventId;
+
+      if (!currentEvent?.start?.dateTime && !currentEvent?.start?.date) {
+        console.error('Current event has no start date');
+        return false;
+      }
+
+      const masterEvent = await getEvent(calendarId, masterEventId);
+      if (!masterEvent || !masterEvent.recurrence) {
+        console.error('Master event not found or has no recurrence');
+        return false;
+      }
+
+      const instanceStartStr =
+        currentEvent.originalStartTime?.dateTime ||
+        currentEvent.originalStartTime?.date ||
+        currentEvent.start.dateTime ||
+        currentEvent.start.date!;
+
+      let untilDate: Date;
+
+      if (currentEvent.start.dateTime) {
+        const instanceStartDate = new Date(instanceStartStr);
+        untilDate = new Date(instanceStartDate);
+        untilDate.setDate(untilDate.getDate() - 1);
+        untilDate.setHours(23, 59, 59, 0);
+      } else {
+        const dateOnly = instanceStartStr.split('T')[0];
+        const parts = dateOnly.split('-');
+        const year = parseInt(parts[0]);
+        const month = parseInt(parts[1]) - 1;
+        const day = parseInt(parts[2]);
+
+        untilDate = new Date(Date.UTC(year, month, day - 1, 23, 59, 59, 0));
+      }
+
+      const updatedRecurrence = masterEvent.recurrence.map((rule) => {
+        if (rule.startsWith('RRULE:')) {
+          let rrule = rule.replace(/;UNTIL=[^;]+/g, '').replace(/;COUNT=\d+/g, '');
+
+          const untilStr = untilDate
+            .toISOString()
+            .replace(/[-:]/g, '')
+            .replace(/\.\d{3}/, '');
+          rrule += `;UNTIL=${untilStr}`;
+
+          return rrule;
+        }
+        return rule;
+      });
+
+      await calendar.events.patch({
+        calendarId,
+        eventId: masterEventId,
+        requestBody: {
+          recurrence: updatedRecurrence,
+        },
+      });
+
+      return true;
+    }
+
+    return false;
   } catch (error) {
     console.error('Error deleting event:', error);
     return false;
@@ -142,6 +234,7 @@ export async function moveEventBetweenCalendars(
           timeZone: originalEvent.end.timeZone ?? undefined,
         }
       : undefined,
+    recurrence: originalEvent.recurrence ?? undefined, // Preserve recurrence rules when moving
     extendedProperties: { private: metadata },
   };
 
@@ -173,6 +266,8 @@ export function normalizeEventToBlock(event: calendar_v3.Schema$Event, calendarI
     endTime,
     allDay: isAllDay,
     metadata,
+    recurrence: event.recurrence || undefined,
+    recurringEventId: event.recurringEventId || undefined,
   };
 }
 
@@ -183,7 +278,8 @@ export function blockToGoogleEvent(
   startTime: string,
   endTime: string,
   allDay: boolean,
-  metadata?: BlockMetadata
+  metadata?: BlockMetadata,
+  recurrence?: string[]
 ): GoogleCalendarEvent {
   const event: GoogleCalendarEvent = { summary: title, description: description || undefined };
 
@@ -191,8 +287,8 @@ export function blockToGoogleEvent(
     event.start = { date: startTime.split('T')[0] };
     event.end = { date: endTime.split('T')[0] };
   } else {
-    event.start = { dateTime: startTime };
-    event.end = { dateTime: endTime };
+    event.start = { dateTime: startTime, timeZone: 'Europe/Stockholm' };
+    event.end = { dateTime: endTime, timeZone: 'Europe/Stockholm' };
   }
 
   if (metadata) {
@@ -202,6 +298,10 @@ export function blockToGoogleEvent(
         ...(metadata.originalCalendarId && { originalCalendarId: metadata.originalCalendarId }),
       },
     };
+  }
+
+  if (recurrence && recurrence.length > 0) {
+    event.recurrence = recurrence;
   }
 
   return event;

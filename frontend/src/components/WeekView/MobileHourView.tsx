@@ -109,6 +109,7 @@ export function MobileHourView({
     }
   }, []);
 
+  // Calculate position and size for a block in hour view
   const getBlockPosition = (block: Block) => {
     const startHour = block.startTime.getHours();
     const startMinute = block.startTime.getMinutes();

@@ -4,6 +4,8 @@ import { useAuthStore } from '@/stores/authStore';
 import { useCreateEvent } from '@/hooks/useCalendarQueries';
 import { getInitial } from '@/types';
 import { RecurrenceSelector } from './RecurrenceSelector';
+import { calculateSmartDefaultTimes, calculateEndTimeWithDuration } from '@/utils/timeUtils';
+import { getDefaultCalendarId, prepareEventData } from '@/utils/eventCreationUtils';
 import type { RecurrenceRule } from '@/types/block';
 
 interface EventCreatePanelProps {
@@ -27,20 +29,13 @@ export function EventCreatePanel({
   const { user } = useAuthStore();
   const createEvent = useCreateEvent();
 
-  // Get the default calendar: use logged-in user's email, or defaultCalendarId, or first calendar
-  const getDefaultCalendarId = () => {
-    if (defaultCalendarId) return defaultCalendarId;
-    if (user?.email) {
-      // Check if user's email exists as a calendar
-      const userCalendar = config.calendars.find((cal) => cal.id === user.email);
-      if (userCalendar) return user.email;
-    }
-    return config.calendars[0]?.id || '';
-  };
+  // Get the default calendar using utility
+  const getDefaultCalendarIdForForm = () =>
+    getDefaultCalendarId(config.calendars, user, defaultCalendarId);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [calendarId, setCalendarId] = useState(getDefaultCalendarId());
+  const [calendarId, setCalendarId] = useState(getDefaultCalendarIdForForm());
   const [startDate, setStartDate] = useState(defaultDate || new Date());
   const [endDate, setEndDate] = useState(defaultDate || new Date());
   const [startTime, setStartTime] = useState('09:00');
@@ -49,33 +44,12 @@ export function EventCreatePanel({
   const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Helper function to calculate time in minutes from "HH:MM" string
-  const timeToMinutes = (time: string): number => {
-    const [hours, minutes] = time.split(':').map(Number);
-    return hours * 60 + minutes;
-  };
-
-  // Helper function to convert minutes to "HH:MM" string
-  const minutesToTime = (minutes: number): string => {
-    const hours = Math.floor(minutes / 60) % 24;
-    const mins = minutes % 60;
-    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-  };
-
   // Handler for start time change that maintains duration
   const handleStartTimeChange = (newStartTime: string) => {
-    // Calculate current duration in minutes
-    const oldStartMinutes = timeToMinutes(startTime);
-    const oldEndMinutes = timeToMinutes(endTime);
-    const duration = oldEndMinutes - oldStartMinutes;
-
-    // Update start time
     setStartTime(newStartTime);
-
-    // Calculate and set new end time to maintain duration
-    const newStartMinutes = timeToMinutes(newStartTime);
-    const newEndMinutes = newStartMinutes + duration;
-    setEndTime(minutesToTime(newEndMinutes));
+    // Use utility to calculate new end time maintaining duration
+    const newEndTime = calculateEndTimeWithDuration(startTime, endTime, newStartTime);
+    setEndTime(newEndTime);
   };
 
   // Reset form when opened - intentional setState in effect for form reset
@@ -84,7 +58,7 @@ export function EventCreatePanel({
     if (isOpen) {
       setTitle('');
       setDescription('');
-      setCalendarId(getDefaultCalendarId());
+      setCalendarId(getDefaultCalendarIdForForm());
 
       const dateToUse = defaultDate || new Date();
       setStartDate(dateToUse);
@@ -95,23 +69,10 @@ export function EventCreatePanel({
         setStartTime(defaultStartTime);
         setEndTime(defaultEndTime);
       } else {
-        // Calculate smart default times based on current time if today, otherwise 09:00
-        const now = new Date();
-        const isToday = dateToUse.toDateString() === now.toDateString();
-
-        if (isToday) {
-          // Round up to next hour
-          const nextHour = new Date(now);
-          nextHour.setHours(now.getHours() + 1, 0, 0, 0);
-          const hours = nextHour.getHours();
-          const startHourStr = hours.toString().padStart(2, '0');
-          const endHourStr = ((hours + 1) % 24).toString().padStart(2, '0');
-          setStartTime(`${startHourStr}:00`);
-          setEndTime(`${endHourStr}:00`);
-        } else {
-          setStartTime('09:00');
-          setEndTime('10:00');
-        }
+        // Use utility to calculate smart default times
+        const { startTime: smartStart, endTime: smartEnd } = calculateSmartDefaultTimes(dateToUse);
+        setStartTime(smartStart);
+        setEndTime(smartEnd);
       }
 
       setAllDay(false);
@@ -148,26 +109,18 @@ export function EventCreatePanel({
     setError(null);
 
     try {
-      // Combine dates with times
-      const startDateTime = new Date(startDate);
-      const endDateTime = new Date(endDate);
+      // Use utility to prepare and validate event data
+      const { startDateTime, endDateTime, validationError } = prepareEventData(
+        startDate,
+        endDate,
+        startTime,
+        endTime,
+        allDay
+      );
 
-      if (!allDay) {
-        const [startHour, startMinute] = startTime.split(':').map(Number);
-        const [endHour, endMinute] = endTime.split(':').map(Number);
-
-        startDateTime.setHours(startHour, startMinute, 0, 0);
-        endDateTime.setHours(endHour, endMinute, 0, 0);
-
-        // Validate times
-        if (endDateTime <= startDateTime) {
-          setError('Sluttid måste vara efter starttid');
-          return;
-        }
-      } else {
-        // For all-day events, ensure proper date boundaries
-        startDateTime.setHours(0, 0, 0, 0);
-        endDateTime.setHours(23, 59, 59, 999);
+      if (validationError) {
+        setError(validationError);
+        return;
       }
 
       await createEvent.mutateAsync({

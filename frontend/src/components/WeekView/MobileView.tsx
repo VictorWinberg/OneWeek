@@ -1,19 +1,22 @@
-import { useState, useEffect } from 'react';
-import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor, TouchSensor } from '@dnd-kit/core';
-import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
+import { useEffect } from 'react';
+import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
 import { useWeekEvents, usePrefetchAdjacentWeeks, useUpdateEvent, useMoveEvent } from '@/hooks/useCalendarQueries';
 import { getWeekDays, formatWeekHeader, getWeekNumber } from '@/utils/dateUtils';
+import {
+  urlToMobileViewMode,
+  mobileToUrlViewMode,
+  type MobileViewMode,
+  type UrlViewMode,
+} from '@/utils/viewModeUtils';
+import { useMobileDragAndDrop } from '@/hooks/useDragAndDrop';
 import { EventCard } from './EventCard';
 import { MobileListView } from './MobileListView';
 import { MobileGridView } from './MobileGridView';
 import { MobileUserView } from './MobileUserView';
 import { MobileHourView } from './MobileHourView';
 import type { Block } from '@/types';
-
-type MobileViewMode = 'list' | 'calendar' | 'grid' | 'hour';
-type UrlViewMode = 'day' | 'grid' | 'user' | 'hour';
 
 interface MobileViewProps {
   onBlockClick: (block: Block) => void;
@@ -24,39 +27,6 @@ interface MobileViewProps {
   onPrevWeek?: () => void;
   onGoToToday?: () => void;
   onViewModeChange?: (mode: UrlViewMode) => void;
-}
-
-// Map URL view modes to mobile view modes
-function urlToMobileViewMode(urlMode: UrlViewMode | undefined, localMode: MobileViewMode): MobileViewMode {
-  if (!urlMode) return localMode;
-  switch (urlMode) {
-    case 'day':
-      return 'list';
-    case 'grid':
-      return 'grid';
-    case 'user':
-      return 'calendar';
-    case 'hour':
-      return 'hour';
-    default:
-      return 'list';
-  }
-}
-
-// Map mobile view modes to URL view modes
-function mobileToUrlViewMode(mobileMode: MobileViewMode): UrlViewMode {
-  switch (mobileMode) {
-    case 'list':
-      return 'day';
-    case 'grid':
-      return 'grid';
-    case 'calendar':
-      return 'user';
-    case 'hour':
-      return 'hour';
-    default:
-      return 'day';
-  }
 }
 
 export function MobileView({
@@ -92,24 +62,12 @@ export function MobileView({
       onViewModeChange(newUrlMode);
     }
   };
-  const [activeBlock, setActiveBlock] = useState<Block | null>(null);
 
-  // Configure drag sensors for mobile - use separate mouse and touch sensors
-  // PointerSensor with low distance for mouse/trackpad on tablets
-  // TouchSensor with delay to prevent accidental drags and allow scroll
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 3,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 150, // Delay before drag activates, allows scroll to work
-        tolerance: 5, // Movement tolerance during delay
-      },
-    })
-  );
+  // Use mobile drag and drop hook
+  const { activeBlock, handleDragStart, handleDragEnd, sensors } = useMobileDragAndDrop(blocks, {
+    updateEventTime,
+    moveEvent,
+  });
 
   // Prefetch adjacent weeks when data loads
   useEffect(() => {
@@ -117,187 +75,6 @@ export function MobileView({
       prefetch();
     }
   }, [isLoading, prefetch, blocks.length]);
-
-  const handleDragStart = (event: DragStartEvent) => {
-    const blockId = String(event.active.id);
-    const block = blocks.find((b) => `${b.calendarId}-${b.id}` === blockId);
-    if (block) {
-      setActiveBlock(block);
-    }
-  };
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    setActiveBlock(null);
-
-    if (!event.over) return;
-
-    const blockId = String(event.active.id);
-    const dropData = event.over.data.current as
-      | { date?: Date; calendarId?: string; hour?: number; minute?: number }
-      | undefined;
-
-    if (!dropData) return;
-
-    const block = blocks.find((b) => `${b.calendarId}-${b.id}` === blockId);
-    if (!block) return;
-
-    // Handle all-day events - preserve all-day status
-    if (block.allDay && dropData.date) {
-      // For all-day events, just change the date (and calendar if provided)
-      const needsMove = dropData.calendarId && block.calendarId !== dropData.calendarId;
-
-      if (needsMove && dropData.calendarId) {
-        try {
-          await moveEvent.mutateAsync({
-            blockId: block.id,
-            calendarId: block.calendarId,
-            targetCalendarId: dropData.calendarId,
-            startTime: block.startTime,
-          });
-        } catch (error) {
-          console.error('Failed to move block:', error);
-          return;
-        }
-      }
-
-      const needsTimeUpdate = block.startTime.toDateString() !== dropData.date.toDateString();
-      if (needsTimeUpdate) {
-        const newStartTime = new Date(dropData.date);
-        newStartTime.setHours(0, 0, 0, 0);
-
-        // For all-day events, end time is midnight of the NEXT day
-        const newEndTime = new Date(dropData.date);
-        newEndTime.setDate(newEndTime.getDate() + 1);
-        newEndTime.setHours(0, 0, 0, 0);
-
-        try {
-          await updateEventTime.mutateAsync({
-            blockId: block.id,
-            calendarId: needsMove && dropData.calendarId ? dropData.calendarId : block.calendarId,
-            startTime: newStartTime,
-            endTime: newEndTime,
-            allDay: true,
-          });
-        } catch (error) {
-          console.error('Failed to update block time:', error);
-        }
-      }
-      return;
-    }
-
-    // Handle user view with time slots (calendar + day + time change)
-    if (dropData.date && dropData.calendarId && dropData.hour !== undefined && dropData.minute !== undefined) {
-      const needsMove = block.calendarId !== dropData.calendarId;
-      const newStartTime = new Date(dropData.date);
-      newStartTime.setHours(dropData.hour, dropData.minute, 0, 0);
-
-      const duration = block.endTime.getTime() - block.startTime.getTime();
-      const newEndTime = new Date(newStartTime.getTime() + duration);
-
-      // If calendar changed, move the event first
-      if (needsMove) {
-        try {
-          await moveEvent.mutateAsync({
-            blockId: block.id,
-            calendarId: block.calendarId,
-            targetCalendarId: dropData.calendarId,
-            startTime: block.startTime,
-          });
-        } catch (error) {
-          console.error('Failed to move block:', error);
-          return;
-        }
-      }
-
-      // Update the time (always needed in this case)
-      try {
-        await updateEventTime.mutateAsync({
-          blockId: block.id,
-          calendarId: needsMove ? dropData.calendarId : block.calendarId,
-          startTime: newStartTime,
-          endTime: newEndTime,
-        });
-      } catch (error) {
-        console.error('Failed to update block time:', error);
-      }
-    }
-    // Handle hour view (time slot change only, no calendar)
-    else if (dropData.date && dropData.hour !== undefined && dropData.minute !== undefined) {
-      const newStartTime = new Date(dropData.date);
-      newStartTime.setHours(dropData.hour, dropData.minute, 0, 0);
-
-      const duration = block.endTime.getTime() - block.startTime.getTime();
-      const newEndTime = new Date(newStartTime.getTime() + duration);
-
-      try {
-        await updateEventTime.mutateAsync({
-          blockId: block.id,
-          calendarId: block.calendarId,
-          startTime: newStartTime,
-          endTime: newEndTime,
-        });
-      } catch (error) {
-        console.error('Failed to update block time:', error);
-      }
-    }
-    // Handle user view cell drop (day + calendar change, no specific time)
-    else if (dropData.date && dropData.calendarId) {
-      const needsMove = block.calendarId !== dropData.calendarId;
-      const needsTimeUpdate = block.startTime.toDateString() !== dropData.date.toDateString();
-
-      if (needsMove) {
-        try {
-          await moveEvent.mutateAsync({
-            blockId: block.id,
-            calendarId: block.calendarId,
-            targetCalendarId: dropData.calendarId,
-            startTime: block.startTime,
-          });
-        } catch (error) {
-          console.error('Failed to move block:', error);
-          return;
-        }
-      }
-
-      if (needsTimeUpdate) {
-        const newStartTime = new Date(dropData.date);
-        newStartTime.setHours(block.startTime.getHours(), block.startTime.getMinutes(), 0, 0);
-
-        const duration = block.endTime.getTime() - block.startTime.getTime();
-        const newEndTime = new Date(newStartTime.getTime() + duration);
-
-        try {
-          await updateEventTime.mutateAsync({
-            blockId: block.id,
-            calendarId: needsMove ? dropData.calendarId : block.calendarId,
-            startTime: newStartTime,
-            endTime: newEndTime,
-          });
-        } catch (error) {
-          console.error('Failed to update block time:', error);
-        }
-      }
-    }
-    // Handle list/grid view (day change only)
-    else if (dropData.date) {
-      const newStartTime = new Date(dropData.date);
-      newStartTime.setHours(block.startTime.getHours(), block.startTime.getMinutes(), 0, 0);
-
-      const duration = block.endTime.getTime() - block.startTime.getTime();
-      const newEndTime = new Date(newStartTime.getTime() + duration);
-
-      try {
-        await updateEventTime.mutateAsync({
-          blockId: block.id,
-          calendarId: block.calendarId,
-          startTime: newStartTime,
-          endTime: newEndTime,
-        });
-      } catch (error) {
-        console.error('Failed to update block time:', error);
-      }
-    }
-  };
 
   if (isLoading) {
     return (

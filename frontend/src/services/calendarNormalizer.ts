@@ -66,3 +66,60 @@ export function isBlockCurrent(block: Block): boolean {
   const now = new Date();
   return new Date(block.startTime) <= now && new Date(block.endTime) >= now;
 }
+
+/**
+ * Find a block by its composite ID (calendarId-blockId)
+ */
+export function findBlockById(blocks: Block[], compositeId: string): Block | undefined {
+  return blocks.find((b) => `${b.calendarId}-${b.id}` === compositeId);
+}
+
+/**
+ * Create a composite ID from a block
+ */
+export function getBlockCompositeId(block: Block): string {
+  return `${block.calendarId}-${block.id}`;
+}
+
+/**
+ * Calculate the visual position of a block in an hour-based view
+ * Returns top position and height in pixels
+ */
+export function calculateBlockPosition(
+  block: Block,
+  pixelsPerHour: number,
+  minHeight: number = 30
+): { top: number; height: number } {
+  const startHour = block.startTime.getHours();
+  const startMinute = block.startTime.getMinutes();
+  const endHour = block.endTime.getHours();
+  const endMinute = block.endTime.getMinutes();
+
+  const top = (startHour + startMinute / 60) * pixelsPerHour;
+  const duration = endHour - startHour + (endMinute - startMinute) / 60;
+  const height = Math.max(duration * pixelsPerHour, minHeight);
+
+  return { top, height };
+}
+
+/**
+ * Get blocks for a specific day and calendar
+ */
+export function getBlocksForDayAndCalendar(blocks: Block[], date: Date, calendarId: string): Block[] {
+  const dayBlocks = getBlocksForDay(blocks, date);
+  return sortBlocksByTime(dayBlocks.filter((b) => b.calendarId === calendarId));
+}
+
+/**
+ * Get timed (non-all-day) blocks for a day
+ */
+export function getTimedBlocksForDay(blocks: Block[], date: Date): Block[] {
+  return getBlocksForDay(blocks, date).filter((block) => !block.allDay);
+}
+
+/**
+ * Get all-day blocks for a day
+ */
+export function getAllDayBlocksForDay(blocks: Block[], date: Date): Block[] {
+  return getBlocksForDay(blocks, date).filter((block) => block.allDay);
+}

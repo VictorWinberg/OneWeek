@@ -1,7 +1,8 @@
 import { useDroppable } from '@dnd-kit/core';
 import { useEffect, useRef } from 'react';
 import { formatDayShort, isToday } from '@/utils/dateUtils';
-import { getBlocksForDay } from '@/services/calendarNormalizer';
+import { getBlocksForDay, calculateBlockPosition } from '@/services/calendarNormalizer';
+import { calculateNextHourTimeSlot } from '@/utils/timeUtils';
 import { EventCard } from './EventCard';
 import type { Block } from '@/types';
 
@@ -109,19 +110,8 @@ export function MobileHourView({
     }
   }, []);
 
-  // Calculate position and size for a block in hour view
-  const getBlockPosition = (block: Block) => {
-    const startHour = block.startTime.getHours();
-    const startMinute = block.startTime.getMinutes();
-    const endHour = block.endTime.getHours();
-    const endMinute = block.endTime.getMinutes();
-
-    const top = (startHour + startMinute / 60) * 50; // 50px per hour
-    const duration = endHour - startHour + (endMinute - startMinute) / 60;
-    const height = Math.max(duration * 50, 25); // Minimum 25px height
-
-    return { top, height };
-  };
+  // Use extracted utility for block positioning (50px per hour, 25px min height)
+  const getBlockPositionForView = (block: Block) => calculateBlockPosition(block, 50, 25);
 
   return (
     <div className="flex flex-col w-full h-full overflow-hidden">
@@ -251,15 +241,8 @@ export function MobileHourView({
                       const clickedDateTime = new Date(date);
                       clickedDateTime.setHours(hour, minute, 0, 0);
 
-                      // Calculate end time (1 hour later)
-                      const endDateTime = new Date(clickedDateTime);
-                      endDateTime.setHours(hour + 1, minute, 0, 0);
-
-                      const startTimeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                      const endTimeStr = `${endDateTime.getHours().toString().padStart(2, '0')}:${endDateTime
-                        .getMinutes()
-                        .toString()
-                        .padStart(2, '0')}`;
+                      // Use utility to calculate time slot
+                      const { startTime: startTimeStr, endTime: endTimeStr } = calculateNextHourTimeSlot(hour, minute);
 
                       return (
                         <DroppableTimeSlot
@@ -288,7 +271,7 @@ export function MobileHourView({
                 {/* Events overlay */}
                 <div className="absolute top-0 left-0 right-0 pointer-events-none z-0">
                   {dayBlocks.map((block) => {
-                    const { top, height } = getBlockPosition(block);
+                    const { top, height } = getBlockPositionForView(block);
                     return (
                       <div
                         key={`${block.calendarId}-${block.id}`}

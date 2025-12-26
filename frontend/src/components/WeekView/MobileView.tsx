@@ -91,7 +91,6 @@ export function MobileView({
     }
   };
   const [activeBlock, setActiveBlock] = useState<Block | null>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Configure drag sensors for mobile - use separate mouse and touch sensors
   // PointerSensor with low distance for mouse/trackpad on tablets
@@ -116,14 +115,6 @@ export function MobileView({
       prefetch();
     }
   }, [isLoading, prefetch, blocks.length]);
-
-  // Auto-scroll to hour 8 (8am) on mount when in hour view
-  useEffect(() => {
-    if (mobileViewMode === 'hour' && scrollContainerRef.current && !isLoading) {
-      const targetScrollPosition = 8 * 60;
-      scrollContainerRef.current.scrollTop = targetScrollPosition;
-    }
-  }, [mobileViewMode, isLoading]);
 
   const handleDragStart = (event: DragStartEvent) => {
     const blockId = String(event.active.id);

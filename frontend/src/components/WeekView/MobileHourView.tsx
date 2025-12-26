@@ -1,4 +1,5 @@
 import { useDroppable } from '@dnd-kit/core';
+import { useEffect, useRef } from 'react';
 import { formatDayShort, isToday } from '@/utils/dateUtils';
 import { getBlocksForDay } from '@/services/calendarNormalizer';
 import { EventCard } from './EventCard';
@@ -51,6 +52,15 @@ interface MobileHourViewProps {
 }
 
 export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: MobileHourViewProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      const targetScrollPosition = 8 * 50;
+      scrollContainerRef.current.scrollTop = targetScrollPosition;
+    }
+  }, []);
+
   // Calculate position and size for a block in hour view
   const getBlockPosition = (block: Block) => {
     const startHour = block.startTime.getHours();
@@ -144,7 +154,7 @@ export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: 
       </div>
 
       {/* Hourly Events Section - Scrollable */}
-      <div className="flex flex-1 w-full overflow-y-auto overflow-x-hidden">
+      <div ref={scrollContainerRef} className="flex flex-1 w-full overflow-y-auto overflow-x-hidden">
         <div className="flex w-full">
           {/* Time column */}
           <div

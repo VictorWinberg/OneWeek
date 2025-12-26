@@ -1,5 +1,4 @@
 import { useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import type { Block } from '@/types';
 import { getInitial } from '@/types';
 import { useConfigStore } from '@/stores/configStore';
@@ -34,14 +33,14 @@ export function EventCard({
   const isCurrent = isBlockCurrent(block);
 
   // Setup draggable
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `${block.calendarId}-${block.id}`,
     disabled: !draggable || !person,
   });
 
   const style = {
-    transform: CSS.Translate.toString(transform),
-    opacity: isDragging ? 0.5 : 1,
+    // Don't apply transform - DragOverlay handles the dragged element position
+    opacity: isDragging ? 0.3 : 1,
     backgroundColor: person ? `color-mix(in srgb, ${person.color} 25%, var(--color-bg-secondary))` : 'transparent',
     borderLeft: person ? `4px solid ${person.color}` : 'none',
     touchAction: draggable ? 'none' : 'auto',

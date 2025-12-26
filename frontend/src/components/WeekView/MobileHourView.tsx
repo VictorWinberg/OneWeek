@@ -72,10 +72,10 @@ export function MobileHourView({
       // Disable scroll during drag - use important styles to override
       container.style.overflow = 'hidden';
       container.style.touchAction = 'none';
-      
+
       // Store current scroll position to prevent any scroll drift
       const scrollTop = container.scrollTop;
-      
+
       // Prevent scroll on the container - be very aggressive
       const preventScroll = (e: Event) => {
         e.preventDefault();
@@ -84,11 +84,11 @@ export function MobileHourView({
         container.scrollTop = scrollTop;
         return false;
       };
-      
+
       container.addEventListener('touchmove', preventScroll, { passive: false, capture: true });
       container.addEventListener('scroll', preventScroll, { passive: false });
       container.addEventListener('wheel', preventScroll, { passive: false });
-      
+
       return () => {
         container.removeEventListener('touchmove', preventScroll, true);
         container.removeEventListener('scroll', preventScroll);

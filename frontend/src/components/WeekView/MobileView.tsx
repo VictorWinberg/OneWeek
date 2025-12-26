@@ -360,13 +360,29 @@ export function MobileView({
         {/* Drag Overlay */}
         <DragOverlay>
           {activeBlock ? (
-            <div className="opacity-90">
+            <div
+              className="opacity-90"
+              style={
+                mobileViewMode === 'hour' && !activeBlock.allDay
+                  ? {
+                      // Calculate height based on event duration to match the original size
+                      height: `${Math.max(
+                        ((activeBlock.endTime.getTime() - activeBlock.startTime.getTime()) / (1000 * 60 * 60)) * 50,
+                        25
+                      )}px`,
+                      width: '100%',
+                      minWidth: '42px',
+                    }
+                  : undefined
+              }
+            >
               <EventCard
                 block={activeBlock}
                 onClick={() => {}}
                 compact={true}
-                fillHeight={false}
+                fillHeight={mobileViewMode === 'hour' ? true : false}
                 hideTime={mobileViewMode === 'hour'}
+                extraCompact={mobileViewMode === 'hour'}
                 isAllDay={activeBlock.allDay}
               />
             </div>

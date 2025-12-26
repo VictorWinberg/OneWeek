@@ -61,6 +61,19 @@ export function MobileHourView({
 }: MobileHourViewProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
+  // Disable scrolling when dragging
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      if (activeBlock) {
+        // Disable scroll during drag
+        scrollContainerRef.current.style.overflow = 'hidden';
+      } else {
+        // Re-enable scroll after drag
+        scrollContainerRef.current.style.overflow = 'auto';
+      }
+    }
+  }, [activeBlock]);
+
   useEffect(() => {
     if (scrollContainerRef.current) {
       const targetScrollPosition = 8 * 50;
@@ -160,7 +173,11 @@ export function MobileHourView({
       </div>
 
       {/* Hourly Events Section - Scrollable */}
-      <div ref={scrollContainerRef} className="flex flex-1 w-full overflow-y-auto overflow-x-hidden">
+      <div
+        ref={scrollContainerRef}
+        className="flex flex-1 w-full overflow-y-auto overflow-x-hidden"
+        style={{ touchAction: activeBlock ? 'none' : 'auto' }}
+      >
         <div className="flex w-full">
           {/* Time column */}
           <div

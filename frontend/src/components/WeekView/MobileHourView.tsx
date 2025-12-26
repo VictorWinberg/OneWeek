@@ -171,7 +171,7 @@ export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: 
                 className={`flex-1 border-r border-[var(--color-bg-tertiary)] last:border-r-0 relative ${
                   today ? 'bg-[var(--color-accent)]/5' : ''
                 }`}
-                style={{ minWidth: '42px' }}
+                style={{ minWidth: '42px', height: '1200px' }}
               >
                 {/* Hour grid lines */}
                 {Array.from({ length: 24 }, (_, i) => i).map((hour) => (

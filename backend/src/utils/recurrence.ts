@@ -1,4 +1,4 @@
-import RRule, { Frequency, Weekday, type Options } from 'rrule';
+import rrule, { type Options, Frequency, Weekday } from 'rrule';
 
 export interface RecurrenceRule {
   frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
@@ -39,7 +39,7 @@ export function recurrenceRuleToRRULE(rule: RecurrenceRule): string {
     options.until = new Date(rule.until);
   }
 
-  const rrule = new RRule(options);
+  const rruleInstance = new rrule.RRule(options);
 
-  return rrule.toString();
+  return rruleInstance.toString();
 }

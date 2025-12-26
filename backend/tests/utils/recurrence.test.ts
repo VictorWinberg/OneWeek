@@ -111,8 +111,7 @@ describe('recurrence', () => {
         };
         const rrule = recurrenceRuleToRRULE(rule);
 
-        // Note: The implementation adds 1 to count
-        expect(rrule).toContain('COUNT=11');
+        expect(rrule).toContain('COUNT=10');
       });
 
       it('should work with weekly recurrence and count', () => {
@@ -124,7 +123,7 @@ describe('recurrence', () => {
         const rrule = recurrenceRuleToRRULE(rule);
 
         expect(rrule).toContain('FREQ=WEEKLY');
-        expect(rrule).toContain('COUNT=6');
+        expect(rrule).toContain('COUNT=5');
         expect(rrule).toContain('BYDAY=MO');
       });
     });
@@ -177,7 +176,7 @@ describe('recurrence', () => {
         const rrule = recurrenceRuleToRRULE(rule);
 
         expect(rrule).toContain('FREQ=MONTHLY');
-        expect(rrule).toContain('COUNT=13');
+        expect(rrule).toContain('COUNT=12');
         expect(rrule).not.toContain('INTERVAL');
       });
 
@@ -191,7 +190,7 @@ describe('recurrence', () => {
 
         expect(rrule).toContain('FREQ=DAILY');
         expect(rrule).toContain('INTERVAL=3');
-        expect(rrule).toContain('COUNT=11');
+        expect(rrule).toContain('COUNT=10');
       });
     });
 

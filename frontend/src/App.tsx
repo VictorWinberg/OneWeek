@@ -361,6 +361,7 @@ function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEventForDat
           <MobileView
             onBlockClick={onBlockClick}
             onCreateEvent={onCreateEvent}
+            onCreateEventForDate={onCreateEventForDate}
             viewMode={viewMode}
             onNextWeek={handleNextWeek}
             onPrevWeek={handlePrevWeek}

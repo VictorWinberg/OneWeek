@@ -23,6 +23,7 @@ interface MobileViewProps {
   onPrevWeek?: () => void;
   onGoToToday?: () => void;
   onViewModeChange?: (mode: UrlViewMode) => void;
+  onCreateEventForDate?: (date: Date, calendarId?: string) => void;
 }
 
 // Map URL view modes to mobile view modes
@@ -66,6 +67,7 @@ export function MobileView({
   onPrevWeek,
   onGoToToday,
   onViewModeChange,
+  onCreateEventForDate,
 }: MobileViewProps) {
   const { selectedDate } = useCalendarStore();
   const { config } = useConfigStore();
@@ -337,7 +339,7 @@ export function MobileView({
           ) : mobileViewMode === 'grid' ? (
             <MobileGridView weekDays={weekDays} blocks={blocks} onBlockClick={onBlockClick} />
           ) : mobileViewMode === 'hour' ? (
-            <MobileHourView weekDays={weekDays} blocks={blocks} onBlockClick={onBlockClick} activeBlock={activeBlock} />
+            <MobileHourView weekDays={weekDays} blocks={blocks} onBlockClick={onBlockClick} activeBlock={activeBlock} onCreateEventForDate={onCreateEventForDate} />
           ) : (
             <MobileUserView weekDays={weekDays} blocks={blocks} calendars={calendars} onBlockClick={onBlockClick} />
           )}

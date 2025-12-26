@@ -49,9 +49,10 @@ interface MobileHourViewProps {
   blocks: Block[];
   onBlockClick: (block: Block) => void;
   activeBlock: Block | null;
+  onCreateEventForDate?: (date: Date) => void;
 }
 
-export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: MobileHourViewProps) {
+export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock, onCreateEventForDate }: MobileHourViewProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -61,7 +62,6 @@ export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: 
     }
   }, []);
 
-  // Calculate position and size for a block in hour view
   const getBlockPosition = (block: Block) => {
     const startHour = block.startTime.getHours();
     const startMinute = block.startTime.getMinutes();
@@ -205,7 +205,10 @@ export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: 
                           activeBlock ? activeBlock.endTime.getTime() - activeBlock.startTime.getTime() : undefined
                         }
                       >
-                        <div className="h-[12.5px] cursor-pointer hover:bg-[var(--color-bg-tertiary)]/10 transition-colors pointer-events-auto" />
+                        <div
+                          className="h-[12.5px] cursor-pointer hover:bg-[var(--color-bg-tertiary)]/10 transition-colors pointer-events-auto"
+                          onClick={() => onCreateEventForDate && onCreateEventForDate(date)}
+                        />
                       </DroppableTimeSlot>
                     ))
                   )}

@@ -131,8 +131,11 @@ export function HourView({
   };
 
   const handleEmptySpaceClick = (date: Date, hour: number, minute: number) => {
+    const startTimeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+    const endHour = hour + 1;
+    const endTimeStr = `${(endHour % 24).toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
     if (onCreateEventForDate) {
-      onCreateEventForDate(date, undefined, hour, minute);
+      onCreateEventForDate(date, undefined, startTimeStr, endTimeStr);
     }
   };
 
@@ -334,31 +337,6 @@ export function HourView({
                           ))
                         )}
                       </div>
-
-                      {/* Events overlay */}
-                      <div className="absolute top-0 left-0 right-0 pointer-events-none z-0">
-                        {dayBlocks.map((block) => {
-                          const { top, height } = getBlockPosition(block);
-                          return (
-                            <div
-                              key={`${block.calendarId}-${block.id}`}
-                              className="absolute pointer-events-auto left-1 right-1"
-                              style={{
-                                top: `${top}px`,
-                                height: `${height}px`,
-                              }}
-                            >
-                              <EventCard
-                                block={block}
-                                onClick={() => onBlockClick(block)}
-                                compact={height < 60}
-                                fillHeight={true}
-                                draggable={true}
-                              />
-                            </div>
-                          );
-                        })}
-                      </div>
                     </div>
                   );
                 })}
@@ -416,7 +394,7 @@ export function HourView({
                               >
                                 <div
                                   className="h-[15px] cursor-pointer hover:bg-[var(--color-bg-tertiary)]/10 transition-colors pointer-events-auto"
-                                  onClick={() => handleEmptySpaceClick(date)}
+                                  onClick={() => handleEmptySpaceClick(date, hour, minute)}
                                 />
                               </DroppableTimeSlot>
                             ))

@@ -48,7 +48,6 @@ interface MobileHourViewProps {
   weekDays: Date[];
   blocks: Block[];
   onBlockClick: (block: Block) => void;
-  onCreateEventForDate?: (date: Date, calendarId?: string, hour?: number, minute?: number) => void;
   activeBlock: Block | null;
   onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
 }
@@ -124,8 +123,6 @@ export function MobileHourView({
     return { top, height };
   };
 
-  // Check if any day has all-day events
-  const hasAllDayEvents = blocks.some((block) => block.allDay);
   const handleEmptySpaceClick = (date: Date, hour: number, minute: number) => {
     const startTimeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
     const endHour = hour + 1;
@@ -230,31 +227,6 @@ export function MobileHourView({
                     </DroppableTimeSlot>
                   ))
                 )}
-              </div>
-
-              {/* Events overlay */}
-              <div className="absolute top-0 left-0 right-0 pointer-events-none z-0">
-                {dayBlocks.map((block) => {
-                  const { top, height } = getBlockPosition(block);
-                  return (
-                    <div
-                      key={`${block.calendarId}-${block.id}`}
-                      className="absolute left-0.5 right-0.5 pointer-events-auto"
-                      style={{
-                        top: `${top}px`,
-                        height: `${height}px`,
-                      }}
-                    >
-                      <EventCard
-                        block={block}
-                        onClick={() => onBlockClick(block)}
-                        compact={true}
-                        fillHeight={true}
-                        draggable={true}
-                      />
-                    </div>
-                  );
-                })}
               </div>
             </div>
           );

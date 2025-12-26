@@ -18,13 +18,12 @@ type UrlViewMode = 'day' | 'grid' | 'user' | 'hour';
 interface MobileViewProps {
   onBlockClick: (block: Block) => void;
   onCreateEvent: () => void;
-  onCreateEventForDate?: (date: Date, calendarId?: string, hour?: number, minute?: number) => void;
+  onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
   viewMode?: UrlViewMode;
   onNextWeek?: () => void;
   onPrevWeek?: () => void;
   onGoToToday?: () => void;
   onViewModeChange?: (mode: UrlViewMode) => void;
-  onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
 }
 
 // Map URL view modes to mobile view modes
@@ -69,7 +68,6 @@ export function MobileView({
   onPrevWeek,
   onGoToToday,
   onViewModeChange,
-  onCreateEventForDate,
 }: MobileViewProps) {
   const { selectedDate } = useCalendarStore();
   const { config } = useConfigStore();

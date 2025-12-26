@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
+import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor, TouchSensor } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
@@ -93,11 +93,19 @@ export function MobileView({
   const [activeBlock, setActiveBlock] = useState<Block | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Configure drag sensors - lower distance for better mobile touch responsiveness
+  // Configure drag sensors for mobile - use separate mouse and touch sensors
+  // PointerSensor with low distance for mouse/trackpad on tablets
+  // TouchSensor with delay to prevent scroll conflicts on phones
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 3,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 150, // Press delay before drag activates
+        tolerance: 5, // Allow 5px of movement during delay
       },
     })
   );

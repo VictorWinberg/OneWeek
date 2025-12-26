@@ -123,15 +123,6 @@ export function MobileHourView({
     return { top, height };
   };
 
-  const handleEmptySpaceClick = (date: Date, hour: number, minute: number) => {
-    const startTimeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-    const endHour = hour + 1;
-    const endTimeStr = `${(endHour % 24).toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-    if (onCreateEventForDate) {
-      onCreateEventForDate(date, undefined, startTimeStr, endTimeStr);
-    }
-  };
-
   return (
     <div className="flex flex-col w-full h-full overflow-hidden">
       {/* Day Headers Section */}
@@ -205,29 +196,6 @@ export function MobileHourView({
                   truncate={true}
                 />
               ))}
-
-              {/* 15-minute droppable time slots overlay */}
-              <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none">
-                {Array.from({ length: 24 }, (_, i) => i).map((hour) =>
-                  [0, 15, 30, 45].map((minute) => (
-                    <DroppableTimeSlot
-                      key={`${date.toISOString()}-${hour}-${minute}`}
-                      id={`${date.toISOString()}-${hour}-${minute}`}
-                      date={date}
-                      hour={hour}
-                      minute={minute}
-                      activeBlockDuration={
-                        activeBlock ? activeBlock.endTime.getTime() - activeBlock.startTime.getTime() : undefined
-                      }
-                    >
-                      <div
-                        className="h-[15px] cursor-pointer hover:bg-[var(--color-bg-tertiary)]/10 transition-colors pointer-events-auto"
-                        onClick={() => handleEmptySpaceClick(date, hour, minute)}
-                      />
-                    </DroppableTimeSlot>
-                  ))
-                )}
-              </div>
             </div>
           );
         })}

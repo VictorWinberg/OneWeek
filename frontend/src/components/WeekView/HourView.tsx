@@ -312,31 +312,6 @@ export function HourView({
                           truncate={true}
                         />
                       ))}
-
-                      {/* 15-minute droppable time slots overlay */}
-                      <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none">
-                        {hours.map((hour) =>
-                          [0, 15, 30, 45].map((minute) => (
-                            <DroppableTimeSlot
-                              key={`${date.toISOString()}-${hour}-${minute}`}
-                              id={`${date.toISOString()}-${hour}-${minute}`}
-                              date={date}
-                              hour={hour}
-                              minute={minute}
-                              activeBlockDuration={
-                                activeBlock
-                                  ? activeBlock.endTime.getTime() - activeBlock.startTime.getTime()
-                                  : undefined
-                              }
-                            >
-                              <div
-                                className="h-[15px] cursor-pointer hover:bg-[var(--color-bg-tertiary)]/10 transition-colors pointer-events-auto"
-                                onClick={() => handleEmptySpaceClick(date, hour, minute)}
-                              />
-                            </DroppableTimeSlot>
-                          ))
-                        )}
-                      </div>
                     </div>
                   );
                 })}

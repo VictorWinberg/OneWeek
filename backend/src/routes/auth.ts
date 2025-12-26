@@ -89,7 +89,7 @@ router.get(
 
 // POST /api/auth/logout - Clear session
 router.post('/logout', (req, res) => {
-  (req as unknown as { session: null }).session = null;
+  req.session = null;
   res.json({ success: true });
 });
 

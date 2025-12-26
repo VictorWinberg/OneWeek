@@ -6,6 +6,7 @@ import cookieSession from 'cookie-session';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { getEnv } from './utils/env.js';
+import { errorHandler } from './middleware/errorHandler.js';
 
 import authRoutes from './routes/auth.js';
 import calendarRoutes from './routes/calendars.js';
@@ -41,7 +42,7 @@ app.use('/api/events', eventRoutes);
 app.use('/api/config', configRoutes);
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
@@ -52,11 +53,8 @@ app.get('/*path', (_req, res) => {
   res.sendFile(path.join(staticPath, 'index.html'));
 });
 
-// Error handling middleware
-app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error('Server error:', err);
-  res.status(500).json({ error: 'Internal server error' });
-});
+// Global error handler - must be last
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);

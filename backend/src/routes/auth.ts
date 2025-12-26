@@ -1,4 +1,4 @@
-import { Router, type Request } from 'express';
+import { Router } from 'express';
 import {
   createOAuth2Client,
   getAuthUrl,
@@ -7,49 +7,36 @@ import {
   getUserInfo,
 } from '../services/googleAuth.js';
 import { isEmailAllowed } from '../services/permissionService.js';
+import { getRedirectUri, appendErrorToUrl } from '../utils/url.js';
+import { mapUserInfoToResponse } from '../utils/response.js';
+import { asyncHandler, ValidationError } from '../middleware/errorHandler.js';
+import { requireAuth, getTokens } from '../middleware/auth.js';
+import { validateRedirectUrl, validateAuthCode } from '../validators/query.js';
 
 const router = Router();
 
-function getRedirectUri(req: Request): string {
-  const protocol = req.get('X-Forwarded-Proto') || req.protocol || 'http';
-  const host = req.get('X-Forwarded-Host') || req.get('host');
-  return `${protocol}://${host}/api/auth/callback`;
-}
-
 // GET /api/auth/login - Redirect to Google OAuth
 router.get('/login', (req, res) => {
-  try {
-    const redirectUrl = req.query.redirect_url;
-    if (!redirectUrl || typeof redirectUrl !== 'string') {
-      return res.status(400).json({ error: 'redirect_url query parameter is required' });
-    }
+  const redirectUrl = validateRedirectUrl(req.query as Record<string, unknown>);
 
-    if (!req.session) {
-      console.error('Session is not available');
-      return res.status(500).json({ error: 'Session configuration error' });
-    }
-    req.session.redirectUrl = redirectUrl;
-
-    const redirectUri = getRedirectUri(req);
-    const oauth2Client = createOAuth2Client(redirectUri);
-    const authUrl = getAuthUrl(oauth2Client, redirectUri);
-    res.redirect(authUrl);
-  } catch (error) {
-    console.error('Login error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Failed to initiate login';
-    res.status(500).json({ error: errorMessage });
+  if (!req.session) {
+    console.error('Session is not available');
+    throw new ValidationError('Session configuration error');
   }
+  req.session.redirectUrl = redirectUrl;
+
+  const redirectUri = getRedirectUri(req);
+  const oauth2Client = createOAuth2Client(redirectUri);
+  const authUrl = getAuthUrl(oauth2Client, redirectUri);
+  res.redirect(authUrl);
 });
 
 // GET /api/auth/callback - Handle OAuth callback
-router.get('/callback', async (req, res) => {
-  const { code } = req.query;
+router.get(
+  '/callback',
+  asyncHandler(async (req, res) => {
+    const code = validateAuthCode(req.query as Record<string, unknown>);
 
-  if (!code || typeof code !== 'string') {
-    return res.status(400).json({ error: 'Missing authorization code' });
-  }
-
-  try {
     const redirectUri = getRedirectUri(req);
     const oauth2Client = createOAuth2Client(redirectUri);
     const tokens = await getTokensFromCode(oauth2Client, code);
@@ -63,13 +50,14 @@ router.get('/callback', async (req, res) => {
       if (req.session) {
         delete req.session.redirectUrl;
       }
-      return res.redirect(`${redirectUrl}${redirectUrl.includes('?') ? '&' : '?'}error=unauthorized`);
+      return res.redirect(appendErrorToUrl(redirectUrl, 'unauthorized'));
     }
 
     if (!req.session) {
       console.error('Session is not available during callback');
-      return res.status(500).json({ error: 'Session configuration error' });
+      throw new ValidationError('Session configuration error');
     }
+
     req.session.tokens = {
       access_token: tokens.access_token ?? undefined,
       refresh_token: tokens.refresh_token ?? undefined,
@@ -81,38 +69,27 @@ router.get('/callback', async (req, res) => {
     delete req.session.redirectUrl;
 
     res.redirect(redirectUrl);
-  } catch (error) {
-    console.error('OAuth callback error:', error);
-    res.status(500).json({ error: 'Authentication failed' });
-  }
-});
+  })
+);
 
 // GET /api/auth/me - Get current user info
-router.get('/me', async (req, res) => {
-  const tokens = req.session?.tokens;
+router.get(
+  '/me',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const tokens = getTokens(req);
 
-  if (!tokens?.access_token) {
-    return res.status(401).json({ error: 'Not authenticated' });
-  }
-
-  try {
     const oauth2Client = createOAuth2Client();
-    setCredentials(oauth2Client, tokens);
+    setCredentials(oauth2Client, tokens!);
     const userInfo = await getUserInfo(oauth2Client);
-    res.json({
-      email: userInfo.email,
-      name: userInfo.name,
-      picture: userInfo.picture,
-    });
-  } catch (error) {
-    console.error('Error getting user info:', error);
-    res.status(500).json({ error: 'Failed to get user info' });
-  }
-});
+
+    res.json(mapUserInfoToResponse(userInfo));
+  })
+);
 
 // POST /api/auth/logout - Clear session
 router.post('/logout', (req, res) => {
-  (req as any).session = null;
+  (req as unknown as { session: null }).session = null;
   res.json({ success: true });
 });
 

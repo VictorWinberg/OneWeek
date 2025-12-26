@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
-import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor, useDroppable } from '@dnd-kit/core';
-import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
+import { useEffect, useRef } from 'react';
+import { DndContext, DragOverlay, useDroppable } from '@dnd-kit/core';
 import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
 import { useWeekEvents, usePrefetchAdjacentWeeks, useUpdateEvent } from '@/hooks/useCalendarQueries';
 import { getWeekDays, formatWeekHeader, getWeekNumber, formatDayShort, isToday } from '@/utils/dateUtils';
-import { getBlocksForDay } from '@/services/calendarNormalizer';
+import { getBlocksForDay, calculateBlockPosition } from '@/services/calendarNormalizer';
+import { calculateNextHourTimeSlot } from '@/utils/timeUtils';
+import { useDesktopDragAndDrop } from '@/hooks/useDragAndDrop';
 import { EventCard } from './EventCard';
 import type { Block } from '@/types';
 
@@ -68,21 +69,17 @@ export function HourView({
   const { selectedDate } = useCalendarStore();
   const { isConfigured } = useConfigStore();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [activeBlock, setActiveBlock] = useState<Block | null>(null);
 
   // Fetch events using React Query
   const { data: blocks = [], isLoading, error } = useWeekEvents(selectedDate);
   const { prefetch } = usePrefetchAdjacentWeeks(selectedDate);
   const updateEventTime = useUpdateEvent();
 
-  // Configure drag sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8, // Require 8px movement before drag starts
-      },
-    })
-  );
+  // Use desktop drag and drop hook (no moveEvent needed for HourView)
+  const { activeBlock, handleDragStart, handleDragEnd, sensors } = useDesktopDragAndDrop(blocks, {
+    updateEventTime,
+    moveEvent: { mutateAsync: async () => {} }, // HourView doesn't support calendar moves
+  });
 
   // Prefetch adjacent weeks when data loads
   useEffect(() => {
@@ -104,9 +101,7 @@ export function HourView({
   const weekNumber = getWeekNumber(selectedDate);
 
   // Generate hours array (8-20 visible, but support scrolling to 0-23)
-  const startHour = 0;
-  const endHour = 23;
-  const hours = Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i);
+  const hours = Array.from({ length: 24 }, (_, i) => i);
 
   if (!isConfigured) {
     return (
@@ -116,69 +111,16 @@ export function HourView({
     );
   }
 
-  // Calculate position and size for a block
-  const getBlockPosition = (block: Block) => {
-    const startHour = block.startTime.getHours();
-    const startMinute = block.startTime.getMinutes();
-    const endHour = block.endTime.getHours();
-    const endMinute = block.endTime.getMinutes();
-
-    const top = (startHour + startMinute / 60) * 60; // 60px per hour
-    const duration = endHour - startHour + (endMinute - startMinute) / 60;
-    const height = Math.max(duration * 60, 30); // Minimum 30px height
-
-    return { top, height };
-  };
-
+  // Handle click on empty time slot to create event
   const handleEmptySpaceClick = (date: Date, hour: number, minute: number) => {
-    const startTimeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-    const endHour = hour + 1;
-    const endTimeStr = `${(endHour % 24).toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+    const { startTime, endTime } = calculateNextHourTimeSlot(hour, minute);
     if (onCreateEventForDate) {
-      onCreateEventForDate(date, undefined, startTimeStr, endTimeStr);
+      onCreateEventForDate(date, undefined, startTime, endTime);
     }
   };
 
-  const handleDragStart = (event: DragStartEvent) => {
-    const blockId = String(event.active.id);
-    const block = blocks.find((b) => `${b.calendarId}-${b.id}` === blockId);
-    if (block) {
-      setActiveBlock(block);
-    }
-  };
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    setActiveBlock(null);
-
-    if (!event.over) return;
-
-    const blockId = event.active.id as string;
-    const dropData = event.over.data.current as { date: Date; hour: number; minute: number } | undefined;
-
-    if (!dropData) return;
-
-    const block = blocks.find((b) => `${b.calendarId}-${b.id}` === blockId);
-    if (!block) return;
-
-    // Calculate new times
-    const newStartTime = new Date(dropData.date);
-    newStartTime.setHours(dropData.hour, dropData.minute, 0, 0);
-
-    const duration = block.endTime.getTime() - block.startTime.getTime();
-    const newEndTime = new Date(newStartTime.getTime() + duration);
-
-    // Update the block
-    try {
-      await updateEventTime.mutateAsync({
-        blockId: block.id,
-        calendarId: block.calendarId,
-        startTime: newStartTime,
-        endTime: newEndTime,
-      });
-    } catch (error) {
-      console.error('Failed to update block:', error);
-    }
-  };
+  // Use extracted utility for block positioning (60px per hour, 30px min height)
+  const getBlockPositionForView = (block: Block) => calculateBlockPosition(block, 60, 30);
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -379,7 +321,7 @@ export function HourView({
                         {/* Events overlay */}
                         <div className="absolute top-0 left-0 right-0 pointer-events-none z-0">
                           {dayBlocks.map((block) => {
-                            const { top, height } = getBlockPosition(block);
+                            const { top, height } = getBlockPositionForView(block);
                             return (
                               <div
                                 key={`${block.calendarId}-${block.id}`}

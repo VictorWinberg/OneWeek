@@ -6,7 +6,7 @@ dist/
 build/
 
 # Test coverage
-backend/coverage/
+coverage/
 
 # Environment files
 .env

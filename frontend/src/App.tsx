@@ -162,7 +162,7 @@ function App() {
       <div className="min-h-screen flex flex-col items-center justify-center p-8">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-[var(--color-text-primary)] mb-2 flex items-baseline justify-center">
-            <img src="/calendar.svg" alt="Calendar" className="w-10 h-10" />
+            <img src="/oneweek.svg" alt="Calendar" className="w-10 h-10" />
             <span>
               <span className="text-[#ef4136]">One</span>Week
             </span>
@@ -311,7 +311,7 @@ function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEventForDat
       {/* Top navigation */}
       <nav className="flex items-center justify-between p-4 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)] flex-shrink-0">
         <h1 className="text-xl font-bold text-[var(--color-text-primary)] flex items-baseline">
-          <img src="/calendar.svg" alt="Calendar" className="w-6 h-6" />
+          <img src="/oneweek.svg" alt="Calendar" className="w-6 h-6" />
           <span>
             <span className="text-[#ef4136]">One</span>Week
           </span>

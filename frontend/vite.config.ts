@@ -21,7 +21,7 @@ export default defineConfig({
     process.env.VITE_ENABLE_PWA === 'true' &&
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['calendar.svg', 'vite.svg'],
+        includeAssets: ['oneweek.svg'],
         manifest: {
           name: 'OneWeek - Familjekalender',
           short_name: 'OneWeek',

@@ -153,12 +153,57 @@ export function GridView({
     if (!event.over) return;
 
     const blockId = String(event.active.id);
-    const dropData = event.over.data.current as { date: Date } | undefined;
+    const dropData = event.over.data.current as { date: Date; hour?: number; minute?: number } | undefined;
 
     if (!dropData) return;
 
     const block = blocks.find((b) => `${b.calendarId}-${b.id}` === blockId);
     if (!block) return;
+
+    // For all-day events, just change the date and preserve all-day status
+    if (block.allDay) {
+      const newStartTime = new Date(dropData.date);
+      newStartTime.setHours(0, 0, 0, 0);
+
+      // For all-day events, end time is midnight of the NEXT day
+      const newEndTime = new Date(dropData.date);
+      newEndTime.setDate(newEndTime.getDate() + 1);
+      newEndTime.setHours(0, 0, 0, 0);
+
+      try {
+        await updateEventTime.mutateAsync({
+          blockId: block.id,
+          calendarId: block.calendarId,
+          startTime: newStartTime,
+          endTime: newEndTime,
+          allDay: true,
+        });
+      } catch (error) {
+        console.error('Failed to update block:', error);
+      }
+      return;
+    }
+
+    // For time-specific events, handle time slot drops with hour/minute
+    if (dropData.hour !== undefined && dropData.minute !== undefined) {
+      const newStartTime = new Date(dropData.date);
+      newStartTime.setHours(dropData.hour, dropData.minute, 0, 0);
+
+      const duration = block.endTime.getTime() - block.startTime.getTime();
+      const newEndTime = new Date(newStartTime.getTime() + duration);
+
+      try {
+        await updateEventTime.mutateAsync({
+          blockId: block.id,
+          calendarId: block.calendarId,
+          startTime: newStartTime,
+          endTime: newEndTime,
+        });
+      } catch (error) {
+        console.error('Failed to update block:', error);
+      }
+      return;
+    }
 
     // Calculate new times - keep same time, just change the day
     const newStartTime = new Date(dropData.date);

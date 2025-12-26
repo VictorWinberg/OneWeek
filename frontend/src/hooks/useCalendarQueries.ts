@@ -173,6 +173,7 @@ export function useUpdateEvent() {
       description,
       startTime,
       endTime,
+      allDay,
     }: {
       blockId: string;
       calendarId: string;
@@ -180,8 +181,9 @@ export function useUpdateEvent() {
       description?: string;
       startTime: Date;
       endTime: Date;
+      allDay?: boolean;
     }) => {
-      return eventsApi.updateEvent(calendarId, blockId, { title, description, startTime, endTime });
+      return eventsApi.updateEvent(calendarId, blockId, { title, description, startTime, endTime, allDay });
     },
     onMutate: async ({ blockId, calendarId, title, description, startTime, endTime }) => {
       const weekKey = getWeekKey(startTime);

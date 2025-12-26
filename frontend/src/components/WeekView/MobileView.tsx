@@ -141,8 +141,88 @@ export function MobileView({
     const block = blocks.find((b) => `${b.calendarId}-${b.id}` === blockId);
     if (!block) return;
 
-    // Handle hour view (time slot change)
-    if (dropData.date && dropData.hour !== undefined && dropData.minute !== undefined) {
+    // Handle all-day events - preserve all-day status
+    if (block.allDay && dropData.date) {
+      // For all-day events, just change the date (and calendar if provided)
+      const needsMove = dropData.calendarId && block.calendarId !== dropData.calendarId;
+
+      if (needsMove && dropData.calendarId) {
+        try {
+          await moveEvent.mutateAsync({
+            blockId: block.id,
+            calendarId: block.calendarId,
+            targetCalendarId: dropData.calendarId,
+            startTime: block.startTime,
+          });
+        } catch (error) {
+          console.error('Failed to move block:', error);
+          return;
+        }
+      }
+
+      const needsTimeUpdate = block.startTime.toDateString() !== dropData.date.toDateString();
+      if (needsTimeUpdate) {
+        const newStartTime = new Date(dropData.date);
+        newStartTime.setHours(0, 0, 0, 0);
+
+        // For all-day events, end time is midnight of the NEXT day
+        const newEndTime = new Date(dropData.date);
+        newEndTime.setDate(newEndTime.getDate() + 1);
+        newEndTime.setHours(0, 0, 0, 0);
+
+        try {
+          await updateEventTime.mutateAsync({
+            blockId: block.id,
+            calendarId: needsMove && dropData.calendarId ? dropData.calendarId : block.calendarId,
+            startTime: newStartTime,
+            endTime: newEndTime,
+            allDay: true,
+          });
+        } catch (error) {
+          console.error('Failed to update block time:', error);
+        }
+      }
+      return;
+    }
+
+    // Handle user view with time slots (calendar + day + time change)
+    if (dropData.date && dropData.calendarId && dropData.hour !== undefined && dropData.minute !== undefined) {
+      const needsMove = block.calendarId !== dropData.calendarId;
+      const newStartTime = new Date(dropData.date);
+      newStartTime.setHours(dropData.hour, dropData.minute, 0, 0);
+
+      const duration = block.endTime.getTime() - block.startTime.getTime();
+      const newEndTime = new Date(newStartTime.getTime() + duration);
+
+      // If calendar changed, move the event first
+      if (needsMove) {
+        try {
+          await moveEvent.mutateAsync({
+            blockId: block.id,
+            calendarId: block.calendarId,
+            targetCalendarId: dropData.calendarId,
+            startTime: block.startTime,
+          });
+        } catch (error) {
+          console.error('Failed to move block:', error);
+          return;
+        }
+      }
+
+      // Update the time (always needed in this case)
+      try {
+        await updateEventTime.mutateAsync({
+          blockId: block.id,
+          calendarId: needsMove ? dropData.calendarId : block.calendarId,
+          startTime: newStartTime,
+          endTime: newEndTime,
+        });
+      } catch (error) {
+        console.error('Failed to update block time:', error);
+      }
+    }
+    // Handle hour view (time slot change only, no calendar)
+    else if (dropData.date && dropData.hour !== undefined && dropData.minute !== undefined) {
       const newStartTime = new Date(dropData.date);
       newStartTime.setHours(dropData.hour, dropData.minute, 0, 0);
 
@@ -160,7 +240,7 @@ export function MobileView({
         console.error('Failed to update block time:', error);
       }
     }
-    // Handle calendar view (day + calendar change)
+    // Handle user view cell drop (day + calendar change, no specific time)
     else if (dropData.date && dropData.calendarId) {
       const needsMove = block.calendarId !== dropData.calendarId;
       const needsTimeUpdate = block.startTime.toDateString() !== dropData.date.toDateString();

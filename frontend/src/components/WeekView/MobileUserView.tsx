@@ -60,7 +60,6 @@ export function MobileUserView({ weekDays, blocks, calendars, onBlockClick }: Mo
                 <th
                   key={calendar.id}
                   className="p-1 text-center text-sm font-semibold text-[var(--color-text-primary)] border-b border-r border-[var(--color-bg-tertiary)] last:border-r-0 flex-1"
-                  style={{ minWidth: `${Math.max(60, (window.innerWidth - 48) / calendars.length)}px` }}
                 >
                   <div className="flex flex-col items-center justify-center gap-1">
                     <div

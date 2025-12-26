@@ -147,7 +147,10 @@ export function MobileHourView({ weekDays, blocks, onBlockClick, activeBlock }: 
       <div className="flex flex-1 w-full overflow-y-auto overflow-x-hidden">
         <div className="flex w-full">
           {/* Time column */}
-          <div className="w-[35px] flex-shrink-0 sticky left-0 z-10 bg-[var(--color-bg-secondary)] border-r border-[var(--color-bg-tertiary)]" style={{ height: '1200px' }}>
+          <div
+            className="w-[35px] flex-shrink-0 sticky left-0 z-10 bg-[var(--color-bg-secondary)] border-r border-[var(--color-bg-tertiary)]"
+            style={{ height: '1200px' }}
+          >
             {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
               <div
                 key={hour}

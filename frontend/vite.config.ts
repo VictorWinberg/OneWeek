@@ -43,13 +43,13 @@ export default defineConfig({
               type: 'image/png',
             },
             {
-              src: 'icons/oneweek-192x192.png',
-              sizes: '192x192',
+              src: 'icons/oneweek-96x96.png',
+              sizes: '96x96',
               type: 'image/png',
             },
             {
-              src: 'icons/oneweek-512x512.png',
-              sizes: '512x512',
+              src: 'icons/oneweek-192x192.png',
+              sizes: '192x192',
               type: 'image/png',
             },
             {

@@ -4,6 +4,7 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { calculateUntilDate, getDateOnly } from '../utils/date.js';
 import { updateRecurrenceWithUntil } from '../utils/rrule.js';
+import { NotFoundError, AppError } from '../middleware/errorHandler.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -51,14 +52,18 @@ export async function listEvents(
 }
 
 /** Get a single event by ID */
-export async function getEvent(calendarId: string, eventId: string): Promise<calendar_v3.Schema$Event | null> {
+export async function getEvent(calendarId: string, eventId: string): Promise<calendar_v3.Schema$Event> {
   const calendar = getServiceAccountClient();
   try {
     const response = await calendar.events.get({ calendarId, eventId });
     return response.data;
   } catch (error) {
-    console.error('Error getting event:', error);
-    return null;
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    // Check for 404 Not Found
+    if (error && typeof error === 'object' && 'code' in error && error.code === 404) {
+      throw new NotFoundError(`Event not found: ${eventId}`);
+    }
+    throw new AppError(`Failed to get event: ${message}`, 500);
   }
 }
 
@@ -66,14 +71,14 @@ export async function getEvent(calendarId: string, eventId: string): Promise<cal
 export async function createEvent(
   calendarId: string,
   event: GoogleCalendarEvent
-): Promise<calendar_v3.Schema$Event | null> {
+): Promise<calendar_v3.Schema$Event> {
   const calendar = getServiceAccountClient();
   try {
     const response = await calendar.events.insert({ calendarId, requestBody: event });
     return response.data;
   } catch (error) {
-    console.error('Error creating event:', error);
-    return null;
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    throw new AppError(`Failed to create event: ${message}`, 500);
   }
 }
 
@@ -82,12 +87,12 @@ export async function updateEvent(
   calendarId: string,
   eventId: string,
   event: Partial<GoogleCalendarEvent>
-): Promise<calendar_v3.Schema$Event | null> {
+): Promise<calendar_v3.Schema$Event> {
   const calendar = getServiceAccountClient();
   try {
     const currentEvent = await getEvent(calendarId, eventId);
 
-    if (currentEvent?.recurringEventId) {
+    if (currentEvent.recurringEventId) {
       const exceptionEvent = {
         ...currentEvent,
         ...event,
@@ -100,8 +105,12 @@ export async function updateEvent(
     const response = await calendar.events.patch({ calendarId, eventId, requestBody: event });
     return response.data;
   } catch (error) {
-    console.error('Error updating event:', error);
-    return null;
+    // Re-throw AppErrors (including NotFoundError from getEvent)
+    if (error instanceof AppError) {
+      throw error;
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    throw new AppError(`Failed to update event: ${message}`, 500);
   }
 }
 
@@ -110,35 +119,33 @@ export async function deleteEvent(
   calendarId: string,
   eventId: string,
   updateMode?: 'this' | 'all' | 'future'
-): Promise<boolean> {
+): Promise<void> {
   const calendar = getServiceAccountClient();
 
   try {
-    const currentEvent = await getEvent(calendarId, eventId);
-
     if (!updateMode || updateMode === 'this') {
       await calendar.events.delete({ calendarId, eventId });
-      return true;
+      return;
     }
 
+    const currentEvent = await getEvent(calendarId, eventId);
+
     if (updateMode === 'all') {
-      const masterEventId = currentEvent?.recurringEventId || eventId;
+      const masterEventId = currentEvent.recurringEventId || eventId;
       await calendar.events.delete({ calendarId, eventId: masterEventId });
-      return true;
+      return;
     }
 
     if (updateMode === 'future') {
-      const masterEventId = currentEvent?.recurringEventId || eventId;
+      const masterEventId = currentEvent.recurringEventId || eventId;
 
-      if (!currentEvent?.start?.dateTime && !currentEvent?.start?.date) {
-        console.error('Current event has no start date');
-        return false;
+      if (!currentEvent.start?.dateTime && !currentEvent.start?.date) {
+        throw new AppError('Event has no start date', 400);
       }
 
       const masterEvent = await getEvent(calendarId, masterEventId);
-      if (!masterEvent || !masterEvent.recurrence) {
-        console.error('Master event not found or has no recurrence');
-        return false;
+      if (!masterEvent.recurrence) {
+        throw new AppError('Master event has no recurrence rule', 400);
       }
 
       const instanceStartStr =
@@ -159,13 +166,17 @@ export async function deleteEvent(
         },
       });
 
-      return true;
+      return;
     }
 
-    return false;
+    throw new AppError(`Invalid update mode: ${updateMode}`, 400);
   } catch (error) {
-    console.error('Error deleting event:', error);
-    return false;
+    // Re-throw AppErrors
+    if (error instanceof AppError) {
+      throw error;
+    }
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    throw new AppError(`Failed to delete event: ${message}`, 500);
   }
 }
 
@@ -175,9 +186,8 @@ export async function moveEventBetweenCalendars(
   targetCalendarId: string,
   eventId: string,
   originalCalendarId?: string
-): Promise<calendar_v3.Schema$Event | null> {
+): Promise<calendar_v3.Schema$Event> {
   const originalEvent = await getEvent(sourceCalendarId, eventId);
-  if (!originalEvent) return null;
 
   const existingPrivate = originalEvent.extendedProperties?.private || {};
 
@@ -213,8 +223,6 @@ export async function moveEventBetweenCalendars(
   };
 
   const createdEvent = await createEvent(targetCalendarId, newEvent);
-  if (!createdEvent) return null;
-
   await deleteEvent(sourceCalendarId, eventId);
   return createdEvent;
 }

@@ -11,7 +11,7 @@ import {
 } from '../services/calendarService.js';
 import { hasPermission } from '../services/permissionService.js';
 import { requireAuth, getUserEmail } from '../middleware/auth.js';
-import { asyncHandler, PermissionError, NotFoundError, ValidationError } from '../middleware/errorHandler.js';
+import { asyncHandler, PermissionError, ValidationError } from '../middleware/errorHandler.js';
 import { getUpdateMode } from '../utils/request.js';
 import { buildEventDatetime } from '../utils/date.js';
 import { recurrenceRuleToRRULE } from '../utils/recurrence.js';
@@ -64,11 +64,8 @@ router.get(
       throw new PermissionError('No permission to read this calendar');
     }
 
+    // getEvent throws NotFoundError if event doesn't exist
     const event = await getEvent(calendarId, eventId);
-    if (!event) {
-      throw new NotFoundError('Event not found');
-    }
-
     res.json(normalizeEventToBlock(event, calendarId));
   })
 );
@@ -106,11 +103,8 @@ router.post(
       recurrence
     );
 
+    // createEvent throws AppError on failure
     const createdEvent = await createEvent(eventData.calendarId, googleEvent);
-    if (!createdEvent) {
-      throw new Error('Failed to create event');
-    }
-
     res.json({ success: true, eventId: createdEvent.id });
   })
 );
@@ -157,11 +151,8 @@ router.patch(
       }
     }
 
-    const updatedEvent = await updateEvent(calendarId, eventId, updates);
-    if (!updatedEvent) {
-      throw new Error('Failed to update event');
-    }
-
+    // updateEvent throws AppError on failure
+    await updateEvent(calendarId, eventId, updates);
     res.json({ success: true });
   })
 );
@@ -183,11 +174,8 @@ router.post(
       throw new PermissionError('No permission to create events in target calendar');
     }
 
+    // moveEventBetweenCalendars throws AppError on failure
     const movedEvent = await moveEventBetweenCalendars(calendarId, targetCalendarId, eventId);
-    if (!movedEvent) {
-      throw new Error('Failed to move event');
-    }
-
     res.json({ success: true, newEventId: movedEvent.id });
   })
 );
@@ -205,11 +193,8 @@ router.delete(
       throw new PermissionError('No permission to delete events from this calendar');
     }
 
-    const success = await deleteEvent(calendarId, eventId, updateMode);
-    if (!success) {
-      throw new Error('Failed to delete event');
-    }
-
+    // deleteEvent throws AppError on failure
+    await deleteEvent(calendarId, eventId, updateMode);
     res.json({ success: true });
   })
 );

@@ -18,6 +18,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = Number(getEnv('PORT', '3000'));
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 app.set('trust proxy', 1);
 
@@ -28,7 +29,9 @@ app.use(
     name: 'session',
     keys: [getEnv('SESSION_SECRET')],
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    secure: getEnv('NODE_ENV', 'development') === 'production',
+    // Only set secure=true in production (HTTPS required)
+    // In development, cookies won't work over HTTP if secure=true
+    secure: IS_PRODUCTION,
     httpOnly: true,
     signed: true,
     sameSite: 'lax',

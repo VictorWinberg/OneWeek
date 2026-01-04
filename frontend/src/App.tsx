@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Routes, Route, useParams, useNavigate, Navigate } from 'react-router-dom';
-import { startOfWeek, addWeeks, subWeeks, format, parseISO, isValid } from 'date-fns';
+import { startOfWeek, addWeeks, subWeeks, format, parseISO, isValid, isSameDay } from 'date-fns';
 import { useAuthStore } from './stores/authStore';
 import { useConfigStore } from './stores/configStore';
 import { useCalendarStore } from './stores/calendarStore';
@@ -257,27 +257,32 @@ function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEventForDat
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { selectedDate, setSelectedDate } = useCalendarStore();
+  
+  // Track if we're currently syncing from URL to prevent loops
+  const isSyncingFromUrl = useRef(false);
 
-  // Sync URL date parameter with calendar store
+  // Unified URL/store synchronization - URL is the source of truth
   useEffect(() => {
     const parsedDate = parseDateParam(date);
+    
     if (parsedDate) {
-      // URL has a date, sync to store
-      setSelectedDate(parsedDate);
-    } else if (date) {
-      // Invalid date in URL, redirect to current week
-      navigate(`/${viewMode}/${getWeekMonday(new Date())}`, { replace: true });
-    }
-    // If no date in URL, we'll add it on first render below
-  }, [date, viewMode, navigate, setSelectedDate]);
-
-  // If no date in URL, add the current week's Monday
-  useEffect(() => {
-    if (!date) {
-      const mondayStr = getWeekMonday(selectedDate);
+      // URL has a valid date - sync to store if different
+      if (!isSameDay(parsedDate, selectedDate)) {
+        isSyncingFromUrl.current = true;
+        setSelectedDate(parsedDate);
+        // Reset flag after React processes the state update
+        requestAnimationFrame(() => {
+          isSyncingFromUrl.current = false;
+        });
+      }
+    } else {
+      // No date or invalid date in URL - redirect to current week's Monday
+      // Use selectedDate if we have one, otherwise use today
+      const targetDate = isSyncingFromUrl.current ? new Date() : selectedDate;
+      const mondayStr = getWeekMonday(targetDate);
       navigate(`/${viewMode}/${mondayStr}`, { replace: true });
     }
-  }, [date, viewMode, selectedDate, navigate]);
+  }, [date, viewMode, navigate, setSelectedDate, selectedDate]);
 
   // Navigation handlers that update URL
   const handleNextWeek = useCallback(() => {

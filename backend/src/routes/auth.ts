@@ -79,8 +79,12 @@ router.get(
   asyncHandler(async (req, res) => {
     const tokens = getTokens(req);
 
+    if (!tokens) {
+      throw new ValidationError('No tokens in session');
+    }
+
     const oauth2Client = createOAuth2Client();
-    setCredentials(oauth2Client, tokens!);
+    setCredentials(oauth2Client, tokens);
     const userInfo = await getUserInfo(oauth2Client);
 
     res.json(mapUserInfoToResponse(userInfo));

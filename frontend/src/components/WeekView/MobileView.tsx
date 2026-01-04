@@ -167,7 +167,7 @@ export function MobileView({
                   : 'text-[var(--color-text-secondary)]'
               }`}
             >
-              Användarvy
+              Personlig
             </button>
             <button
               onClick={() => handleViewModeChange('hour')}

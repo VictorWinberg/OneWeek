@@ -347,7 +347,7 @@ function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEventForDat
                     : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
                 }`}
               >
-                Användarvy
+                Personlig
               </button>
               <button
                 onClick={() => handleViewModeChange('hour')}

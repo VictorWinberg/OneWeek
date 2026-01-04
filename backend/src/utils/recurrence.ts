@@ -1,4 +1,4 @@
-import rrule, { type Options, Frequency, Weekday } from 'rrule';
+import rrule, { type Options } from 'rrule';
 
 export interface RecurrenceRule {
   frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
@@ -9,15 +9,12 @@ export interface RecurrenceRule {
 }
 
 // Map our frequency strings to RRule frequency constants
-const FREQUENCY_MAP: Record<RecurrenceRule['frequency'], Frequency> = {
-  DAILY: Frequency.DAILY,
-  WEEKLY: Frequency.WEEKLY,
-  MONTHLY: Frequency.MONTHLY,
-  YEARLY: Frequency.YEARLY,
+const FREQUENCY_MAP: Record<RecurrenceRule['frequency'], rrule.Frequency> = {
+  DAILY: rrule.Frequency.DAILY,
+  WEEKLY: rrule.Frequency.WEEKLY,
+  MONTHLY: rrule.Frequency.MONTHLY,
+  YEARLY: rrule.Frequency.YEARLY,
 };
-
-// Valid weekday strings for byDay
-type WeekdayStr = 'MO' | 'TU' | 'WE' | 'TH' | 'FR' | 'SA' | 'SU';
 
 export function recurrenceRuleToRRULE(rule: RecurrenceRule): string {
   const options: Partial<Options> = {
@@ -29,7 +26,7 @@ export function recurrenceRuleToRRULE(rule: RecurrenceRule): string {
   }
 
   if (rule.byDay && rule.byDay.length > 0) {
-    options.byweekday = rule.byDay.map((day) => Weekday.fromStr(day as WeekdayStr));
+    options.byweekday = rule.byDay.map((day) => rrule.Weekday.fromStr(day as rrule.WeekdayStr));
   }
 
   // count specifies total number of occurrences - use as-is

@@ -9,6 +9,7 @@ import { GridView } from './components/WeekView/GridView';
 import { UserView } from './components/WeekView/UserView';
 import { HourView } from './components/WeekView/HourView';
 import { MobileView } from './components/WeekView/MobileView';
+import { TasksView } from './components/TasksView/TasksView';
 import { EventDetailPanel } from './components/EventDetail/EventDetailPanel';
 import { EventCreatePanel } from './components/EventDetail/EventCreatePanel';
 import { LoginButton, LogoutButton } from './components/Auth/LoginButton';
@@ -16,7 +17,7 @@ import { useIsMobile } from './hooks/useMediaQuery';
 import type { Block } from './types';
 import './index.css';
 
-type ViewMode = 'day' | 'grid' | 'user' | 'hour';
+type ViewMode = 'day' | 'grid' | 'user' | 'hour' | 'tasks';
 
 // Helper to get Monday of the week for a given date
 function getWeekMonday(date: Date): string {
@@ -134,6 +135,17 @@ function App() {
         element={
           <MainLayout
             viewMode="hour"
+            onBlockClick={handleBlockClick}
+            onCreateEvent={handleOpenCreatePanel}
+            onCreateEventForDate={handleOpenCreatePanelWithDate}
+          />
+        }
+      />
+      <Route
+        path="/tasks"
+        element={
+          <MainLayout
+            viewMode="tasks"
             onBlockClick={handleBlockClick}
             onCreateEvent={handleOpenCreatePanel}
             onCreateEventForDate={handleOpenCreatePanelWithDate}
@@ -258,8 +270,10 @@ function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEventForDat
   const isMobile = useIsMobile();
   const { selectedDate, setSelectedDate } = useCalendarStore();
 
-  // Sync URL date parameter with calendar store
+  // Sync URL date parameter with calendar store (skip for tasks view)
   useEffect(() => {
+    if (viewMode === 'tasks') return; // Tasks view doesn't use date parameter
+
     const parsedDate = parseDateParam(date);
     if (parsedDate) {
       // URL has a date, sync to store
@@ -271,8 +285,10 @@ function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEventForDat
     // If no date in URL, we'll add it on first render below
   }, [date, viewMode, navigate, setSelectedDate]);
 
-  // If no date in URL, add the current week's Monday
+  // If no date in URL, add the current week's Monday (skip for tasks view)
   useEffect(() => {
+    if (viewMode === 'tasks') return; // Tasks view doesn't use date parameter
+
     if (!date) {
       const mondayStr = getWeekMonday(selectedDate);
       navigate(`/${viewMode}/${mondayStr}`, { replace: true });
@@ -359,6 +375,16 @@ function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEventForDat
               >
                 Timvy
               </button>
+              <button
+                onClick={() => navigate('/tasks')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === 'tasks'
+                    ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
+                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                }`}
+              >
+                Uppgifter
+              </button>
             </div>
           )}
           <LogoutButton />
@@ -367,7 +393,9 @@ function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEventForDat
 
       {/* Main content */}
       <main className="flex-1 overflow-hidden min-h-0">
-        {isMobile ? (
+        {viewMode === 'tasks' ? (
+          <TasksView onGoToToday={handleGoToToday} />
+        ) : isMobile ? (
           <MobileView
             onBlockClick={onBlockClick}
             onCreateEvent={onCreateEvent}

@@ -1,4 +1,4 @@
-import type { Block, Calendar } from '@/types';
+import type { Block, Calendar, Task, TaskList } from '@/types';
 
 const API_BASE = '/api';
 
@@ -206,6 +206,79 @@ export const eventsApi = {
     const url = `${API_BASE}/events/${calendarId}/${eventId}${queryString ? `?${queryString}` : ''}`;
 
     return fetchJson(url, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Tasks API
+export const tasksApi = {
+  listTaskLists: async (): Promise<TaskList[]> => {
+    return fetchJson(`${API_BASE}/tasks/tasklists`);
+  },
+
+  listTasks: async (taskListId: string, options?: { showCompleted?: boolean }): Promise<Task[]> => {
+    const params = new URLSearchParams();
+    if (options?.showCompleted) {
+      params.append('showCompleted', 'true');
+    }
+    const queryString = params.toString();
+    const url = `${API_BASE}/tasks/tasklists/${taskListId}/tasks${queryString ? `?${queryString}` : ''}`;
+    return fetchJson(url);
+  },
+
+  getTask: async (taskListId: string, taskId: string): Promise<Task> => {
+    return fetchJson(`${API_BASE}/tasks/tasklists/${taskListId}/tasks/${taskId}`);
+  },
+
+  createTask: async (
+    taskListId: string,
+    task: {
+      title: string;
+      notes?: string;
+      due?: string;
+      assignedUser?: string;
+      assignedUserEmail?: string;
+    }
+  ): Promise<Task> => {
+    return fetchJson(`${API_BASE}/tasks/tasklists/${taskListId}/tasks`, {
+      method: 'POST',
+      body: JSON.stringify(task),
+    });
+  },
+
+  updateTask: async (
+    taskListId: string,
+    taskId: string,
+    updates: {
+      title?: string;
+      notes?: string;
+      due?: string;
+      status?: 'needsAction' | 'completed';
+      assignedUser?: string;
+      assignedUserEmail?: string;
+    }
+  ): Promise<Task> => {
+    return fetchJson(`${API_BASE}/tasks/tasklists/${taskListId}/tasks/${taskId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  completeTask: async (taskListId: string, taskId: string): Promise<Task> => {
+    return fetchJson(`${API_BASE}/tasks/tasklists/${taskListId}/tasks/${taskId}/complete`, {
+      method: 'POST',
+    });
+  },
+
+  uncompleteTask: async (taskListId: string, taskId: string): Promise<Task> => {
+    return fetchJson(`${API_BASE}/tasks/tasklists/${taskListId}/tasks/${taskId}/uncomplete`, {
+      method: 'POST',
+    });
+  },
+
+  deleteTask: async (taskListId: string, taskId: string): Promise<{ success: boolean }> => {
+    return fetchJson(`${API_BASE}/tasks/tasklists/${taskListId}/tasks/${taskId}`, {
       method: 'DELETE',
     });
   },

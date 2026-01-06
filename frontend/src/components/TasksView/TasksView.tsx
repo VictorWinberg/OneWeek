@@ -310,7 +310,7 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
             <select
               value={newTaskAssignee}
               onChange={(e) => setNewTaskAssignee(e.target.value)}
-              className="w-full bg-transparent text-[var(--color-text-secondary)] text-sm focus:outline-none cursor-pointer appearance-none pr-5 py-1 min-h-[32px] sm:min-h-0"
+              className="absolute inset-0 w-full h-full bg-transparent text-[var(--color-text-secondary)] text-sm focus:outline-none cursor-pointer appearance-none opacity-0 z-20"
               style={newTaskAssignee ? { color: getUserColor(newTaskAssignee) } : undefined}
             >
               <option value="">Ingen</option>
@@ -320,8 +320,16 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
                 </option>
               ))}
             </select>
+            <span
+              className="block pr-5 py-1 min-h-[32px] sm:min-h-0 text-sm pointer-events-none"
+              style={
+                newTaskAssignee ? { color: getUserColor(newTaskAssignee) } : { color: 'var(--color-text-secondary)' }
+              }
+            >
+              {newTaskAssignee ? users.find((u) => u.id === newTaskAssignee)?.name || 'Ingen' : 'Ingen'}
+            </span>
             <svg
-              className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)] opacity-50 pointer-events-none"
+              className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)] opacity-50 pointer-events-none z-10"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -525,7 +533,7 @@ function TaskItem({
         <select
           value={task.metadata.assignedUser || ''}
           onChange={handleAssigneeChange}
-          className="w-full bg-transparent text-sm focus:outline-none cursor-pointer truncate appearance-none pr-5 py-1 min-h-[32px] sm:min-h-0"
+          className="absolute inset-0 w-full h-full bg-transparent text-sm focus:outline-none cursor-pointer appearance-none opacity-0 z-20"
           style={{
             color: task.metadata.assignedUser
               ? getUserColor(task.metadata.assignedUser)
@@ -539,8 +547,18 @@ function TaskItem({
             </option>
           ))}
         </select>
+        <span
+          className="block pr-5 py-1 min-h-[32px] sm:min-h-0 text-sm truncate pointer-events-none"
+          style={{
+            color: task.metadata.assignedUser
+              ? getUserColor(task.metadata.assignedUser)
+              : 'var(--color-text-secondary)',
+          }}
+        >
+          {task.metadata.assignedUser ? users.find((u) => u.id === task.metadata.assignedUser)?.name || '–' : '–'}
+        </span>
         <svg
-          className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)] opacity-50 pointer-events-none"
+          className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)] opacity-50 pointer-events-none z-10"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"

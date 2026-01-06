@@ -278,7 +278,7 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
             placeholder="Lägg till uppgift..."
             className="flex-1 min-w-0 bg-transparent text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none"
           />
-          <label className="flex-shrink-0 relative cursor-pointer">
+          <label className="flex-shrink-0 relative cursor-pointer flex items-center">
             <input
               type="date"
               value={newTaskDue}
@@ -306,7 +306,7 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
               </svg>
             )}
           </label>
-          <label className="flex-shrink-0 relative cursor-pointer min-w-[60px] sm:min-w-0 max-w-[100px]">
+          <label className="flex-shrink-0 relative cursor-pointer min-w-[60px] sm:min-w-0 max-w-[100px] flex items-center">
             <select
               value={newTaskAssignee}
               onChange={(e) => setNewTaskAssignee(e.target.value)}
@@ -321,7 +321,7 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
               ))}
             </select>
             <span
-              className="block py-1 min-h-[32px] sm:min-h-0 text-sm pointer-events-none"
+              className="text-xs pointer-events-none"
               style={
                 newTaskAssignee ? { color: getUserColor(newTaskAssignee) } : { color: 'var(--color-text-secondary)' }
               }
@@ -492,7 +492,7 @@ function TaskItem({
       </div>
 
       {/* Due date - always editable */}
-      <label className="flex-shrink-0 relative cursor-pointer">
+      <label className="flex-shrink-0 relative cursor-pointer flex items-center">
         <input
           type="date"
           value={task.due ? task.due.split('T')[0] : ''}
@@ -521,7 +521,7 @@ function TaskItem({
       </label>
 
       {/* Assignee - always editable */}
-      <label className="flex-shrink-0 relative cursor-pointer min-w-[50px] sm:min-w-0 max-w-[80px]">
+      <label className="flex-shrink-0 relative cursor-pointer min-w-[50px] sm:min-w-0 max-w-[80px] flex items-center">
         <select
           value={task.metadata.assignedUser || ''}
           onChange={handleAssigneeChange}
@@ -540,7 +540,7 @@ function TaskItem({
           ))}
         </select>
         <span
-          className="block py-1 min-h-[32px] sm:min-h-0 text-sm truncate pointer-events-none"
+          className="text-xs truncate pointer-events-none"
           style={{
             color: task.metadata.assignedUser
               ? getUserColor(task.metadata.assignedUser)

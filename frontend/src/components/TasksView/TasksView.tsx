@@ -309,7 +309,7 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
           <select
             value={newTaskAssignee}
             onChange={(e) => setNewTaskAssignee(e.target.value)}
-            className="flex-shrink-0 bg-transparent text-[var(--color-text-secondary)] text-sm focus:outline-none cursor-pointer max-w-[100px]"
+            className="flex-shrink-0 bg-transparent text-[var(--color-text-secondary)] text-sm focus:outline-none cursor-pointer max-w-[100px] appearance-none"
             style={newTaskAssignee ? { color: getUserColor(newTaskAssignee) } : undefined}
           >
             <option value="">Ingen</option>
@@ -514,8 +514,10 @@ function TaskItem({
       <select
         value={task.metadata.assignedUser || ''}
         onChange={handleAssigneeChange}
-        className="flex-shrink-0 bg-transparent text-sm focus:outline-none cursor-pointer max-w-[80px] truncate"
-        style={{ color: task.metadata.assignedUser ? getUserColor(task.metadata.assignedUser) : 'var(--color-text-secondary)' }}
+        className="flex-shrink-0 bg-transparent text-sm focus:outline-none cursor-pointer max-w-[80px] truncate appearance-none"
+        style={{
+          color: task.metadata.assignedUser ? getUserColor(task.metadata.assignedUser) : 'var(--color-text-secondary)',
+        }}
       >
         <option value="">–</option>
         {users.map((user) => (

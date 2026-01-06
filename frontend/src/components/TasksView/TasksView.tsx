@@ -288,13 +288,24 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
             placeholder="Lägg till uppgift... (tryck Enter)"
             className="flex-1 min-w-0 bg-transparent text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none"
           />
-          <input
-            type="date"
-            value={newTaskDue}
-            onChange={(e) => setNewTaskDue(e.target.value)}
-            className="flex-shrink-0 w-10 bg-transparent text-[var(--color-text-secondary)] text-sm focus:outline-none cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-            title="Välj datum"
-          />
+          <div className="flex-shrink-0 relative">
+            <input
+              type="date"
+              value={newTaskDue}
+              onChange={(e) => setNewTaskDue(e.target.value)}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              title="Välj datum"
+            />
+            {newTaskDue ? (
+              <span className="text-xs text-[var(--color-text-primary)]">
+                {formatDueDate(newTaskDue) || newTaskDue}
+              </span>
+            ) : (
+              <svg className="w-4 h-4 text-[var(--color-text-secondary)] opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            )}
+          </div>
           <select
             value={newTaskAssignee}
             onChange={(e) => setNewTaskAssignee(e.target.value)}

@@ -181,7 +181,7 @@ export async function updateTask(
   updates: {
     title?: string;
     notes?: string;
-    due?: string;
+    due?: string | null;
     status?: 'needsAction' | 'completed';
     parent?: string;
     metadata?: Partial<TaskMetadata>;
@@ -206,15 +206,20 @@ export async function updateTask(
       notesToUpdate = updates.notes;
     }
 
+    const requestBody: tasks_v1.Schema$Task = {};
+
+    if (updates.title) requestBody.title = updates.title;
+    if (notesToUpdate !== undefined) requestBody.notes = notesToUpdate;
+    if (updates.due !== undefined) {
+      // null means clear the date, otherwise set it
+      requestBody.due = updates.due;
+    }
+    if (updates.status) requestBody.status = updates.status;
+
     const response = await tasks.tasks.patch({
       tasklist: taskListId,
       task: taskId,
-      requestBody: {
-        ...(updates.title && { title: updates.title }),
-        ...(notesToUpdate !== undefined && { notes: notesToUpdate }),
-        ...(updates.due && { due: updates.due }),
-        ...(updates.status && { status: updates.status }),
-      },
+      requestBody,
     });
     return normalizeTaskToInternal(response.data, taskListId);
   } catch (error) {

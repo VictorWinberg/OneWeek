@@ -253,7 +253,7 @@ export const tasksApi = {
     updates: {
       title?: string;
       notes?: string;
-      due?: string;
+      due?: string | null;
       status?: 'needsAction' | 'completed';
       assignedUser?: string;
       assignedUserEmail?: string;

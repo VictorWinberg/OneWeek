@@ -127,7 +127,7 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
 
   // Direct update for due date and assignee
   const handleUpdateTask = useCallback(
-    async (taskId: string, updates: { due?: string; assignedUser?: string }) => {
+    async (taskId: string, updates: { due?: string | null; assignedUser?: string }) => {
       await updateTask.mutateAsync({ taskId, updates });
     },
     [updateTask]
@@ -420,7 +420,7 @@ interface TaskItemProps {
   onEditKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   onToggleComplete: (task: Task) => void;
   onDelete: (taskId: string) => void;
-  onUpdateTask: (taskId: string, updates: { due?: string; assignedUser?: string }) => void;
+  onUpdateTask: (taskId: string, updates: { due?: string | null; assignedUser?: string }) => void;
   getUserColor: (assignedUser?: string) => string;
   formatDueDate: (dueString?: string) => string | null;
 }
@@ -454,7 +454,7 @@ function TaskItem({
   }, [isEditing]);
 
   const handleDueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newDue = e.target.value ? new Date(e.target.value).toISOString() : undefined;
+    const newDue = e.target.value ? new Date(e.target.value).toISOString() : null;
     onUpdateTask(task.id, { due: newDue });
   };
 

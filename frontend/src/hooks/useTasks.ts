@@ -73,7 +73,7 @@ export function useUpdateTask(taskListId: string = DEFAULT_TASK_LIST_ID) {
       updates: {
         title?: string;
         notes?: string;
-        due?: string;
+        due?: string | null;
         status?: 'needsAction' | 'completed';
         assignedUser?: string;
         assignedUserEmail?: string;

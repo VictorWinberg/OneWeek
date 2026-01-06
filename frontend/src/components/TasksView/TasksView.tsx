@@ -321,21 +321,13 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
               ))}
             </select>
             <span
-              className="block pr-5 py-1 min-h-[32px] sm:min-h-0 text-sm pointer-events-none"
+              className="block py-1 min-h-[32px] sm:min-h-0 text-sm pointer-events-none"
               style={
                 newTaskAssignee ? { color: getUserColor(newTaskAssignee) } : { color: 'var(--color-text-secondary)' }
               }
             >
               {newTaskAssignee ? users.find((u) => u.id === newTaskAssignee)?.name || 'Ingen' : 'Ingen'}
             </span>
-            <svg
-              className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)] opacity-50 pointer-events-none z-10"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
           </label>
         </div>
 
@@ -548,7 +540,7 @@ function TaskItem({
           ))}
         </select>
         <span
-          className="block pr-5 py-1 min-h-[32px] sm:min-h-0 text-sm truncate pointer-events-none"
+          className="block py-1 min-h-[32px] sm:min-h-0 text-sm truncate pointer-events-none"
           style={{
             color: task.metadata.assignedUser
               ? getUserColor(task.metadata.assignedUser)
@@ -557,14 +549,6 @@ function TaskItem({
         >
           {task.metadata.assignedUser ? users.find((u) => u.id === task.metadata.assignedUser)?.name || '–' : '–'}
         </span>
-        <svg
-          className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)] opacity-50 pointer-events-none z-10"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
       </label>
 
       {/* Delete button */}

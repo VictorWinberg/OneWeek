@@ -38,46 +38,47 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
   const uncompleteTask = useUncompleteTask(DEFAULT_TASK_LIST_ID);
   const deleteTask = useDeleteTask(DEFAULT_TASK_LIST_ID);
 
-  // Extract unique users from calendars config for assignment
   const users = calendars.map((cal) => ({
     id: cal.name.toLowerCase().replace(/\s+/g, ''),
     name: cal.name,
     color: cal.color,
   }));
 
-  // Filter tasks by assigned user
   const filteredTasks = filterUser ? tasks.filter((task) => task.metadata.assignedUser === filterUser) : tasks;
 
-  // Sort tasks: overdue first, then by due date ascending, tasks without due date last
   const sortTasks = (taskList: Task[]): Task[] => {
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
+    const tasks = [...taskList];
 
-    return [...taskList].sort((a, b) => {
+    tasks.sort((a, b) => a.title.localeCompare(b.title));
+
+    tasks.sort((a, b) => {
+      const aAssignee = a.metadata.assignedUser || '';
+      const bAssignee = b.metadata.assignedUser || '';
+      return aAssignee.localeCompare(bAssignee);
+    });
+
+    tasks.sort((a, b) => {
       const aDate = a.due ? new Date(a.due) : null;
       const bDate = b.due ? new Date(b.due) : null;
-      const aOverdue = aDate && aDate < now;
-      const bOverdue = bDate && bDate < now;
 
-      if (aOverdue && !bOverdue) return -1;
-      if (!aOverdue && bOverdue) return 1;
       if (aDate && !bDate) return -1;
       if (!aDate && bDate) return 1;
       if (aDate && bDate) return aDate.getTime() - bDate.getTime();
+
       return 0;
     });
+
+    return tasks;
   };
 
   const activeTasks = sortTasks(filteredTasks.filter((t) => t.status === 'needsAction'));
   const completedTasks = sortTasks(filteredTasks.filter((t) => t.status === 'completed'));
 
-  // Handle filter change - also update default assignee
   const handleFilterChange = useCallback((userId: string | null) => {
     setFilterUser(userId);
     setNewTaskAssignee(userId || '');
   }, []);
 
-  // Create new task on Enter
   const handleCreateTask = useCallback(async () => {
     if (!newTaskTitle.trim() || createTask.isPending) return;
 
@@ -89,7 +90,6 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
 
     setNewTaskTitle('');
     setNewTaskDue('');
-    // Keep assignee for quick entry of multiple tasks with same assignee
     newTaskInputRef.current?.focus();
   }, [newTaskTitle, newTaskDue, newTaskAssignee, createTask]);
 
@@ -100,13 +100,11 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
     }
   };
 
-  // Start inline editing (title only)
   const handleStartEdit = useCallback((task: Task) => {
     setEditingTaskId(task.id);
     setEditingTitle(task.title);
   }, []);
 
-  // Save inline edit (title only)
   const handleSaveEdit = useCallback(async () => {
     if (!editingTaskId || !editingTitle.trim() || updateTask.isPending) return;
 
@@ -119,13 +117,11 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
     setEditingTitle('');
   }, [editingTaskId, editingTitle, updateTask]);
 
-  // Cancel inline edit
   const handleCancelEdit = useCallback(() => {
     setEditingTaskId(null);
     setEditingTitle('');
   }, []);
 
-  // Direct update for due date and assignee
   const handleUpdateTask = useCallback(
     async (taskId: string, updates: { due?: string | null; assignedUser?: string }) => {
       await updateTask.mutateAsync({ taskId, updates });
@@ -202,7 +198,6 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
       <header className="flex items-center justify-between p-4 border-b border-[var(--color-bg-tertiary)]">
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Uppgifter</h1>
@@ -221,7 +216,6 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
         )}
       </header>
 
-      {/* Filters */}
       <div className="flex items-center gap-4 p-4 border-b border-[var(--color-bg-tertiary)]">
         <div className="flex items-center gap-2">
           <span className="text-sm text-[var(--color-text-secondary)]">Visa:</span>
@@ -281,9 +275,7 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
         </button>
       </div>
 
-      {/* Task List */}
       <div className="flex-1 overflow-y-auto p-4">
-        {/* Inline new task input */}
         <div className="flex items-center gap-2 p-3 mb-2 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-bg-tertiary)] border-dashed">
           <div className="flex-shrink-0 w-5 h-5 rounded border-2 border-[var(--color-text-secondary)]/30" />
           <input
@@ -348,7 +340,6 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
           </label>
         </div>
 
-        {/* Active Tasks */}
         {activeTasks.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-[var(--color-text-secondary)]">Inga aktiva uppgifter</p>
@@ -376,7 +367,6 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
           </div>
         )}
 
-        {/* Completed Tasks */}
         {showCompleted && completedTasks.length > 0 && (
           <div className="mt-6">
             <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] mb-2 uppercase tracking-wider">
@@ -445,7 +435,6 @@ function TaskItem({
   const dueDate = formatDueDate(task.due);
   const isOverdue = task.due && !isCompleted && new Date(task.due) < new Date();
 
-  // Focus input when editing starts
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
@@ -468,7 +457,6 @@ function TaskItem({
         isEditing ? 'bg-[var(--color-bg-secondary)]' : ''
       }`}
     >
-      {/* Checkbox */}
       <button
         onClick={() => onToggleComplete(task)}
         className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
@@ -484,7 +472,6 @@ function TaskItem({
         )}
       </button>
 
-      {/* Title - inline editable */}
       <div className="flex-1 min-w-0">
         {isEditing ? (
           <input
@@ -508,7 +495,6 @@ function TaskItem({
         )}
       </div>
 
-      {/* Due date - always editable */}
       <label className="flex-shrink-0 relative cursor-pointer flex items-center">
         <input
           type="date"
@@ -537,7 +523,6 @@ function TaskItem({
         )}
       </label>
 
-      {/* Assignee - always editable */}
       <label className="flex-shrink-0 relative cursor-pointer min-w-[50px] sm:min-w-0 max-w-[80px] flex items-center">
         <select
           value={task.metadata.assignedUser || ''}
@@ -568,7 +553,6 @@ function TaskItem({
         </span>
       </label>
 
-      {/* Delete button */}
       {!isEditing && (
         <button
           onClick={() => onDelete(task.id)}

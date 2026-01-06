@@ -91,7 +91,11 @@ export function useUpdateTask(taskListId: string = DEFAULT_TASK_LIST_ID) {
             task.id === taskId
               ? {
                   ...task,
-                  ...updates,
+                  ...(updates.title !== undefined && { title: updates.title }),
+                  ...(updates.notes !== undefined && { notes: updates.notes }),
+                  // Convert null to undefined for due field to match Task type
+                  ...(updates.due !== undefined && { due: updates.due === null ? undefined : updates.due }),
+                  ...(updates.status !== undefined && { status: updates.status }),
                   metadata: {
                     ...task.metadata,
                     ...(updates.assignedUser !== undefined && { assignedUser: updates.assignedUser }),

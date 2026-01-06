@@ -275,7 +275,7 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
             value={newTaskTitle}
             onChange={(e) => setNewTaskTitle(e.target.value)}
             onKeyDown={handleNewTaskKeyDown}
-            placeholder="Lägg till uppgift... (tryck Enter)"
+            placeholder="Lägg till uppgift..."
             className="flex-1 min-w-0 bg-transparent text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none"
           />
           <label className="flex-shrink-0 relative cursor-pointer">
@@ -306,19 +306,29 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
               </svg>
             )}
           </label>
-          <select
-            value={newTaskAssignee}
-            onChange={(e) => setNewTaskAssignee(e.target.value)}
-            className="flex-shrink-0 bg-transparent text-[var(--color-text-secondary)] text-sm focus:outline-none cursor-pointer max-w-[100px] appearance-none"
-            style={newTaskAssignee ? { color: getUserColor(newTaskAssignee) } : undefined}
-          >
-            <option value="">Ingen</option>
-            {users.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name}
-              </option>
-            ))}
-          </select>
+          <label className="flex-shrink-0 relative cursor-pointer min-w-[60px] sm:min-w-0 max-w-[100px]">
+            <select
+              value={newTaskAssignee}
+              onChange={(e) => setNewTaskAssignee(e.target.value)}
+              className="w-full bg-transparent text-[var(--color-text-secondary)] text-sm focus:outline-none cursor-pointer appearance-none pr-5 py-1 min-h-[32px] sm:min-h-0"
+              style={newTaskAssignee ? { color: getUserColor(newTaskAssignee) } : undefined}
+            >
+              <option value="">Ingen</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name}
+                </option>
+              ))}
+            </select>
+            <svg
+              className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)] opacity-50 pointer-events-none"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </label>
         </div>
 
         {/* Active Tasks */}
@@ -511,21 +521,33 @@ function TaskItem({
       </label>
 
       {/* Assignee - always editable */}
-      <select
-        value={task.metadata.assignedUser || ''}
-        onChange={handleAssigneeChange}
-        className="flex-shrink-0 bg-transparent text-sm focus:outline-none cursor-pointer max-w-[80px] truncate appearance-none"
-        style={{
-          color: task.metadata.assignedUser ? getUserColor(task.metadata.assignedUser) : 'var(--color-text-secondary)',
-        }}
-      >
-        <option value="">–</option>
-        {users.map((user) => (
-          <option key={user.id} value={user.id}>
-            {user.name}
-          </option>
-        ))}
-      </select>
+      <label className="flex-shrink-0 relative cursor-pointer min-w-[50px] sm:min-w-0 max-w-[80px]">
+        <select
+          value={task.metadata.assignedUser || ''}
+          onChange={handleAssigneeChange}
+          className="w-full bg-transparent text-sm focus:outline-none cursor-pointer truncate appearance-none pr-5 py-1 min-h-[32px] sm:min-h-0"
+          style={{
+            color: task.metadata.assignedUser
+              ? getUserColor(task.metadata.assignedUser)
+              : 'var(--color-text-secondary)',
+          }}
+        >
+          <option value="">–</option>
+          {users.map((user) => (
+            <option key={user.id} value={user.id}>
+              {user.name}
+            </option>
+          ))}
+        </select>
+        <svg
+          className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)] opacity-50 pointer-events-none"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </label>
 
       {/* Delete button */}
       {!isEditing && (

@@ -572,7 +572,7 @@ function TaskItem({
       {!isEditing && (
         <button
           onClick={() => onDelete(task.id)}
-          className="flex-shrink-0 p-1 rounded opacity-0 group-hover:opacity-100 text-[var(--color-text-secondary)] hover:text-red-400 transition-all"
+          className="flex-shrink-0 p-1 rounded opacity-50 hover:opacity-100 text-[var(--color-text-secondary)] hover:text-red-400 transition-all"
           title="Ta bort"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

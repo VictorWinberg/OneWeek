@@ -253,15 +253,32 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
           </div>
         </div>
 
-        <label className="flex items-center gap-2 cursor-pointer ml-auto">
-          <input
-            type="checkbox"
-            checked={showCompleted}
-            onChange={(e) => setShowCompleted(e.target.checked)}
-            className="w-4 h-4 rounded border-[var(--color-bg-tertiary)] bg-[var(--color-bg-tertiary)] text-[var(--color-accent)]"
-          />
-          <span className="text-sm text-[var(--color-text-secondary)]">Visa färdiga</span>
-        </label>
+        <button
+          onClick={() => setShowCompleted(!showCompleted)}
+          className="ml-auto p-1 rounded hover:bg-[var(--color-bg-tertiary)] transition-colors"
+          title="Visa färdiga uppgifter"
+        >
+          {showCompleted ? (
+            <svg className="w-5 h-5 text-[var(--color-accent)]" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+            </svg>
+          ) : (
+            <svg
+              className="w-5 h-5 text-[var(--color-text-secondary)] opacity-60"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+              />
+            </svg>
+          )}
+        </button>
       </div>
 
       {/* Task List */}

@@ -533,19 +533,23 @@ function TaskItem({
 
       {/* Due date */}
       {dueDate && !isEditing && (
-        <span className={`flex-shrink-0 text-xs ${isOverdue ? 'text-red-400' : 'text-[var(--color-text-secondary)]'}`}>
+        <button
+          onClick={() => onStartEdit(task)}
+          className={`flex-shrink-0 text-xs hover:underline ${isOverdue ? 'text-red-400' : 'text-[var(--color-text-secondary)]'}`}
+        >
           {dueDate}
-        </span>
+        </button>
       )}
 
       {/* Assignee badge */}
       {task.metadata.assignedUser && !isEditing && (
-        <span
-          className="flex-shrink-0 px-2 py-0.5 rounded text-xs font-medium text-white"
+        <button
+          onClick={() => onStartEdit(task)}
+          className="flex-shrink-0 px-2 py-0.5 rounded text-xs font-medium text-white hover:opacity-80"
           style={{ backgroundColor: getUserColor(task.metadata.assignedUser) }}
         >
           {getUserName(task.metadata.assignedUser)}
-        </span>
+        </button>
       )}
 
       {/* Delete button */}

@@ -28,8 +28,6 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
   const [newTaskAssignee, setNewTaskAssignee] = useState('');
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
-  const [editingDue, setEditingDue] = useState('');
-  const [editingAssignee, setEditingAssignee] = useState('');
 
   const newTaskInputRef = useRef<HTMLInputElement>(null);
 
@@ -102,40 +100,38 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
     }
   };
 
-  // Start inline editing
+  // Start inline editing (title only)
   const handleStartEdit = useCallback((task: Task) => {
     setEditingTaskId(task.id);
     setEditingTitle(task.title);
-    setEditingDue(task.due ? task.due.split('T')[0] : '');
-    setEditingAssignee(task.metadata.assignedUser || '');
   }, []);
 
-  // Save inline edit
+  // Save inline edit (title only)
   const handleSaveEdit = useCallback(async () => {
     if (!editingTaskId || !editingTitle.trim() || updateTask.isPending) return;
 
     await updateTask.mutateAsync({
       taskId: editingTaskId,
-      updates: {
-        title: editingTitle.trim(),
-        due: editingDue ? new Date(editingDue).toISOString() : undefined,
-        assignedUser: editingAssignee || undefined,
-      },
+      updates: { title: editingTitle.trim() },
     });
 
     setEditingTaskId(null);
     setEditingTitle('');
-    setEditingDue('');
-    setEditingAssignee('');
-  }, [editingTaskId, editingTitle, editingDue, editingAssignee, updateTask]);
+  }, [editingTaskId, editingTitle, updateTask]);
 
   // Cancel inline edit
   const handleCancelEdit = useCallback(() => {
     setEditingTaskId(null);
     setEditingTitle('');
-    setEditingDue('');
-    setEditingAssignee('');
   }, []);
+
+  // Direct update for due date and assignee
+  const handleUpdateTask = useCallback(
+    async (taskId: string, updates: { due?: string; assignedUser?: string }) => {
+      await updateTask.mutateAsync({ taskId, updates });
+    },
+    [updateTask]
+  );
 
   const handleEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -180,12 +176,6 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
     if (!assignedUser) return 'var(--color-text-secondary)';
     const calendar = calendars.find((cal) => cal.name.toLowerCase().replace(/\s+/g, '') === assignedUser);
     return calendar?.color || 'var(--color-text-secondary)';
-  };
-
-  const getUserName = (assignedUser?: string): string => {
-    if (!assignedUser) return '';
-    const calendar = calendars.find((cal) => cal.name.toLowerCase().replace(/\s+/g, '') === assignedUser);
-    return calendar?.name || assignedUser;
   };
 
   if (isLoading) {
@@ -345,18 +335,14 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
                 users={users}
                 isEditing={editingTaskId === task.id}
                 editingTitle={editingTitle}
-                editingDue={editingDue}
-                editingAssignee={editingAssignee}
                 onEditingTitleChange={setEditingTitle}
-                onEditingDueChange={setEditingDue}
-                onEditingAssigneeChange={setEditingAssignee}
                 onStartEdit={handleStartEdit}
                 onSaveEdit={handleSaveEdit}
                 onEditKeyDown={handleEditKeyDown}
                 onToggleComplete={handleToggleComplete}
                 onDelete={handleDelete}
+                onUpdateTask={handleUpdateTask}
                 getUserColor={getUserColor}
-                getUserName={getUserName}
                 formatDueDate={formatDueDate}
               />
             ))}
@@ -377,18 +363,14 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
                   users={users}
                   isEditing={editingTaskId === task.id}
                   editingTitle={editingTitle}
-                  editingDue={editingDue}
-                  editingAssignee={editingAssignee}
                   onEditingTitleChange={setEditingTitle}
-                  onEditingDueChange={setEditingDue}
-                  onEditingAssigneeChange={setEditingAssignee}
                   onStartEdit={handleStartEdit}
                   onSaveEdit={handleSaveEdit}
                   onEditKeyDown={handleEditKeyDown}
                   onToggleComplete={handleToggleComplete}
                   onDelete={handleDelete}
+                  onUpdateTask={handleUpdateTask}
                   getUserColor={getUserColor}
-                  getUserName={getUserName}
                   formatDueDate={formatDueDate}
                 />
               ))}
@@ -405,18 +387,14 @@ interface TaskItemProps {
   users: { id: string; name: string; email?: string; color?: string }[];
   isEditing: boolean;
   editingTitle: string;
-  editingDue: string;
-  editingAssignee: string;
   onEditingTitleChange: (title: string) => void;
-  onEditingDueChange: (due: string) => void;
-  onEditingAssigneeChange: (assignee: string) => void;
   onStartEdit: (task: Task) => void;
   onSaveEdit: () => void;
   onEditKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   onToggleComplete: (task: Task) => void;
   onDelete: (taskId: string) => void;
+  onUpdateTask: (taskId: string, updates: { due?: string; assignedUser?: string }) => void;
   getUserColor: (assignedUser?: string) => string;
-  getUserName: (assignedUser?: string) => string;
   formatDueDate: (dueString?: string) => string | null;
 }
 
@@ -425,22 +403,17 @@ function TaskItem({
   users,
   isEditing,
   editingTitle,
-  editingDue,
-  editingAssignee,
   onEditingTitleChange,
-  onEditingDueChange,
-  onEditingAssigneeChange,
   onStartEdit,
   onSaveEdit,
   onEditKeyDown,
   onToggleComplete,
   onDelete,
+  onUpdateTask,
   getUserColor,
-  getUserName,
   formatDueDate,
 }: TaskItemProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const editContainerRef = useRef<HTMLDivElement>(null);
   const isCompleted = task.status === 'completed';
   const dueDate = formatDueDate(task.due);
   const isOverdue = task.due && !isCompleted && new Date(task.due) < new Date();
@@ -453,13 +426,13 @@ function TaskItem({
     }
   }, [isEditing]);
 
-  // Handle blur - only save if focus moves outside the edit container
-  const handleEditBlur = (e: React.FocusEvent) => {
-    // Check if the new focus target is within the edit container
-    if (editContainerRef.current?.contains(e.relatedTarget as Node)) {
-      return; // Focus moved within the edit container, don't save
-    }
-    onSaveEdit();
+  const handleDueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDue = e.target.value ? new Date(e.target.value).toISOString() : undefined;
+    onUpdateTask(task.id, { due: newDue });
+  };
+
+  const handleAssigneeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    onUpdateTask(task.id, { assignedUser: e.target.value || undefined });
   };
 
   return (
@@ -487,38 +460,15 @@ function TaskItem({
       {/* Title - inline editable */}
       <div className="flex-1 min-w-0">
         {isEditing ? (
-          <div ref={editContainerRef} className="flex items-center gap-2 flex-wrap">
-            <input
-              ref={inputRef}
-              type="text"
-              value={editingTitle}
-              onChange={(e) => onEditingTitleChange(e.target.value)}
-              onKeyDown={onEditKeyDown}
-              onBlur={handleEditBlur}
-              className="flex-1 min-w-[120px] bg-transparent text-[var(--color-text-primary)] focus:outline-none"
-            />
-            <input
-              type="date"
-              value={editingDue}
-              onChange={(e) => onEditingDueChange(e.target.value)}
-              onBlur={handleEditBlur}
-              className="flex-shrink-0 bg-transparent text-[var(--color-text-secondary)] text-sm focus:outline-none cursor-pointer"
-            />
-            <select
-              value={editingAssignee}
-              onChange={(e) => onEditingAssigneeChange(e.target.value)}
-              onBlur={handleEditBlur}
-              className="flex-shrink-0 bg-transparent text-[var(--color-text-secondary)] text-sm focus:outline-none cursor-pointer max-w-[100px]"
-              style={editingAssignee ? { color: getUserColor(editingAssignee) } : undefined}
-            >
-              <option value="">Ingen</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <input
+            ref={inputRef}
+            type="text"
+            value={editingTitle}
+            onChange={(e) => onEditingTitleChange(e.target.value)}
+            onKeyDown={onEditKeyDown}
+            onBlur={onSaveEdit}
+            className="w-full bg-transparent text-[var(--color-text-primary)] focus:outline-none"
+          />
         ) : (
           <button
             onClick={() => onStartEdit(task)}
@@ -531,26 +481,49 @@ function TaskItem({
         )}
       </div>
 
-      {/* Due date */}
-      {dueDate && !isEditing && (
-        <button
-          onClick={() => onStartEdit(task)}
-          className={`flex-shrink-0 text-xs hover:underline ${isOverdue ? 'text-red-400' : 'text-[var(--color-text-secondary)]'}`}
-        >
-          {dueDate}
-        </button>
-      )}
+      {/* Due date - always editable */}
+      <label className="flex-shrink-0 relative cursor-pointer">
+        <input
+          type="date"
+          value={task.due ? task.due.split('T')[0] : ''}
+          onChange={handleDueChange}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+        />
+        {dueDate ? (
+          <span className={`text-xs ${isOverdue ? 'text-red-400' : 'text-[var(--color-text-secondary)]'}`}>
+            {dueDate}
+          </span>
+        ) : (
+          <svg
+            className="w-4 h-4 text-[var(--color-text-secondary)] opacity-30 hover:opacity-60 transition-opacity"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
+          </svg>
+        )}
+      </label>
 
-      {/* Assignee badge */}
-      {task.metadata.assignedUser && !isEditing && (
-        <button
-          onClick={() => onStartEdit(task)}
-          className="flex-shrink-0 px-2 py-0.5 rounded text-xs font-medium text-white hover:opacity-80"
-          style={{ backgroundColor: getUserColor(task.metadata.assignedUser) }}
-        >
-          {getUserName(task.metadata.assignedUser)}
-        </button>
-      )}
+      {/* Assignee - always editable */}
+      <select
+        value={task.metadata.assignedUser || ''}
+        onChange={handleAssigneeChange}
+        className="flex-shrink-0 bg-transparent text-sm focus:outline-none cursor-pointer max-w-[80px] truncate"
+        style={{ color: task.metadata.assignedUser ? getUserColor(task.metadata.assignedUser) : 'var(--color-text-secondary)' }}
+      >
+        <option value="">–</option>
+        {users.map((user) => (
+          <option key={user.id} value={user.id}>
+            {user.name}
+          </option>
+        ))}
+      </select>
 
       {/* Delete button */}
       {!isEditing && (

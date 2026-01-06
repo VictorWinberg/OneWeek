@@ -26,7 +26,7 @@ Metadata is stored as JSON at the end of the task's `notes` field, prefixed with
 ### Creating a Task with Metadata
 
 ```typescript
-import { createTaskWithMetadata } from './services/tasksService.withMetadata.example.js';
+import { createTaskWithMetadata } from './services/tasksService.js';
 
 await createTaskWithMetadata('@default', {
   title: 'Buy groceries',
@@ -43,7 +43,7 @@ await createTaskWithMetadata('@default', {
 ### Assigning a Task to a User
 
 ```typescript
-import { assignTaskToUser } from './services/tasksService.withMetadata.example.js';
+import { assignTaskToUser } from './services/tasksService.js';
 
 await assignTaskToUser(
   '@default',
@@ -56,7 +56,7 @@ await assignTaskToUser(
 ### Reading Task Metadata
 
 ```typescript
-import { normalizeTaskToInternal } from './services/tasksService.withMetadata.example.js';
+import { normalizeTaskToInternal } from './services/tasksService.js';
 import { extractTaskMetadata } from './utils/taskMetadata.js';
 
 // From a Google Task object
@@ -74,7 +74,7 @@ console.log(metadata.assignedUser);
 ### Filtering Tasks by Assigned User
 
 ```typescript
-import { listTasksByAssignedUser } from './services/tasksService.withMetadata.example.js';
+import { listTasksByAssignedUser } from './services/tasksService.js';
 
 const victorTasks = await listTasksByAssignedUser('@default', 'victor');
 ```
@@ -96,9 +96,11 @@ interface TaskMetadata {
 ## Utility Functions
 
 ### `encodeTaskMetadata(notes, metadata)`
+
 Encodes metadata into notes field, preserving existing notes.
 
 ### `decodeTaskMetadata(notes)`
+
 Extracts metadata and returns clean notes separately.
 
 ```typescript
@@ -108,9 +110,11 @@ const { notes, metadata } = decodeTaskMetadata(task.notes);
 ```
 
 ### `extractTaskMetadata(notes)`
+
 Quick way to get just the metadata without the clean notes.
 
 ### `updateTaskMetadata(notes, updates)`
+
 Updates metadata in existing notes, merging with existing metadata.
 
 ## Important Notes
@@ -132,8 +136,8 @@ Updates metadata in existing notes, merging with existing metadata.
 
 To integrate this into your existing app:
 
-1. Copy `tasksService.withMetadata.example.ts` to `tasksService.ts`
-2. Update your routes to use the metadata-aware functions
+1. The metadata-aware functions are already implemented in `tasksService.ts`
+2. Routes are already set up in `routes/tasks.ts`
 3. Add UI to assign tasks to users
 4. Filter tasks by assigned user in your frontend
 
@@ -157,4 +161,3 @@ router.post('/tasklists/:taskListId/tasks', requireAuth, asyncHandler(async (req
   res.status(201).json(task);
 }));
 ```
-

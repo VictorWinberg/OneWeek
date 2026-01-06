@@ -126,7 +126,7 @@ select:focus-visible {
   }
 
   /* Allow text selection in input fields and textareas */
-  input, textarea, [contenteditable] {
+  input, textarea, select, [contenteditable] {
     -webkit-user-select: text;
     -moz-user-select: text;
     -ms-user-select: text;

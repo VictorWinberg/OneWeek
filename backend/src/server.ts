@@ -12,6 +12,7 @@ import authRoutes from './routes/auth.js';
 import calendarRoutes from './routes/calendars.js';
 import eventRoutes from './routes/events.js';
 import configRoutes from './routes/config.js';
+import tasksRoutes from './routes/tasks.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -43,6 +44,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/calendars', calendarRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/config', configRoutes);
+app.use('/api/tasks', tasksRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {

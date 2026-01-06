@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { format, parseISO, isValid } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import { useConfigStore } from '@/stores/configStore';
@@ -23,18 +23,15 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
 
   const [showCompleted, setShowCompleted] = useState(false);
   const [filterUser, setFilterUser] = useState<string | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [newTaskNotes, setNewTaskNotes] = useState('');
   const [newTaskDue, setNewTaskDue] = useState('');
-  const [newTaskAssignee, setNewTaskAssignee] = useState<string>('');
+  const [newTaskAssignee, setNewTaskAssignee] = useState('');
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
+  const [editingDue, setEditingDue] = useState('');
+  const [editingAssignee, setEditingAssignee] = useState('');
 
-  // Edit state
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [editTitle, setEditTitle] = useState('');
-  const [editNotes, setEditNotes] = useState('');
-  const [editDue, setEditDue] = useState('');
-  const [editAssignee, setEditAssignee] = useState('');
+  const newTaskInputRef = useRef<HTMLInputElement>(null);
 
   const { data: tasks = [], isLoading, error } = useTasks(DEFAULT_TASK_LIST_ID, showCompleted);
   const createTask = useCreateTask(DEFAULT_TASK_LIST_ID);
@@ -50,19 +47,13 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
     color: cal.color,
   }));
 
-  // Open create form with default assignee from filter
-  const handleOpenCreateForm = useCallback(() => {
-    setNewTaskAssignee(filterUser || '');
-    setIsCreating(true);
-  }, [filterUser]);
-
   // Filter tasks by assigned user
   const filteredTasks = filterUser ? tasks.filter((task) => task.metadata.assignedUser === filterUser) : tasks;
 
   // Sort tasks: overdue first, then by due date ascending, tasks without due date last
   const sortTasks = (taskList: Task[]): Task[] => {
     const now = new Date();
-    now.setHours(0, 0, 0, 0); // Compare dates only, not time
+    now.setHours(0, 0, 0, 0);
 
     return [...taskList].sort((a, b) => {
       const aDate = a.due ? new Date(a.due) : null;
@@ -70,83 +61,91 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
       const aOverdue = aDate && aDate < now;
       const bOverdue = bDate && bDate < now;
 
-      // Overdue tasks first
       if (aOverdue && !bOverdue) return -1;
       if (!aOverdue && bOverdue) return 1;
-
-      // Tasks with due dates before tasks without
       if (aDate && !bDate) return -1;
       if (!aDate && bDate) return 1;
-
-      // Both have due dates: sort by date ascending
-      if (aDate && bDate) {
-        return aDate.getTime() - bDate.getTime();
-      }
-
-      // Both without due dates: keep original order
+      if (aDate && bDate) return aDate.getTime() - bDate.getTime();
       return 0;
     });
   };
 
-  // Separate active and completed tasks, then sort
   const activeTasks = sortTasks(filteredTasks.filter((t) => t.status === 'needsAction'));
   const completedTasks = sortTasks(filteredTasks.filter((t) => t.status === 'completed'));
 
-  const handleCreateTask = useCallback(async () => {
-    if (!newTaskTitle.trim()) return;
+  // Handle filter change - also update default assignee
+  const handleFilterChange = useCallback((userId: string | null) => {
+    setFilterUser(userId);
+    setNewTaskAssignee(userId || '');
+  }, []);
 
-    const assignedUser = newTaskAssignee || undefined;
-    const assignedCalendar = calendars.find((cal) => cal.name.toLowerCase().replace(/\s+/g, '') === assignedUser);
+  // Create new task on Enter
+  const handleCreateTask = useCallback(async () => {
+    if (!newTaskTitle.trim() || createTask.isPending) return;
 
     await createTask.mutateAsync({
       title: newTaskTitle.trim(),
-      notes: newTaskNotes.trim() || undefined,
       due: newTaskDue ? new Date(newTaskDue).toISOString() : undefined,
-      assignedUser,
-      assignedUserEmail: assignedCalendar ? undefined : undefined,
+      assignedUser: newTaskAssignee || undefined,
     });
 
-    // Reset form
     setNewTaskTitle('');
-    setNewTaskNotes('');
     setNewTaskDue('');
-    setNewTaskAssignee('');
-    setIsCreating(false);
-  }, [newTaskTitle, newTaskNotes, newTaskDue, newTaskAssignee, calendars, createTask]);
+    // Keep assignee for quick entry of multiple tasks with same assignee
+    newTaskInputRef.current?.focus();
+  }, [newTaskTitle, newTaskDue, newTaskAssignee, createTask]);
 
-  // Open edit form with task data
-  const handleOpenEditForm = useCallback((task: Task) => {
-    setEditingTask(task);
-    setEditTitle(task.title);
-    setEditNotes(task.notes || '');
-    // Convert ISO date to YYYY-MM-DD for input
-    setEditDue(task.due ? task.due.split('T')[0] : '');
-    setEditAssignee(task.metadata.assignedUser || '');
+  const handleNewTaskKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleCreateTask();
+    }
+  };
+
+  // Start inline editing
+  const handleStartEdit = useCallback((task: Task) => {
+    setEditingTaskId(task.id);
+    setEditingTitle(task.title);
+    setEditingDue(task.due ? task.due.split('T')[0] : '');
+    setEditingAssignee(task.metadata.assignedUser || '');
   }, []);
 
-  const handleCloseEditForm = useCallback(() => {
-    setEditingTask(null);
-    setEditTitle('');
-    setEditNotes('');
-    setEditDue('');
-    setEditAssignee('');
-  }, []);
-
-  const handleUpdateTask = useCallback(async () => {
-    if (!editingTask || !editTitle.trim()) return;
+  // Save inline edit
+  const handleSaveEdit = useCallback(async () => {
+    if (!editingTaskId || !editingTitle.trim() || updateTask.isPending) return;
 
     await updateTask.mutateAsync({
-      taskId: editingTask.id,
+      taskId: editingTaskId,
       updates: {
-        title: editTitle.trim(),
-        notes: editNotes.trim() || undefined,
-        due: editDue ? new Date(editDue).toISOString() : undefined,
-        assignedUser: editAssignee || undefined,
+        title: editingTitle.trim(),
+        due: editingDue ? new Date(editingDue).toISOString() : undefined,
+        assignedUser: editingAssignee || undefined,
       },
     });
 
-    handleCloseEditForm();
-  }, [editingTask, editTitle, editNotes, editDue, editAssignee, updateTask, handleCloseEditForm]);
+    setEditingTaskId(null);
+    setEditingTitle('');
+    setEditingDue('');
+    setEditingAssignee('');
+  }, [editingTaskId, editingTitle, editingDue, editingAssignee, updateTask]);
+
+  // Cancel inline edit
+  const handleCancelEdit = useCallback(() => {
+    setEditingTaskId(null);
+    setEditingTitle('');
+    setEditingDue('');
+    setEditingAssignee('');
+  }, []);
+
+  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleCancelEdit();
+    }
+  };
 
   const handleToggleComplete = useCallback(
     async (task: Task) => {
@@ -161,9 +160,7 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
 
   const handleDelete = useCallback(
     async (taskId: string) => {
-      if (confirm('Är du säker på att du vill ta bort denna uppgift?')) {
-        await deleteTask.mutateAsync(taskId);
-      }
+      await deleteTask.mutateAsync(taskId);
     },
     [deleteTask]
   );
@@ -186,7 +183,7 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
   };
 
   const getUserName = (assignedUser?: string): string => {
-    if (!assignedUser) return 'Ej tilldelad';
+    if (!assignedUser) return '';
     const calendar = calendars.find((cal) => cal.name.toLowerCase().replace(/\s+/g, '') === assignedUser);
     return calendar?.name || assignedUser;
   };
@@ -224,37 +221,23 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        {onGoToToday && (
           <button
-            onClick={handleOpenCreateForm}
-            className="px-3 py-2 rounded-lg bg-green-900/30 text-green-300 hover:bg-green-900/50 transition-colors flex items-center gap-2"
-            aria-label="Skapa uppgift"
+            onClick={onGoToToday}
+            className="px-3 py-2 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            <span className="hidden sm:inline">Ny uppgift</span>
+            Idag
           </button>
-
-          {onGoToToday && (
-            <button
-              onClick={onGoToToday}
-              className="px-3 py-2 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium"
-            >
-              Idag
-            </button>
-          )}
-        </div>
+        )}
       </header>
 
       {/* Filters */}
       <div className="flex items-center gap-4 p-4 border-b border-[var(--color-bg-tertiary)]">
-        {/* User filter */}
         <div className="flex items-center gap-2">
           <span className="text-sm text-[var(--color-text-secondary)]">Visa:</span>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => setFilterUser(null)}
+              onClick={() => handleFilterChange(null)}
               className={`px-2 py-1 rounded text-sm transition-colors ${
                 filterUser === null
                   ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
@@ -266,7 +249,7 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
             {users.map((user) => (
               <button
                 key={user.id}
-                onClick={() => setFilterUser(user.id)}
+                onClick={() => handleFilterChange(user.id)}
                 className={`px-2 py-1 rounded text-sm transition-colors ${
                   filterUser === user.id
                     ? 'text-[var(--color-bg-primary)]'
@@ -280,7 +263,6 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
           </div>
         </div>
 
-        {/* Show completed toggle */}
         <label className="flex items-center gap-2 cursor-pointer ml-auto">
           <input
             type="checkbox"
@@ -294,158 +276,63 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
 
       {/* Task List */}
       <div className="flex-1 overflow-y-auto p-4">
-        {/* Edit Task Form */}
-        {editingTask && (
-          <div className="mb-4 p-4 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-accent)]/50">
-            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-3">Redigera uppgift</h3>
-            <div className="space-y-3">
-              <input
-                type="text"
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                placeholder="Uppgiftens titel..."
-                className="w-full px-3 py-2 rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] border border-[var(--color-bg-tertiary)] focus:outline-none focus:border-[var(--color-accent)]"
-                autoFocus
-              />
-              <textarea
-                value={editNotes}
-                onChange={(e) => setEditNotes(e.target.value)}
-                placeholder="Anteckningar (valfritt)..."
-                rows={2}
-                className="w-full px-3 py-2 rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] border border-[var(--color-bg-tertiary)] focus:outline-none focus:border-[var(--color-accent)] resize-none"
-              />
-              <div className="flex gap-3">
-                <input
-                  type="date"
-                  value={editDue}
-                  onChange={(e) => setEditDue(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] border border-[var(--color-bg-tertiary)] focus:outline-none focus:border-[var(--color-accent)]"
-                />
-                <select
-                  value={editAssignee}
-                  onChange={(e) => setEditAssignee(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] border border-[var(--color-bg-tertiary)] focus:outline-none focus:border-[var(--color-accent)]"
-                >
-                  <option value="">Ingen tilldelning</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex gap-2 justify-end">
-                <button
-                  onClick={handleCloseEditForm}
-                  className="px-4 py-2 rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-                >
-                  Avbryt
-                </button>
-                <button
-                  onClick={handleUpdateTask}
-                  disabled={!editTitle.trim() || updateTask.isPending}
-                  className="px-4 py-2 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {updateTask.isPending ? 'Sparar...' : 'Spara'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Create Task Form */}
-        {isCreating && !editingTask && (
-          <div className="mb-4 p-4 bg-[var(--color-bg-secondary)] rounded-lg border border-[var(--color-bg-tertiary)]">
-            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-3">Ny uppgift</h3>
-            <div className="space-y-3">
-              <input
-                type="text"
-                value={newTaskTitle}
-                onChange={(e) => setNewTaskTitle(e.target.value)}
-                placeholder="Uppgiftens titel..."
-                className="w-full px-3 py-2 rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] border border-[var(--color-bg-tertiary)] focus:outline-none focus:border-[var(--color-accent)]"
-                autoFocus
-              />
-              <textarea
-                value={newTaskNotes}
-                onChange={(e) => setNewTaskNotes(e.target.value)}
-                placeholder="Anteckningar (valfritt)..."
-                rows={2}
-                className="w-full px-3 py-2 rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] border border-[var(--color-bg-tertiary)] focus:outline-none focus:border-[var(--color-accent)] resize-none"
-              />
-              <div className="flex gap-3">
-                <input
-                  type="date"
-                  value={newTaskDue}
-                  onChange={(e) => setNewTaskDue(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] border border-[var(--color-bg-tertiary)] focus:outline-none focus:border-[var(--color-accent)]"
-                />
-                <select
-                  value={newTaskAssignee}
-                  onChange={(e) => setNewTaskAssignee(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] border border-[var(--color-bg-tertiary)] focus:outline-none focus:border-[var(--color-accent)]"
-                >
-                  <option value="">Ingen tilldelning</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex gap-2 justify-end">
-                <button
-                  onClick={() => setIsCreating(false)}
-                  className="px-4 py-2 rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-                >
-                  Avbryt
-                </button>
-                <button
-                  onClick={handleCreateTask}
-                  disabled={!newTaskTitle.trim() || createTask.isPending}
-                  className="px-4 py-2 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {createTask.isPending ? 'Skapar...' : 'Skapa'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Inline new task input */}
+        <div className="flex items-center gap-2 p-3 mb-2 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-bg-tertiary)] border-dashed">
+          <div className="flex-shrink-0 w-5 h-5 rounded border-2 border-[var(--color-text-secondary)]/30" />
+          <input
+            ref={newTaskInputRef}
+            type="text"
+            value={newTaskTitle}
+            onChange={(e) => setNewTaskTitle(e.target.value)}
+            onKeyDown={handleNewTaskKeyDown}
+            placeholder="Lägg till uppgift... (tryck Enter)"
+            className="flex-1 min-w-0 bg-transparent text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none"
+          />
+          <input
+            type="date"
+            value={newTaskDue}
+            onChange={(e) => setNewTaskDue(e.target.value)}
+            className="flex-shrink-0 w-10 bg-transparent text-[var(--color-text-secondary)] text-sm focus:outline-none cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+            title="Välj datum"
+          />
+          <select
+            value={newTaskAssignee}
+            onChange={(e) => setNewTaskAssignee(e.target.value)}
+            className="flex-shrink-0 bg-transparent text-[var(--color-text-secondary)] text-sm focus:outline-none cursor-pointer max-w-[100px]"
+            style={newTaskAssignee ? { color: getUserColor(newTaskAssignee) } : undefined}
+          >
+            <option value="">Ingen</option>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {/* Active Tasks */}
-        {activeTasks.length === 0 && !isCreating ? (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[var(--color-bg-tertiary)] flex items-center justify-center">
-              <svg
-                className="w-8 h-8 text-[var(--color-text-secondary)]"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-                />
-              </svg>
-            </div>
+        {activeTasks.length === 0 ? (
+          <div className="text-center py-8">
             <p className="text-[var(--color-text-secondary)]">Inga aktiva uppgifter</p>
-            <button
-              onClick={handleOpenCreateForm}
-              className="mt-4 px-4 py-2 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium"
-            >
-              Skapa första uppgiften
-            </button>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1">
             {activeTasks.map((task) => (
               <TaskItem
                 key={task.id}
                 task={task}
+                users={users}
+                isEditing={editingTaskId === task.id}
+                editingTitle={editingTitle}
+                editingDue={editingDue}
+                editingAssignee={editingAssignee}
+                onEditingTitleChange={setEditingTitle}
+                onEditingDueChange={setEditingDue}
+                onEditingAssigneeChange={setEditingAssignee}
+                onStartEdit={handleStartEdit}
+                onSaveEdit={handleSaveEdit}
+                onEditKeyDown={handleEditKeyDown}
                 onToggleComplete={handleToggleComplete}
-                onEdit={handleOpenEditForm}
                 onDelete={handleDelete}
                 getUserColor={getUserColor}
                 getUserName={getUserName}
@@ -457,17 +344,27 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
 
         {/* Completed Tasks */}
         {showCompleted && completedTasks.length > 0 && (
-          <div className="mt-8">
-            <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] mb-3 uppercase tracking-wider">
+          <div className="mt-6">
+            <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] mb-2 uppercase tracking-wider">
               Färdiga ({completedTasks.length})
             </h3>
-            <div className="space-y-2 opacity-60">
+            <div className="space-y-1 opacity-60">
               {completedTasks.map((task) => (
                 <TaskItem
                   key={task.id}
                   task={task}
+                  users={users}
+                  isEditing={editingTaskId === task.id}
+                  editingTitle={editingTitle}
+                  editingDue={editingDue}
+                  editingAssignee={editingAssignee}
+                  onEditingTitleChange={setEditingTitle}
+                  onEditingDueChange={setEditingDue}
+                  onEditingAssigneeChange={setEditingAssignee}
+                  onStartEdit={handleStartEdit}
+                  onSaveEdit={handleSaveEdit}
+                  onEditKeyDown={handleEditKeyDown}
                   onToggleComplete={handleToggleComplete}
-                  onEdit={handleOpenEditForm}
                   onDelete={handleDelete}
                   getUserColor={getUserColor}
                   getUserName={getUserName}
@@ -484,8 +381,18 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
 
 interface TaskItemProps {
   task: Task;
+  users: { id: string; name: string; email?: string; color?: string }[];
+  isEditing: boolean;
+  editingTitle: string;
+  editingDue: string;
+  editingAssignee: string;
+  onEditingTitleChange: (title: string) => void;
+  onEditingDueChange: (due: string) => void;
+  onEditingAssigneeChange: (assignee: string) => void;
+  onStartEdit: (task: Task) => void;
+  onSaveEdit: () => void;
+  onEditKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   onToggleComplete: (task: Task) => void;
-  onEdit: (task: Task) => void;
   onDelete: (taskId: string) => void;
   getUserColor: (assignedUser?: string) => string;
   getUserName: (assignedUser?: string) => string;
@@ -494,27 +401,46 @@ interface TaskItemProps {
 
 function TaskItem({
   task,
+  users,
+  isEditing,
+  editingTitle,
+  editingDue,
+  editingAssignee,
+  onEditingTitleChange,
+  onEditingDueChange,
+  onEditingAssigneeChange,
+  onStartEdit,
+  onSaveEdit,
+  onEditKeyDown,
   onToggleComplete,
-  onEdit,
   onDelete,
   getUserColor,
   getUserName,
   formatDueDate,
 }: TaskItemProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
   const isCompleted = task.status === 'completed';
   const dueDate = formatDueDate(task.due);
   const isOverdue = task.due && !isCompleted && new Date(task.due) < new Date();
 
+  // Focus input when editing starts
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
   return (
     <div
-      className={`group flex items-start gap-3 p-3 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-bg-tertiary)] hover:border-[var(--color-accent)]/30 transition-colors ${
-        isCompleted ? 'opacity-60' : ''
+      className={`group flex items-center gap-3 p-2 rounded-lg hover:bg-[var(--color-bg-secondary)] transition-colors ${
+        isEditing ? 'bg-[var(--color-bg-secondary)]' : ''
       }`}
     >
       {/* Checkbox */}
       <button
         onClick={() => onToggleComplete(task)}
-        className={`flex-shrink-0 w-5 h-5 mt-0.5 rounded border-2 flex items-center justify-center transition-colors ${
+        className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
           isCompleted
             ? 'bg-[var(--color-accent)] border-[var(--color-accent)]'
             : 'border-[var(--color-text-secondary)] hover:border-[var(--color-accent)]'
@@ -527,79 +453,82 @@ function TaskItem({
         )}
       </button>
 
-      {/* Content */}
+      {/* Title - inline editable */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <p className={`font-medium text-[var(--color-text-primary)] ${isCompleted ? 'line-through' : ''}`}>
+        {isEditing ? (
+          <div className="flex items-center gap-2 flex-wrap">
+            <input
+              ref={inputRef}
+              type="text"
+              value={editingTitle}
+              onChange={(e) => onEditingTitleChange(e.target.value)}
+              onKeyDown={onEditKeyDown}
+              onBlur={onSaveEdit}
+              className="flex-1 min-w-[120px] bg-transparent text-[var(--color-text-primary)] focus:outline-none"
+            />
+            <input
+              type="date"
+              value={editingDue}
+              onChange={(e) => onEditingDueChange(e.target.value)}
+              onBlur={onSaveEdit}
+              className="flex-shrink-0 bg-transparent text-[var(--color-text-secondary)] text-sm focus:outline-none cursor-pointer"
+            />
+            <select
+              value={editingAssignee}
+              onChange={(e) => onEditingAssigneeChange(e.target.value)}
+              onBlur={onSaveEdit}
+              className="flex-shrink-0 bg-transparent text-[var(--color-text-secondary)] text-sm focus:outline-none cursor-pointer max-w-[100px]"
+              style={editingAssignee ? { color: getUserColor(editingAssignee) } : undefined}
+            >
+              <option value="">Ingen</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <button
+            onClick={() => onStartEdit(task)}
+            className={`text-left w-full text-[var(--color-text-primary)] ${
+              isCompleted ? 'line-through opacity-60' : ''
+            }`}
+          >
             {task.title}
-          </p>
-
-          {/* Assignee badge */}
-          {task.metadata.assignedUser && (
-            <span
-              className="flex-shrink-0 px-2 py-0.5 rounded text-xs font-medium text-white"
-              style={{ backgroundColor: getUserColor(task.metadata.assignedUser) }}
-            >
-              {getUserName(task.metadata.assignedUser)}
-            </span>
-          )}
-        </div>
-
-        {task.notes && <p className="mt-1 text-sm text-[var(--color-text-secondary)] line-clamp-2">{task.notes}</p>}
-
-        <div className="mt-2 flex items-center gap-3 text-sm">
-          {dueDate && (
-            <span
-              className={`flex items-center gap-1 ${isOverdue ? 'text-red-400' : 'text-[var(--color-text-secondary)]'}`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-              {dueDate}
-            </span>
-          )}
-        </div>
+          </button>
+        )}
       </div>
 
-      {/* Action buttons */}
-      <div className="flex-shrink-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
-        {/* Edit button */}
-        <button
-          onClick={() => onEdit(task)}
-          className="p-1 rounded text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10"
-          title="Redigera"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-            />
-          </svg>
-        </button>
+      {/* Due date */}
+      {dueDate && !isEditing && (
+        <span className={`flex-shrink-0 text-xs ${isOverdue ? 'text-red-400' : 'text-[var(--color-text-secondary)]'}`}>
+          {dueDate}
+        </span>
+      )}
 
-        {/* Delete button */}
+      {/* Assignee badge */}
+      {task.metadata.assignedUser && !isEditing && (
+        <span
+          className="flex-shrink-0 px-2 py-0.5 rounded text-xs font-medium text-white"
+          style={{ backgroundColor: getUserColor(task.metadata.assignedUser) }}
+        >
+          {getUserName(task.metadata.assignedUser)}
+        </span>
+      )}
+
+      {/* Delete button */}
+      {!isEditing && (
         <button
           onClick={() => onDelete(task.id)}
-          className="p-1 rounded text-[var(--color-text-secondary)] hover:text-red-400 hover:bg-red-400/10"
+          className="flex-shrink-0 p-1 rounded opacity-0 group-hover:opacity-100 text-[var(--color-text-secondary)] hover:text-red-400 transition-all"
           title="Ta bort"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-      </div>
+      )}
     </div>
   );
 }

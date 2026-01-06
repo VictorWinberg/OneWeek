@@ -288,24 +288,34 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
             placeholder="Lägg till uppgift... (tryck Enter)"
             className="flex-1 min-w-0 bg-transparent text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none"
           />
-          <div className="flex-shrink-0 relative">
+          <label className="flex-shrink-0 relative cursor-pointer">
             <input
               type="date"
               value={newTaskDue}
               onChange={(e) => setNewTaskDue(e.target.value)}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               title="Välj datum"
             />
             {newTaskDue ? (
-              <span className="text-xs text-[var(--color-text-primary)]">
+              <span className="text-xs text-[var(--color-text-primary)] pointer-events-none">
                 {formatDueDate(newTaskDue) || newTaskDue}
               </span>
             ) : (
-              <svg className="w-4 h-4 text-[var(--color-text-secondary)] opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <svg
+                className="w-4 h-4 text-[var(--color-text-secondary)] opacity-50 pointer-events-none"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
               </svg>
             )}
-          </div>
+          </label>
           <select
             value={newTaskAssignee}
             onChange={(e) => setNewTaskAssignee(e.target.value)}
@@ -430,6 +440,7 @@ function TaskItem({
   formatDueDate,
 }: TaskItemProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const editContainerRef = useRef<HTMLDivElement>(null);
   const isCompleted = task.status === 'completed';
   const dueDate = formatDueDate(task.due);
   const isOverdue = task.due && !isCompleted && new Date(task.due) < new Date();
@@ -441,6 +452,15 @@ function TaskItem({
       inputRef.current.select();
     }
   }, [isEditing]);
+
+  // Handle blur - only save if focus moves outside the edit container
+  const handleEditBlur = (e: React.FocusEvent) => {
+    // Check if the new focus target is within the edit container
+    if (editContainerRef.current?.contains(e.relatedTarget as Node)) {
+      return; // Focus moved within the edit container, don't save
+    }
+    onSaveEdit();
+  };
 
   return (
     <div
@@ -467,27 +487,27 @@ function TaskItem({
       {/* Title - inline editable */}
       <div className="flex-1 min-w-0">
         {isEditing ? (
-          <div className="flex items-center gap-2 flex-wrap">
+          <div ref={editContainerRef} className="flex items-center gap-2 flex-wrap">
             <input
               ref={inputRef}
               type="text"
               value={editingTitle}
               onChange={(e) => onEditingTitleChange(e.target.value)}
               onKeyDown={onEditKeyDown}
-              onBlur={onSaveEdit}
+              onBlur={handleEditBlur}
               className="flex-1 min-w-[120px] bg-transparent text-[var(--color-text-primary)] focus:outline-none"
             />
             <input
               type="date"
               value={editingDue}
               onChange={(e) => onEditingDueChange(e.target.value)}
-              onBlur={onSaveEdit}
+              onBlur={handleEditBlur}
               className="flex-shrink-0 bg-transparent text-[var(--color-text-secondary)] text-sm focus:outline-none cursor-pointer"
             />
             <select
               value={editingAssignee}
               onChange={(e) => onEditingAssigneeChange(e.target.value)}
-              onBlur={onSaveEdit}
+              onBlur={handleEditBlur}
               className="flex-shrink-0 bg-transparent text-[var(--color-text-secondary)] text-sm focus:outline-none cursor-pointer max-w-[100px]"
               style={editingAssignee ? { color: getUserColor(editingAssignee) } : undefined}
             >

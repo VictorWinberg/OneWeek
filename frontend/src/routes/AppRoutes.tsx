@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { MainLayout } from '../components/Layout/MainLayout';
-import type { Block } from '../types';
+import { MainLayout } from '@/components/Layout/MainLayout';
+import type { Block } from '@/types';
 
 interface AppRoutesProps {
   onBlockClick: (block: Block) => void;
@@ -60,7 +60,6 @@ export function AppRoutes({ onBlockClick, onCreateEvent, onCreateEventForDate }:
         path="/tasks"
         element={
           <MainLayout
-            viewMode="tasks"
             onBlockClick={onBlockClick}
             onCreateEvent={onCreateEvent}
             onCreateEventForDate={onCreateEventForDate}

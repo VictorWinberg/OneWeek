@@ -6,11 +6,11 @@ import { useWeekEvents, usePrefetchAdjacentWeeks, useUpdateEvent, useMoveEvent }
 import { getWeekDays, formatWeekHeader, getWeekNumber } from '@/utils/dateUtils';
 import { urlToMobileViewMode, mobileToUrlViewMode, type MobileViewMode, type UrlViewMode } from '@/utils/viewModeUtils';
 import { useMobileDragAndDrop } from '@/hooks/useDragAndDrop';
-import { EventCard } from './EventCard';
-import { MobileListView } from './MobileListView';
-import { MobileGridView } from './MobileGridView';
-import { MobileUserView } from './MobileUserView';
-import { MobileHourView } from './MobileHourView';
+import { EventCard } from '@/components/WeekView/EventCard';
+import { MobileListView } from '@/components/WeekView/MobileListView';
+import { MobileGridView } from '@/components/WeekView/MobileGridView';
+import { MobileUserView } from '@/components/WeekView/MobileUserView';
+import { MobileHourView } from '@/components/WeekView/MobileHourView';
 import type { Block } from '@/types';
 
 interface MobileViewProps {

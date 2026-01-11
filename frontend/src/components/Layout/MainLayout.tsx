@@ -1,21 +1,21 @@
 import { useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { addWeeks, subWeeks } from 'date-fns';
-import { useCalendarStore } from '../../stores/calendarStore';
-import { getWeekMonday, parseDateParam } from '../../utils/dateUtils';
-import { NavigationBar } from './NavigationBar';
-import { DayView } from '../WeekView/DayView';
-import { GridView } from '../WeekView/GridView';
-import { UserView } from '../WeekView/UserView';
-import { HourView } from '../WeekView/HourView';
-import { MobileView } from '../WeekView/MobileView';
-import { TasksView } from '../TasksView/TasksView';
-import { useIsMobile } from '../../hooks/useMediaQuery';
-import type { Block } from '../../types';
-import type { ViewMode } from '../../types/viewMode';
+import { useCalendarStore } from '@/stores/calendarStore';
+import { getWeekMonday, parseDateParam } from '@/utils/dateUtils';
+import { NavigationBar } from '@/components/Layout/NavigationBar';
+import { DayView } from '@/components/WeekView/DayView';
+import { GridView } from '@/components/WeekView/GridView';
+import { UserView } from '@/components/WeekView/UserView';
+import { HourView } from '@/components/WeekView/HourView';
+import { MobileView } from '@/components/WeekView/MobileView';
+import { TasksView } from '@/components/TasksView/TasksView';
+import { useIsMobile } from '@/hooks/useMediaQuery';
+import type { Block } from '@/types';
+import type { ViewMode } from '@/types/viewMode';
 
 interface MainLayoutProps {
-  viewMode: ViewMode;
+  viewMode?: ViewMode;
   onBlockClick: (block: Block) => void;
   onCreateEvent: () => void;
   onCreateEventForDate: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
@@ -27,9 +27,9 @@ export function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEven
   const isMobile = useIsMobile();
   const { selectedDate, setSelectedDate } = useCalendarStore();
 
-  // Sync URL date parameter with calendar store (skip for tasks view)
+  // Sync URL date parameter with calendar store (skip when no viewMode - tasks page)
   useEffect(() => {
-    if (viewMode === 'tasks') return; // Tasks view doesn't use date parameter
+    if (!viewMode) return; // Tasks view doesn't use date parameter
 
     const parsedDate = parseDateParam(date);
     if (parsedDate) {
@@ -42,9 +42,9 @@ export function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEven
     // If no date in URL, we'll add it on first render below
   }, [date, viewMode, navigate, setSelectedDate]);
 
-  // If no date in URL, add the current week's Monday (skip for tasks view)
+  // If no date in URL, add the current week's Monday (skip when no viewMode - tasks page)
   useEffect(() => {
-    if (viewMode === 'tasks') return; // Tasks view doesn't use date parameter
+    if (!viewMode) return; // Tasks view doesn't use date parameter
 
     if (!date) {
       const mondayStr = getWeekMonday(selectedDate);
@@ -54,12 +54,14 @@ export function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEven
 
   // Navigation handlers that update URL
   const handleNextWeek = useCallback(() => {
+    if (!viewMode) return;
     const nextWeekDate = addWeeks(selectedDate, 1);
     const mondayStr = getWeekMonday(nextWeekDate);
     navigate(`/${viewMode}/${mondayStr}`);
   }, [selectedDate, viewMode, navigate]);
 
   const handlePrevWeek = useCallback(() => {
+    if (!viewMode) return;
     const prevWeekDate = subWeeks(selectedDate, 1);
     const mondayStr = getWeekMonday(prevWeekDate);
     navigate(`/${viewMode}/${mondayStr}`);
@@ -67,7 +69,11 @@ export function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEven
 
   const handleGoToToday = useCallback(() => {
     const todayMonday = getWeekMonday(new Date());
-    navigate(`/${viewMode}/${todayMonday}`);
+    if (viewMode) {
+      navigate(`/${viewMode}/${todayMonday}`);
+    } else {
+      navigate(`/day/${todayMonday}`);
+    }
   }, [viewMode, navigate]);
 
   // View mode change handler
@@ -85,7 +91,7 @@ export function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEven
 
       {/* Main content */}
       <main className="flex-1 overflow-hidden min-h-0">
-        {viewMode === 'tasks' ? (
+        {!viewMode ? (
           <TasksView onGoToToday={handleGoToToday} />
         ) : isMobile ? (
           <MobileView

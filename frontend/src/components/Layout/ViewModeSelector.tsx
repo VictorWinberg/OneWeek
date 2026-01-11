@@ -1,7 +1,4 @@
-import { useNavigate } from 'react-router-dom';
-import { getWeekMonday } from '../../utils/dateUtils';
-import { useCalendarStore } from '../../stores/calendarStore';
-import type { ViewMode } from '../../types/viewMode';
+import type { ViewMode } from '@/types/viewMode';
 
 interface ViewModeSelectorProps {
   currentViewMode: ViewMode;
@@ -9,15 +6,8 @@ interface ViewModeSelectorProps {
 }
 
 export function ViewModeSelector({ currentViewMode, onViewModeChange }: ViewModeSelectorProps) {
-  const navigate = useNavigate();
-  const { selectedDate } = useCalendarStore();
-
   const handleViewModeChange = (mode: ViewMode) => {
-    if (mode === 'tasks') {
-      navigate('/tasks');
-    } else {
-      onViewModeChange(mode);
-    }
+    onViewModeChange(mode);
   };
 
   return (
@@ -61,16 +51,6 @@ export function ViewModeSelector({ currentViewMode, onViewModeChange }: ViewMode
         }`}
       >
         Timvy
-      </button>
-      <button
-        onClick={() => handleViewModeChange('tasks')}
-        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-          currentViewMode === 'tasks'
-            ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
-            : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-        }`}
-      >
-        Uppgifter
       </button>
     </div>
   );

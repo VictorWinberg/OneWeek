@@ -1,11 +1,11 @@
-import { LogoutButton } from '../Auth/LoginButton';
-import { ViewModeSelector } from './ViewModeSelector';
-import { NavigationIcons } from './NavigationIcons';
-import { useIsMobile } from '../../hooks/useMediaQuery';
-import type { ViewMode } from '../../types/viewMode';
+import { LogoutButton } from '@/components/Auth/LoginButton';
+import { ViewModeSelector } from '@/components/Layout/ViewModeSelector';
+import { NavigationIcons } from '@/components/Layout/NavigationIcons';
+import { useIsMobile } from '@/hooks/useMediaQuery';
+import type { ViewMode } from '@/types/viewMode';
 
 interface NavigationBarProps {
-  viewMode: ViewMode;
+  viewMode?: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
 }
 
@@ -21,7 +21,7 @@ export function NavigationBar({ viewMode, onViewModeChange }: NavigationBarProps
         </span>
       </h1>
       <div className="flex items-center gap-4">
-        {!isMobile && <ViewModeSelector currentViewMode={viewMode} onViewModeChange={onViewModeChange} />}
+        {!isMobile && viewMode && <ViewModeSelector currentViewMode={viewMode} onViewModeChange={onViewModeChange} />}
         <NavigationIcons viewMode={viewMode} />
         <LogoutButton />
       </div>

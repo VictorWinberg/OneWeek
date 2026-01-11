@@ -1,16 +1,10 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
 import { useWeekEvents, usePrefetchAdjacentWeeks, useUpdateEvent, useMoveEvent } from '@/hooks/useCalendarQueries';
 import { getWeekDays, formatWeekHeader, getWeekNumber } from '@/utils/dateUtils';
-import {
-  urlToMobileViewMode,
-  mobileToUrlViewMode,
-  type MobileViewMode,
-  type UrlViewMode,
-} from '@/utils/viewModeUtils';
+import { urlToMobileViewMode, mobileToUrlViewMode, type MobileViewMode, type UrlViewMode } from '@/utils/viewModeUtils';
 import { useMobileDragAndDrop } from '@/hooks/useDragAndDrop';
 import { EventCard } from './EventCard';
 import { MobileListView } from './MobileListView';
@@ -21,26 +15,21 @@ import type { Block } from '@/types';
 
 interface MobileViewProps {
   onBlockClick: (block: Block) => void;
-  onCreateEvent: () => void;
   onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
   viewMode?: UrlViewMode;
   onNextWeek?: () => void;
   onPrevWeek?: () => void;
-  onGoToToday?: () => void;
   onViewModeChange?: (mode: UrlViewMode) => void;
 }
 
 export function MobileView({
   onBlockClick,
-  onCreateEvent,
   onCreateEventForDate,
   viewMode: urlViewMode,
   onNextWeek,
   onPrevWeek,
-  onGoToToday,
   onViewModeChange,
 }: MobileViewProps) {
-  const navigate = useNavigate();
   const { selectedDate } = useCalendarStore();
   const { config } = useConfigStore();
 
@@ -120,26 +109,6 @@ export function MobileView({
             </button>
           </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center justify-center gap-1">
-            <button
-              onClick={onCreateEvent}
-              className="p-1.5 rounded-lg bg-green-900/30 text-green-300 hover:bg-green-900/50 transition-colors"
-              aria-label="Skapa event"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-            </button>
-
-            <button
-              onClick={onGoToToday}
-              className="px-3 py-1 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium text-sm"
-            >
-              Idag
-            </button>
-          </div>
-
           <div className="flex items-center justify-center gap-1 bg-[var(--color-bg-tertiary)] rounded-lg p-1">
             <button
               onClick={() => handleViewModeChange('list')}
@@ -180,12 +149,6 @@ export function MobileView({
               }`}
             >
               Timvy
-            </button>
-            <button
-              onClick={() => navigate('/tasks')}
-              className="px-2 py-1.5 rounded-md text-xs font-medium transition-colors text-[var(--color-text-secondary)]"
-            >
-              Uppgifter
             </button>
           </div>
         </header>

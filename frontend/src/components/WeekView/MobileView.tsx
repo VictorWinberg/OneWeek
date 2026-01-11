@@ -172,8 +172,6 @@ export function MobileView({
               blocks={blocks}
               onBlockClick={onBlockClick}
               activeBlock={activeBlock}
-              onPrevWeek={onPrevWeek}
-              onNextWeek={onNextWeek}
             />
           ) : mobileViewMode === 'grid' ? (
             <MobileGridView
@@ -192,8 +190,6 @@ export function MobileView({
               onBlockClick={onBlockClick}
               activeBlock={activeBlock}
               onCreateEventForDate={onCreateEventForDate}
-              onPrevWeek={onPrevWeek}
-              onNextWeek={onNextWeek}
             />
           ) : (
             <MobileUserView

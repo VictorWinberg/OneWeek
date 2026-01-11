@@ -9,20 +9,31 @@ interface DroppableDaySectionProps {
   title: string;
   blocks: Block[];
   onBlockClick: (block: Block) => void;
+  onEmptyClick?: (date: Date) => void;
   isToday: boolean;
 }
 
-function DroppableDaySection({ date, title, blocks, onBlockClick, isToday }: DroppableDaySectionProps) {
+function DroppableDaySection({ date, title, blocks, onBlockClick, onEmptyClick, isToday }: DroppableDaySectionProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `day-section-${date.toISOString()}`,
     data: { date },
   });
 
+  const handleClick = (e: React.MouseEvent) => {
+    // Don't trigger if clicking on an event card
+    if ((e.target as HTMLElement).closest('[data-event-card]')) {
+      return;
+    }
+    // Trigger for any click on the day section (header or empty space)
+    onEmptyClick?.(date);
+  };
+
   return (
     <section
       ref={setNodeRef}
+      onClick={handleClick}
       className={`
-        border-b border-[var(--color-bg-tertiary)] last:border-b-0
+        border-b border-[var(--color-bg-tertiary)] last:border-b-0 cursor-pointer
         ${isOver ? 'ring-2 ring-[var(--color-accent)] ring-inset' : ''}
       `}
     >
@@ -70,15 +81,22 @@ interface MobileListViewProps {
   weekDays: Date[];
   blocks: Block[];
   onBlockClick: (block: Block) => void;
+  onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
   activeBlock?: Block | null;
 }
 
-export function MobileListView({ weekDays, blocks, onBlockClick }: MobileListViewProps) {
+export function MobileListView({ weekDays, blocks, onBlockClick, onCreateEventForDate }: MobileListViewProps) {
   // Custom sort: timed events first (by time), then all-day events (by time)
   const sortBlocksForList = (blocks: Block[]): Block[] => {
     const timed = blocks.filter((b) => !b.allDay);
     const allDay = blocks.filter((b) => b.allDay);
     return [...sortBlocksByTime(timed), ...sortBlocksByTime(allDay)];
+  };
+
+  const handleEmptySpaceClick = (date: Date) => {
+    if (onCreateEventForDate) {
+      onCreateEventForDate(date);
+    }
   };
 
   return (
@@ -94,6 +112,7 @@ export function MobileListView({ weekDays, blocks, onBlockClick }: MobileListVie
             title={formatDayHeader(date)}
             blocks={dayBlocks}
             onBlockClick={onBlockClick}
+            onEmptyClick={handleEmptySpaceClick}
             isToday={isCurrentDay}
           />
         );

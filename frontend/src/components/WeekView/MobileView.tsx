@@ -171,6 +171,7 @@ export function MobileView({
               weekDays={weekDays}
               blocks={blocks}
               onBlockClick={onBlockClick}
+              onCreateEventForDate={onCreateEventForDate}
               activeBlock={activeBlock}
             />
           ) : mobileViewMode === 'grid' ? (

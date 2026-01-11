@@ -29,10 +29,6 @@ export function MobileView({
   onNextWeek,
   onPrevWeek,
   onViewModeChange,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  onCreateEvent: _onCreateEvent,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  onGoToToday: _onGoToToday,
 }: MobileViewProps) {
   const { selectedDate } = useCalendarStore();
   const { config } = useConfigStore();

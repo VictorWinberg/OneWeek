@@ -1,0 +1,150 @@
+import { useRef, useEffect, useState, type ReactNode } from 'react';
+import { addWeeks, subWeeks } from 'date-fns';
+import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
+import { useWeekEvents } from '@/hooks/useCalendarQueries';
+import { getWeekDays } from '@/utils/dateUtils';
+import type { Block } from '@/types';
+
+interface WeekData {
+  weekDays: Date[];
+  blocks: Block[];
+  isLoading: boolean;
+}
+
+interface SwipeableWeekContainerProps {
+  selectedDate: Date;
+  onPrevWeek?: () => void;
+  onNextWeek?: () => void;
+  isDisabled?: boolean;
+  children: (weekData: WeekData) => ReactNode;
+}
+
+export function SwipeableWeekContainer({
+  selectedDate,
+  onPrevWeek,
+  onNextWeek,
+  isDisabled = false,
+  children,
+}: SwipeableWeekContainerProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  // Calculate adjacent week dates
+  const prevWeekDate = subWeeks(selectedDate, 1);
+  const nextWeekDate = addWeeks(selectedDate, 1);
+
+  // Fetch events for all three weeks
+  const { data: currentBlocks = [], isLoading: isCurrentLoading } = useWeekEvents(selectedDate);
+  const { data: prevBlocks = [], isLoading: isPrevLoading } = useWeekEvents(prevWeekDate);
+  const { data: nextBlocks = [], isLoading: isNextLoading } = useWeekEvents(nextWeekDate);
+
+  // Get week days for all three weeks
+  const currentWeekDays = getWeekDays(selectedDate);
+  const prevWeekDays = getWeekDays(prevWeekDate);
+  const nextWeekDays = getWeekDays(nextWeekDate);
+
+  // Measure container width for swipe calculations
+  useEffect(() => {
+    const updateWidth = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.offsetWidth);
+      }
+    };
+
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
+
+  const { swipeState, getHandlers, isDragging, isAnimating } = useSwipeNavigation({
+    onPrevWeek,
+    onNextWeek,
+    isDisabled,
+    containerWidth,
+  });
+
+  const touchHandlers = getHandlers();
+
+  // Calculate transform offset
+  // The weeks are laid out as: [prev][current][next]
+  // Default position shows current week (translateX = -100%)
+  // When dragging right (positive offset), we reveal prev week
+  // When dragging left (negative offset), we reveal next week
+  const baseOffset = -containerWidth; // Start at current week (-100%)
+  const transformX = baseOffset + swipeState.offsetX;
+
+  // Prepare week data for each position
+  const prevWeekData: WeekData = {
+    weekDays: prevWeekDays,
+    blocks: prevBlocks,
+    isLoading: isPrevLoading,
+  };
+
+  const currentWeekData: WeekData = {
+    weekDays: currentWeekDays,
+    blocks: currentBlocks,
+    isLoading: isCurrentLoading,
+  };
+
+  const nextWeekData: WeekData = {
+    weekDays: nextWeekDays,
+    blocks: nextBlocks,
+    isLoading: isNextLoading,
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      className="flex-1 overflow-hidden relative"
+      style={{
+        touchAction: isDragging ? 'none' : 'pan-y',
+        userSelect: isDragging ? 'none' : 'auto',
+        WebkitUserSelect: isDragging ? 'none' : 'auto',
+      }}
+      {...touchHandlers}
+    >
+      <div
+        className="flex h-full"
+        style={{
+          width: `${containerWidth * 3}px`,
+          transform: `translateX(${transformX}px)`,
+          transition: isAnimating ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+          willChange: isDragging ? 'transform' : 'auto',
+        }}
+      >
+        {/* Previous Week */}
+        <div
+          className="h-full overflow-hidden"
+          style={{
+            width: `${containerWidth}px`,
+            flexShrink: 0,
+          }}
+        >
+          {children(prevWeekData)}
+        </div>
+
+        {/* Current Week */}
+        <div
+          className="h-full overflow-hidden"
+          style={{
+            width: `${containerWidth}px`,
+            flexShrink: 0,
+          }}
+        >
+          {children(currentWeekData)}
+        </div>
+
+        {/* Next Week */}
+        <div
+          className="h-full overflow-hidden"
+          style={{
+            width: `${containerWidth}px`,
+            flexShrink: 0,
+          }}
+        >
+          {children(nextWeekData)}
+        </div>
+      </div>
+    </div>
+  );
+}

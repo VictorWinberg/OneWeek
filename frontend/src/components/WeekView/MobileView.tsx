@@ -1,10 +1,16 @@
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
 import { useWeekEvents, usePrefetchAdjacentWeeks, useUpdateEvent, useMoveEvent } from '@/hooks/useCalendarQueries';
-import { getWeekDays, formatWeekHeader, getWeekNumber } from '@/utils/dateUtils';
-import { urlToMobileViewMode, mobileToUrlViewMode, type MobileViewMode, type UrlViewMode } from '@/utils/viewModeUtils';
+import { formatWeekHeader, getWeekNumber, getWeekDays } from '@/utils/dateUtils';
+import {
+  urlToMobileViewMode,
+  mobileToUrlViewMode,
+  type MobileViewMode,
+  type UrlViewMode,
+} from '@/utils/viewModeUtils';
 import { useMobileDragAndDrop } from '@/hooks/useDragAndDrop';
 import { EventCard } from '@/components/WeekView/EventCard';
 import { MobileListView } from '@/components/WeekView/MobileListView';
@@ -30,18 +36,19 @@ export function MobileView({
   onPrevWeek,
   onViewModeChange,
 }: MobileViewProps) {
+  const navigate = useNavigate();
   const { selectedDate } = useCalendarStore();
   const { config } = useConfigStore();
 
-  // Fetch events using React Query
+  // Fetch events using React Query (for drag and drop)
   const { data: blocks = [], isLoading, error } = useWeekEvents(selectedDate);
   const { prefetch } = usePrefetchAdjacentWeeks(selectedDate);
   const updateEventTime = useUpdateEvent();
   const moveEvent = useMoveEvent();
 
-  const weekDays = getWeekDays(selectedDate);
   const weekNumber = getWeekNumber(selectedDate);
   const calendars = config.calendars;
+  const weekDays = getWeekDays(selectedDate);
 
   // Compute current mobile view mode from URL mode
   const mobileViewMode = urlToMobileViewMode(urlViewMode, 'list');
@@ -175,6 +182,8 @@ export function MobileView({
               onBlockClick={onBlockClick}
               onCreateEventForDate={onCreateEventForDate}
               activeBlock={activeBlock}
+              onPrevWeek={onPrevWeek}
+              onNextWeek={onNextWeek}
             />
           ) : mobileViewMode === 'grid' ? (
             <MobileGridView
@@ -193,6 +202,8 @@ export function MobileView({
               onBlockClick={onBlockClick}
               activeBlock={activeBlock}
               onCreateEventForDate={onCreateEventForDate}
+              onPrevWeek={onPrevWeek}
+              onNextWeek={onNextWeek}
             />
           ) : (
             <MobileUserView

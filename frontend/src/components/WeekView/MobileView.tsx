@@ -202,8 +202,6 @@ export function MobileView({
               onBlockClick={onBlockClick}
               activeBlock={activeBlock}
               onCreateEventForDate={onCreateEventForDate}
-              onPrevWeek={onPrevWeek}
-              onNextWeek={onNextWeek}
             />
           ) : (
             <MobileUserView

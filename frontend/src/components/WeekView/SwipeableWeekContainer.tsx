@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, type ReactNode } from 'react';
+import { useRef, useEffect, useLayoutEffect, useState, type ReactNode } from 'react';
 import { addWeeks, subWeeks } from 'date-fns';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { useWeekEvents } from '@/hooks/useCalendarQueries';
@@ -56,7 +56,7 @@ export function SwipeableWeekContainer({
     return () => window.removeEventListener('resize', updateWidth);
   }, []);
 
-  const { swipeState, getHandlers, isDragging, isAnimating } = useSwipeNavigation({
+  const { swipeState, getHandlers, isDragging, isAnimating, resetSwipeState } = useSwipeNavigation({
     onPrevWeek,
     onNextWeek,
     isDisabled,
@@ -65,13 +65,36 @@ export function SwipeableWeekContainer({
 
   const touchHandlers = getHandlers();
 
+  // Track previous date to detect changes and prevent flicker
+  const [prevSelectedDate, setPrevSelectedDate] = useState(selectedDate);
+
+  // Detect if date changed - if so, ignore swipe offset to prevent flicker
+  const dateChanged = prevSelectedDate.getTime() !== selectedDate.getTime();
+
+  // Reset swipe state when selectedDate changes (after navigation completes)
+  // This prevents flickering when the date changes after a swipe
+  // Using useLayoutEffect to update synchronously before paint to prevent flicker
+  useLayoutEffect(() => {
+    if (dateChanged) {
+      // Date has changed - reset swipe state immediately to prevent flicker
+      // The date change means navigation completed, so we should show the new week centered
+      resetSwipeState();
+      setPrevSelectedDate(selectedDate);
+    }
+    // Note: We intentionally update state in effect to track previous date and prevent flicker
+    // This is necessary to synchronously reset the swipe offset when date changes
+  }, [selectedDate, resetSwipeState, dateChanged]);
+
   // Calculate transform offset
   // The weeks are laid out as: [prev][current][next]
   // Default position shows current week (translateX = -100%)
   // When dragging right (positive offset), we reveal prev week
   // When dragging left (negative offset), we reveal next week
   const baseOffset = -containerWidth; // Start at current week (-100%)
-  const transformX = baseOffset + swipeState.offsetX;
+  // If date changed, ignore swipe offset to prevent flicker during the transition
+  // Only ignore if we're not currently dragging (to allow smooth swipe animation)
+  const effectiveOffsetX = dateChanged && !isDragging && !isAnimating ? 0 : swipeState.offsetX;
+  const transformX = baseOffset + effectiveOffsetX;
 
   // Prepare week data for each position
   const prevWeekData: WeekData = {

@@ -6,7 +6,7 @@ import { useConfigStore } from '@/stores/configStore';
 import { useWeekEvents, usePrefetchAdjacentWeeks, useUpdateEvent } from '@/hooks/useCalendarQueries';
 import { getWeekDays, formatWeekHeader, getWeekNumber, formatDayShort, isToday } from '@/utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
-import { EventCard } from './EventCard';
+import { EventCard } from '@/components/WeekView/EventCard';
 import type { Block } from '@/types';
 
 interface DroppableGridDayProps {

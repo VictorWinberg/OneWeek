@@ -1,16 +1,16 @@
 import { useEffect } from 'react';
-import { useAuthStore } from './stores/authStore';
-import { useConfigStore } from './stores/configStore';
-import { useCalendarStore } from './stores/calendarStore';
-import { EventDetailPanel } from './components/EventDetail/EventDetailPanel';
-import { EventCreatePanel } from './components/EventDetail/EventCreatePanel';
-import { LoadingPage } from './pages/LoadingPage';
-import { LoginPage } from './pages/LoginPage';
-import { ConfigErrorPage } from './pages/ConfigErrorPage';
-import { NotConfiguredPage } from './pages/NotConfiguredPage';
-import { AppRoutes } from './routes/AppRoutes';
-import { useEventPanel } from './hooks/useEventPanel';
-import type { Block } from './types';
+import { useAuthStore } from '@/stores/authStore';
+import { useConfigStore } from '@/stores/configStore';
+import { useCalendarStore } from '@/stores/calendarStore';
+import { EventDetailPanel } from '@/components/EventDetail/EventDetailPanel';
+import { EventCreatePanel } from '@/components/EventDetail/EventCreatePanel';
+import { LoadingPage } from '@/pages/LoadingPage';
+import { LoginPage } from '@/pages/LoginPage';
+import { ConfigErrorPage } from '@/pages/ConfigErrorPage';
+import { NotConfiguredPage } from '@/pages/NotConfiguredPage';
+import { AppRoutes } from '@/routes/AppRoutes';
+import { useEventPanel } from '@/hooks/useEventPanel';
+import type { Block } from '@/types';
 import './index.css';
 
 function App() {

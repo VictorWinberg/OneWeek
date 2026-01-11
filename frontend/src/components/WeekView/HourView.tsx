@@ -7,7 +7,7 @@ import { getWeekDays, formatWeekHeader, getWeekNumber, formatDayShort, isToday }
 import { getBlocksForDay, calculateBlockPosition } from '@/services/calendarNormalizer';
 import { calculateNextHourTimeSlot } from '@/utils/timeUtils';
 import { useDesktopDragAndDrop } from '@/hooks/useDragAndDrop';
-import { EventCard } from './EventCard';
+import { EventCard } from '@/components/WeekView/EventCard';
 import type { Block } from '@/types';
 
 interface DroppableTimeSlotProps {

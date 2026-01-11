@@ -6,7 +6,7 @@ import {
   isValidMobileViewMode,
   type MobileViewMode,
   type UrlViewMode,
-} from '../viewModeUtils';
+} from '@/utils/viewModeUtils';
 
 describe('viewModeUtils', () => {
   describe('urlToMobileViewMode', () => {

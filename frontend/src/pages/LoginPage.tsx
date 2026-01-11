@@ -1,5 +1,5 @@
-import { LoginButton } from '../components/Auth/LoginButton';
-import { FeatureCard } from '../components/FeatureCard';
+import { LoginButton } from '@/components/Auth/LoginButton';
+import { FeatureCard } from '@/components/FeatureCard';
 
 export function LoginPage() {
   return (

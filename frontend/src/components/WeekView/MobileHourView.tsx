@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import { formatDayShort, isToday } from '@/utils/dateUtils';
 import { getBlocksForDay, calculateBlockPosition } from '@/services/calendarNormalizer';
 import { calculateNextHourTimeSlot } from '@/utils/timeUtils';
-import { EventCard } from './EventCard';
+import { EventCard } from '@/components/WeekView/EventCard';
 import type { Block } from '@/types';
 
 interface DroppableTimeSlotProps {

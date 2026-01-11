@@ -5,7 +5,7 @@ import {
   createAllDayEndDateTime,
   validateEventTimes,
   prepareEventData,
-} from '../eventCreationUtils';
+} from '@/utils/eventCreationUtils';
 import type { Calendar } from '@/types/calendar';
 
 describe('eventCreationUtils', () => {

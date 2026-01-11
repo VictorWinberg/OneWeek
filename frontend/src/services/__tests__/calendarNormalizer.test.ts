@@ -13,7 +13,7 @@ import {
   getBlocksForDayAndCalendar,
   getTimedBlocksForDay,
   getAllDayBlocksForDay,
-} from '../calendarNormalizer';
+} from '@/services/calendarNormalizer';
 import { createMockBlock, createMockAllDayBlock, createTestDate } from '@/test-utils/testHelpers';
 
 describe('calendarNormalizer', () => {

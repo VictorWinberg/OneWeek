@@ -1,4 +1,4 @@
-import { LogoutButton } from '../components/Auth/LoginButton';
+import { LogoutButton } from '@/components/Auth/LoginButton';
 
 export function NotConfiguredPage() {
   return (

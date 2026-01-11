@@ -2,7 +2,7 @@ import { useDroppable } from '@dnd-kit/core';
 import type { Block } from '@/types';
 import { isToday, formatDayShort, formatDayNumber } from '@/utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
-import { EventCard } from './EventCard';
+import { EventCard } from '@/components/WeekView/EventCard';
 
 interface DayColumnProps {
   date: Date;
@@ -13,7 +13,14 @@ interface DayColumnProps {
   draggable?: boolean;
 }
 
-export function DayColumn({ date, blocks, onBlockClick, onEmptySpaceClick, compact = false, draggable = false }: DayColumnProps) {
+export function DayColumn({
+  date,
+  blocks,
+  onBlockClick,
+  onEmptySpaceClick,
+  compact = false,
+  draggable = false,
+}: DayColumnProps) {
   const dayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date).filter((b) => !b.allDay));
   const today = isToday(date);
 
@@ -46,7 +53,9 @@ export function DayColumn({ date, blocks, onBlockClick, onEmptySpaceClick, compa
           ${today ? 'before:absolute before:inset-0 before:bg-[var(--color-accent)]/10' : ''}
         `}
       >
-        <div className="text-xs uppercase tracking-wide text-[var(--color-text-secondary)] relative">{formatDayShort(date)}</div>
+        <div className="text-xs uppercase tracking-wide text-[var(--color-text-secondary)] relative">
+          {formatDayShort(date)}
+        </div>
         <div
           className={`
             text-2xl font-bold mt-1 relative

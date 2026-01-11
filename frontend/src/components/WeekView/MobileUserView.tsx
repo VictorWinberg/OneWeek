@@ -1,7 +1,7 @@
 import { useDroppable } from '@dnd-kit/core';
 import { formatDayShort, isToday } from '@/utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
-import { EventCard } from './EventCard';
+import { EventCard } from '@/components/WeekView/EventCard';
 import type { Block } from '@/types';
 import type { Calendar } from '@/types/calendar';
 
@@ -15,7 +15,15 @@ interface DroppableTimeSlotProps {
   activeBlockDuration?: number;
 }
 
-function DroppableTimeSlot({ id, date, hour, minute, calendarId, children, activeBlockDuration }: DroppableTimeSlotProps) {
+function DroppableTimeSlot({
+  id,
+  date,
+  hour,
+  minute,
+  calendarId,
+  children,
+  activeBlockDuration,
+}: DroppableTimeSlotProps) {
   const { setNodeRef, isOver } = useDroppable({
     id,
     data: {
@@ -82,9 +90,7 @@ function DroppableMobileCell({ id, date, calendarId, children, isToday, activeBl
       </div>
 
       {/* Events */}
-      <div className="relative z-10">
-        {children}
-      </div>
+      <div className="relative z-10">{children}</div>
     </td>
   );
 }

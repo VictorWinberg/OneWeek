@@ -100,21 +100,13 @@ function DroppableGridDay({ date, dayBlocks, onBlockClick, onEmptyClick, isCurre
 
 interface GridViewProps {
   onBlockClick: (block: Block) => void;
-  onCreateEvent: () => void;
   onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
   onNextWeek?: () => void;
   onPrevWeek?: () => void;
   onGoToToday?: () => void;
 }
 
-export function GridView({
-  onBlockClick,
-  onCreateEvent,
-  onCreateEventForDate,
-  onNextWeek,
-  onPrevWeek,
-  onGoToToday,
-}: GridViewProps) {
+export function GridView({ onBlockClick, onCreateEventForDate, onNextWeek, onPrevWeek, onGoToToday }: GridViewProps) {
   const { selectedDate } = useCalendarStore();
   const { isConfigured } = useConfigStore();
   const [activeBlock, setActiveBlock] = useState<Block | null>(null);
@@ -255,17 +247,6 @@ export function GridView({
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={onCreateEvent}
-              className="px-3 py-2 rounded-lg bg-green-900/30 text-green-300 hover:bg-green-900/50 transition-colors flex items-center gap-2"
-              aria-label="Skapa event"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              <span className="hidden sm:inline">Skapa event</span>
-            </button>
-
             <button
               onClick={onPrevWeek}
               className="p-2 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"

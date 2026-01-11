@@ -12,12 +12,13 @@ import {
   DEFAULT_TASK_LIST_ID,
 } from '@/hooks/useTasks';
 import type { Task } from '@/types';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 interface TasksViewProps {
   onGoToToday?: () => void;
 }
 
-export function TasksView({ onGoToToday }: TasksViewProps) {
+export function TasksView({ onGoToToday: _onGoToToday }: TasksViewProps) {
   const { config } = useConfigStore();
   const calendars = config.calendars;
 
@@ -205,15 +206,6 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
             {activeTasks.length} aktiva
           </span>
         </div>
-
-        {onGoToToday && (
-          <button
-            onClick={onGoToToday}
-            className="px-3 py-2 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium"
-          >
-            Idag
-          </button>
-        )}
       </header>
 
       <div className="flex items-center gap-4 p-4 border-b border-[var(--color-bg-tertiary)]">
@@ -431,9 +423,13 @@ function TaskItem({
   formatDueDate,
 }: TaskItemProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
   const isCompleted = task.status === 'completed';
   const dueDate = formatDueDate(task.due);
   const isOverdue = task.due && !isCompleted && new Date(task.due) < new Date();
+
+  const [showDateConfirmDialog, setShowDateConfirmDialog] = useState(false);
+  const [pendingDateChange, setPendingDateChange] = useState<string | null>(null);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -442,9 +438,39 @@ function TaskItem({
     }
   }, [isEditing]);
 
+  // Reset date input value when dialog closes to ensure it stays in sync
+  useEffect(() => {
+    if (!showDateConfirmDialog && dateInputRef.current) {
+      const currentDate = task.due ? task.due.split('T')[0] : '';
+      dateInputRef.current.value = currentDate;
+    }
+  }, [showDateConfirmDialog, task.due]);
+
   const handleDueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newDue = e.target.value ? new Date(e.target.value).toISOString() : null;
+    const selectedDate = e.target.value;
+    const currentDate = task.due ? task.due.split('T')[0] : '';
+
+    // If the selected date is the same as the current date, show confirmation dialog
+    if (selectedDate && currentDate && selectedDate === currentDate) {
+      setPendingDateChange(selectedDate);
+      setShowDateConfirmDialog(true);
+      return;
+    }
+
+    // Otherwise, update the date normally
+    const newDue = selectedDate ? new Date(selectedDate).toISOString() : null;
     onUpdateTask(task.id, { due: newDue });
+  };
+
+  const handleRemoveDate = () => {
+    onUpdateTask(task.id, { due: null });
+    setShowDateConfirmDialog(false);
+    setPendingDateChange(null);
+  };
+
+  const handleKeepDate = () => {
+    setShowDateConfirmDialog(false);
+    setPendingDateChange(null);
   };
 
   const handleAssigneeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -497,6 +523,7 @@ function TaskItem({
 
       <label className="flex-shrink-0 relative cursor-pointer flex items-center">
         <input
+          ref={dateInputRef}
           type="date"
           value={task.due ? task.due.split('T')[0] : ''}
           onChange={handleDueChange}
@@ -564,6 +591,17 @@ function TaskItem({
           </svg>
         </button>
       )}
+
+      <ConfirmDialog
+        isOpen={showDateConfirmDialog}
+        onClose={handleKeepDate}
+        onConfirm={handleRemoveDate}
+        title="Ta bort datum?"
+        description={`Vill du ta bort datumet ${pendingDateChange ? (formatDueDate(new Date(pendingDateChange + 'T00:00:00').toISOString()) || pendingDateChange) : ''} eller behålla det?`}
+        confirmText="Ta bort"
+        cancelText="Behåll"
+        isDangerous={false}
+      />
     </div>
   );
 }

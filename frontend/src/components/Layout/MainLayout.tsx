@@ -11,6 +11,7 @@ import { HourView } from '@/components/WeekView/HourView';
 import { MobileView } from '@/components/WeekView/MobileView';
 import { TasksView } from '@/components/TasksView/TasksView';
 import { useIsMobile } from '@/hooks/useMediaQuery';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import type { Block } from '@/types';
 import type { ViewMode } from '@/types/viewMode';
 
@@ -26,6 +27,14 @@ export function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEven
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { selectedDate, setSelectedDate } = useCalendarStore();
+  const [, setLastViewMode] = useLocalStorage<ViewMode>('lastViewMode', 'day');
+
+  // Save view mode to localStorage when it changes
+  useEffect(() => {
+    if (viewMode) {
+      setLastViewMode(viewMode);
+    }
+  }, [viewMode, setLastViewMode]);
 
   // Sync URL date parameter with calendar store (skip when no viewMode - tasks page)
   useEffect(() => {
@@ -96,12 +105,10 @@ export function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEven
         ) : isMobile ? (
           <MobileView
             onBlockClick={onBlockClick}
-            onCreateEvent={onCreateEvent}
             onCreateEventForDate={onCreateEventForDate}
             viewMode={viewMode}
             onNextWeek={handleNextWeek}
             onPrevWeek={handlePrevWeek}
-            onGoToToday={handleGoToToday}
             onViewModeChange={handleViewModeChange}
           />
         ) : viewMode === 'day' ? (

@@ -22,7 +22,7 @@ export function NavigationBar({ viewMode, onViewModeChange }: NavigationBarProps
       </h1>
       <div className="flex items-center gap-4">
         {!isMobile && viewMode && <ViewModeSelector currentViewMode={viewMode} onViewModeChange={onViewModeChange} />}
-        <NavigationIcons viewMode={viewMode} />
+        <NavigationIcons />
         <LogoutButton />
       </div>
     </nav>

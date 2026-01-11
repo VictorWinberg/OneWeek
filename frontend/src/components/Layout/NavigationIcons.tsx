@@ -1,16 +1,8 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getWeekMonday } from '@/utils/dateUtils';
-import { useCalendarStore } from '@/stores/calendarStore';
-import type { ViewMode } from '@/types/viewMode';
 
-interface NavigationIconsProps {
-  viewMode?: ViewMode;
-}
-
-export function NavigationIcons({ viewMode }: NavigationIconsProps) {
+export function NavigationIcons() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { selectedDate } = useCalendarStore();
 
   const isOnTasksPage = location.pathname === '/tasks';
 
@@ -18,9 +10,7 @@ export function NavigationIcons({ viewMode }: NavigationIconsProps) {
     <div className="flex items-center gap-2">
       <button
         onClick={() => {
-          const mondayStr = getWeekMonday(selectedDate);
-          const targetViewMode = viewMode || 'day';
-          navigate(`/${targetViewMode}/${mondayStr}`);
+          navigate('/');
         }}
         className={`p-2 rounded-lg transition-colors ${
           !isOnTasksPage

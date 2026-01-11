@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { MainLayout } from '@/components/Layout/MainLayout';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import type { Block } from '@/types';
+import type { ViewMode } from '@/types/viewMode';
 
 interface AppRoutesProps {
   onBlockClick: (block: Block) => void;
@@ -8,10 +10,15 @@ interface AppRoutesProps {
   onCreateEventForDate: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
 }
 
+function RedirectToLastViewMode() {
+  const [lastViewMode] = useLocalStorage<ViewMode>('lastViewMode', 'day');
+  return <Navigate to={`/${lastViewMode}`} replace />;
+}
+
 export function AppRoutes({ onBlockClick, onCreateEvent, onCreateEventForDate }: AppRoutesProps) {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/day" replace />} />
+      <Route path="/" element={<RedirectToLastViewMode />} />
       <Route
         path="/day/:date?"
         element={
@@ -66,7 +73,7 @@ export function AppRoutes({ onBlockClick, onCreateEvent, onCreateEventForDate }:
           />
         }
       />
-      <Route path="*" element={<Navigate to="/day" replace />} />
+      <Route path="*" element={<RedirectToLastViewMode />} />
     </Routes>
   );
 }

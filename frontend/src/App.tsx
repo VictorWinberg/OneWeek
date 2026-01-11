@@ -269,7 +269,6 @@ function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEventForDat
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { selectedDate, setSelectedDate } = useCalendarStore();
-  const { user } = useAuthStore();
 
   // Sync URL date parameter with calendar store (skip for tasks view)
   useEffect(() => {
@@ -401,14 +400,7 @@ function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEventForDat
               }`}
               aria-label="Kalender"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
+              <img src="/icons/calendar.svg" alt="Kalender" className="w-5 h-5" />
             </button>
             <button
               onClick={() => navigate('/tasks')}
@@ -419,38 +411,8 @@ function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEventForDat
               }`}
               aria-label="Uppgifter"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-                />
-              </svg>
+              <img src="/icons/tasks.svg" alt="Uppgifter" className="w-5 h-5" />
             </button>
-            {user?.picture ? (
-              <img
-                src={user.picture}
-                alt={user.name || 'User'}
-                className="w-8 h-8 rounded-full border-2 border-[var(--color-bg-tertiary)]"
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-[var(--color-bg-tertiary)] flex items-center justify-center">
-                <svg
-                  className="w-5 h-5 text-[var(--color-text-secondary)]"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
-              </div>
-            )}
             <LogoutButton />
           </div>
         </div>

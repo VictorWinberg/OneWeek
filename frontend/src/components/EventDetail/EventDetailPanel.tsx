@@ -148,7 +148,7 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showRecurringUpdateDialog, setShowRecurringUpdateDialog] = useState(false);
   const [showRecurringDeleteDialog, setShowRecurringDeleteDialog] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(true); // Always start in editing mode
   const [masterRecurrence, setMasterRecurrence] = useState<string[] | undefined>(undefined);
 
   const [editTitle, setEditTitle] = useState('');
@@ -171,6 +171,9 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
         .getEvent(block.calendarId, block.recurringEventId)
         .then((masterEvent) => {
           setMasterRecurrence(masterEvent.recurrence);
+          // Update recurrence rule when master recurrence is fetched
+          const recurrenceToUse = masterEvent.recurrence;
+          setEditRecurrenceRule(parseRecurrence(recurrenceToUse));
         })
         .catch((err) => {
           console.error('Failed to fetch master recurring event:', err);
@@ -178,28 +181,54 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
         });
     } else {
       setMasterRecurrence(undefined);
+      // Update recurrence rule when block changes
+      if (block) {
+        const recurrenceToUse = block.recurrence;
+        setEditRecurrenceRule(parseRecurrence(recurrenceToUse));
+      }
     }
-  }, [block?.id, block?.recurringEventId]);
+  }, [block?.id, block?.recurringEventId, block?.recurrence]);
 
+  // Initialize edit form when block changes
   useEffect(() => {
-    setIsEditing(false);
-    setError(null);
+    if (block) {
+      setIsEditing(true);
+      setError(null);
+
+      // Initialize edit form fields
+      setEditTitle(block.title);
+      setEditDescription(block.description || '');
+
+      const startDateTime = new Date(block.startTime);
+      const endDateTime = new Date(block.endTime);
+
+      setEditStartDate(startDateTime);
+      setEditEndDate(endDateTime);
+      setEditAllDay(block.allDay);
+
+      setEditStartTime(
+        `${startDateTime.getHours().toString().padStart(2, '0')}:${startDateTime
+          .getMinutes()
+          .toString()
+          .padStart(2, '0')}`
+      );
+      setEditEndTime(
+        `${endDateTime.getHours().toString().padStart(2, '0')}:${endDateTime.getMinutes().toString().padStart(2, '0')}`
+      );
+
+      // Recurrence will be set in the masterRecurrence effect
+    }
   }, [block?.id]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (isEditing) {
-          setIsEditing(false);
-          setError(null);
-        } else {
-          onClose();
-        }
+        onClose();
       }
     };
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [onClose, isEditing]);
+  }, [onClose]);
 
   if (!block) return null;
 
@@ -279,8 +308,9 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
     }
   };
 
-  const handleEditToggle = () => {
-    if (!isEditing && block) {
+  const handleCancelEdit = () => {
+    // Reset to block's current values
+    if (block) {
       setEditTitle(block.title);
       setEditDescription(block.description || '');
 
@@ -304,7 +334,6 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
       const recurrenceToUse = block.recurrence || masterRecurrence;
       setEditRecurrenceRule(parseRecurrence(recurrenceToUse));
     }
-    setIsEditing(!isEditing);
     setError(null);
   };
 
@@ -388,7 +417,6 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
           endTime: endDateTime,
         });
 
-        setIsEditing(false);
         setError(null);
       }
 
@@ -414,23 +442,13 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
         >
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  placeholder="Titel"
-                  className="w-full text-xl font-bold bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 border border-[var(--color-bg-tertiary)] focus:border-[var(--color-accent)] focus:outline-none"
-                />
-              ) : (
-                <>
-                  <h2 className="text-xl font-bold text-[var(--color-text-primary)] truncate">{block.title}</h2>
-                  <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-                    {formatDateFull(new Date(block.startTime))}
-                  </p>
-                  <p className="text-sm text-[var(--color-text-secondary)]">{formatBlockTime(block)}</p>
-                </>
-              )}
+              <input
+                type="text"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="Titel"
+                className="w-full text-xl font-bold bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 border border-[var(--color-bg-tertiary)] focus:border-[var(--color-accent)] focus:outline-none"
+              />
             </div>
             <button
               onClick={onClose}
@@ -460,9 +478,9 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
-          {isEditing ? (
-            <>
-              {/* Edit Form */}
+          {/* Always show Edit Form */}
+          <>
+            {/* Edit Form */}
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Beskrivning</label>
                 <textarea
@@ -604,90 +622,42 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
                 disabled={updateEvent.isPending}
               />
 
-              {/* Error message */}
-              {error && (
-                <div className="p-3 bg-red-900/30 border border-red-700 rounded-lg text-red-200 text-sm">{error}</div>
-              )}
-            </>
-          ) : (
-            <>
-              {/* View Mode */}
-              {/* Recurrence Info */}
-              {(recurrenceDescription || block.recurringEventId) && (
-                <div className="p-3 bg-[var(--color-bg-tertiary)] rounded-lg">
-                  <div className="flex items-start gap-2">
-                    <svg
-                      className="w-5 h-5 text-[var(--color-accent)] mt-0.5 flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                      />
-                    </svg>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-[var(--color-text-primary)]">Återkommande händelse</p>
-                      {recurrenceDescription ? (
-                        <p className="text-sm text-[var(--color-text-secondary)] mt-1">{recurrenceDescription}</p>
-                      ) : (
-                        <p className="text-sm text-[var(--color-text-secondary)] mt-1">Del av en återkommande serie</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Description */}
-              {block.description && (
-                <div>
-                  <h3 className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">Beskrivning</h3>
-                  <p className="text-[var(--color-text-primary)] whitespace-pre-wrap">{block.description}</p>
-                </div>
-              )}
-            </>
-          )}
+            {/* Error message */}
+            {error && (
+              <div className="p-3 bg-red-900/30 border border-red-700 rounded-lg text-red-200 text-sm">{error}</div>
+            )}
+          </>
         </div>
 
         {/* Footer */}
         <footer className="p-4 border-t border-[var(--color-bg-tertiary)] space-y-2">
           {isEditing ? (
-            <div className="flex gap-3">
-              <button
-                onClick={handleEditToggle}
-                disabled={updateEvent.isPending}
-                className="flex-1 py-2 px-4 rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors disabled:opacity-50"
-              >
-                Avbryt
-              </button>
-              <button
-                onClick={handleSaveEdit}
-                disabled={updateEvent.isPending || !editTitle.trim()}
-                className="flex-1 py-2 px-4 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-50"
-              >
-                {updateEvent.isPending ? 'Sparar...' : 'Spara'}
-              </button>
-            </div>
-          ) : (
             <>
-              <button
-                onClick={handleEditToggle}
-                className="w-full py-2 px-4 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium hover:bg-[var(--color-accent-hover)] transition-colors"
-              >
-                Redigera event
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCancelEdit}
+                  disabled={updateEvent.isPending}
+                  className="flex-1 py-2 px-4 rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors disabled:opacity-50"
+                >
+                  Avbryt
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={updateEvent.isPending || !editTitle.trim()}
+                  className="flex-1 py-2 px-4 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-50"
+                >
+                  {updateEvent.isPending ? 'Sparar...' : 'Spara'}
+                </button>
+              </div>
               <button
                 onClick={handleDeleteClick}
-                disabled={deleteEvent.isPending}
+                disabled={deleteEvent.isPending || updateEvent.isPending}
                 className="w-full py-2 px-4 rounded-lg bg-red-900/30 text-red-300 hover:bg-red-900/50 transition-colors disabled:opacity-50"
               >
                 Ta bort event
               </button>
             </>
-          )}
+          ) : null}
         </footer>
       </div>
 

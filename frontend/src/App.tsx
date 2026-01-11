@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Routes, Route, useParams, useNavigate, Navigate } from 'react-router-dom';
+import { Routes, Route, useParams, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { startOfWeek, addWeeks, subWeeks, format, parseISO, isValid } from 'date-fns';
 import { useAuthStore } from './stores/authStore';
 import { useConfigStore } from './stores/configStore';
@@ -14,10 +14,11 @@ import { EventDetailPanel } from './components/EventDetail/EventDetailPanel';
 import { EventCreatePanel } from './components/EventDetail/EventCreatePanel';
 import { LoginButton, LogoutButton } from './components/Auth/LoginButton';
 import { useIsMobile } from './hooks/useMediaQuery';
+import { useLocalStorage } from './hooks/useLocalStorage';
 import type { Block } from './types';
 import './index.css';
 
-type ViewMode = 'day' | 'grid' | 'user' | 'hour' | 'tasks';
+type ViewMode = 'day' | 'grid' | 'user' | 'hour';
 
 // Helper to get Monday of the week for a given date
 function getWeekMonday(date: Date): string {
@@ -43,6 +44,7 @@ function App() {
   const { isAuthenticated, isLoading: authLoading, checkAuth } = useAuthStore();
   const { isConfigured, isLoading: configLoading, error: configError, loadConfig } = useConfigStore();
   const { selectBlock, selectedBlock } = useCalendarStore();
+  const [lastViewMode, setLastViewMode] = useLocalStorage<ViewMode>('oneweek-last-view-mode', 'day');
   const [isCreatePanelOpen, setIsCreatePanelOpen] = useState(false);
   const [createEventDate, setCreateEventDate] = useState<Date | undefined>(undefined);
   const [createEventCalendarId, setCreateEventCalendarId] = useState<string | undefined>(undefined);
@@ -93,18 +95,24 @@ function App() {
     setCreateEventEndTime(undefined);
   };
 
+  // Helper to get the default redirect path for a view mode
+  const getDefaultViewPath = (mode: ViewMode): string => {
+    const mondayStr = getWeekMonday(new Date());
+    return `/${mode}/${mondayStr}`;
+  };
+
   // Render routes for authenticated users
   const renderAuthenticatedApp = () => (
     <Routes>
-      <Route path="/" element={<Navigate to="/day" replace />} />
+      <Route path="/" element={<Navigate to={getDefaultViewPath(lastViewMode)} replace />} />
       <Route
         path="/day/:date?"
         element={
           <MainLayout
-            viewMode="day"
             onBlockClick={handleBlockClick}
             onCreateEvent={handleOpenCreatePanel}
             onCreateEventForDate={handleOpenCreatePanelWithDate}
+            onViewModeChange={setLastViewMode}
           />
         }
       />
@@ -112,10 +120,10 @@ function App() {
         path="/grid/:date?"
         element={
           <MainLayout
-            viewMode="grid"
             onBlockClick={handleBlockClick}
             onCreateEvent={handleOpenCreatePanel}
             onCreateEventForDate={handleOpenCreatePanelWithDate}
+            onViewModeChange={setLastViewMode}
           />
         }
       />
@@ -123,10 +131,10 @@ function App() {
         path="/user/:date?"
         element={
           <MainLayout
-            viewMode="user"
             onBlockClick={handleBlockClick}
             onCreateEvent={handleOpenCreatePanel}
             onCreateEventForDate={handleOpenCreatePanelWithDate}
+            onViewModeChange={setLastViewMode}
           />
         }
       />
@@ -134,25 +142,15 @@ function App() {
         path="/hour/:date?"
         element={
           <MainLayout
-            viewMode="hour"
             onBlockClick={handleBlockClick}
             onCreateEvent={handleOpenCreatePanel}
             onCreateEventForDate={handleOpenCreatePanelWithDate}
+            onViewModeChange={setLastViewMode}
           />
         }
       />
-      <Route
-        path="/tasks"
-        element={
-          <MainLayout
-            viewMode="tasks"
-            onBlockClick={handleBlockClick}
-            onCreateEvent={handleOpenCreatePanel}
-            onCreateEventForDate={handleOpenCreatePanelWithDate}
-          />
-        }
-      />
-      <Route path="*" element={<Navigate to="/day" replace />} />
+      <Route path="/tasks" element={<TasksLayout />} />
+      <Route path="*" element={<Navigate to={getDefaultViewPath(lastViewMode)} replace />} />
     </Routes>
   );
 
@@ -256,24 +254,125 @@ function App() {
   );
 }
 
+// TasksLayout component - separate from calendar views
+function TasksLayout() {
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const { selectedDate } = useCalendarStore();
+  const [lastViewMode] = useLocalStorage<ViewMode>('oneweek-last-view-mode', 'day');
+
+  const handleGoToToday = useCallback(() => {
+    const mondayStr = getWeekMonday(new Date());
+    navigate(`/${lastViewMode}/${mondayStr}`);
+  }, [navigate, lastViewMode]);
+
+  return (
+    <div className="h-screen flex flex-col overflow-hidden">
+      {/* Top navigation */}
+      <nav className="flex items-center justify-between p-4 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)] flex-shrink-0">
+        <h1 className="text-xl font-bold text-[var(--color-text-primary)] flex items-baseline">
+          <img src="/oneweek.svg" alt="Calendar" className="w-6 h-6" />
+          <span>
+            <span className="text-[#ef4136]">One</span>Week
+          </span>
+        </h1>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const mondayStr = getWeekMonday(selectedDate);
+                navigate(`/${lastViewMode}/${mondayStr}`);
+              }}
+              className="p-2 rounded-lg transition-colors bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+              aria-label="Kalender"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={() => navigate('/tasks')}
+              className="p-2 rounded-lg transition-colors bg-[var(--color-accent)] text-[var(--color-bg-primary)]"
+              aria-label="Uppgifter"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                />
+              </svg>
+            </button>
+            {user?.picture ? (
+              <img
+                src={user.picture}
+                alt={user.name || 'User'}
+                className="w-8 h-8 rounded-full border-2 border-[var(--color-bg-tertiary)]"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-[var(--color-bg-tertiary)] flex items-center justify-center">
+                <svg
+                  className="w-5 h-5 text-[var(--color-text-secondary)]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+              </div>
+            )}
+            <LogoutButton />
+          </div>
+        </div>
+      </nav>
+
+      {/* Main content */}
+      <main className="flex-1 overflow-hidden min-h-0">
+        <TasksView onGoToToday={handleGoToToday} />
+      </main>
+    </div>
+  );
+}
+
 // MainLayout component that handles URL-based navigation
 interface MainLayoutProps {
-  viewMode: ViewMode;
   onBlockClick: (block: Block) => void;
   onCreateEvent: () => void;
   onCreateEventForDate: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
+  onViewModeChange?: (mode: ViewMode) => void;
 }
 
-function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEventForDate }: MainLayoutProps) {
+function MainLayout({ onBlockClick, onCreateEvent, onCreateEventForDate, onViewModeChange }: MainLayoutProps) {
   const { date } = useParams<{ date?: string }>();
+  const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { selectedDate, setSelectedDate } = useCalendarStore();
+  const { user } = useAuthStore();
 
-  // Sync URL date parameter with calendar store (skip for tasks view)
+  // Get current view mode directly from URL pathname
+  const viewMode = (location.pathname.split('/')[1] || 'day') as ViewMode;
+
+  // Save view mode to localStorage when it changes
   useEffect(() => {
-    if (viewMode === 'tasks') return; // Tasks view doesn't use date parameter
+    if (onViewModeChange) {
+      onViewModeChange(viewMode);
+    }
+  }, [viewMode, onViewModeChange]);
 
+  // Sync URL date parameter with calendar store
+  useEffect(() => {
     const parsedDate = parseDateParam(date);
     if (parsedDate) {
       // URL has a date, sync to store
@@ -285,10 +384,8 @@ function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEventForDat
     // If no date in URL, we'll add it on first render below
   }, [date, viewMode, navigate, setSelectedDate]);
 
-  // If no date in URL, add the current week's Monday (skip for tasks view)
+  // If no date in URL, add the current week's Monday
   useEffect(() => {
-    if (viewMode === 'tasks') return; // Tasks view doesn't use date parameter
-
     if (!date) {
       const mondayStr = getWeekMonday(selectedDate);
       navigate(`/${viewMode}/${mondayStr}`, { replace: true });
@@ -375,27 +472,71 @@ function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEventForDat
               >
                 Timvy
               </button>
-              <button
-                onClick={() => navigate('/tasks')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  viewMode === 'tasks'
-                    ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
-                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-                }`}
-              >
-                Uppgifter
-              </button>
             </div>
           )}
-          <LogoutButton />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const mondayStr = getWeekMonday(selectedDate);
+                navigate(`/${viewMode}/${mondayStr}`);
+              }}
+              className="p-2 rounded-lg transition-colors bg-[var(--color-accent)] text-[var(--color-bg-primary)]"
+              aria-label="Kalender"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={() => navigate('/tasks')}
+              className="p-2 rounded-lg transition-colors bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+              aria-label="Uppgifter"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                />
+              </svg>
+            </button>
+            {user?.picture ? (
+              <img
+                src={user.picture}
+                alt={user.name || 'User'}
+                className="w-8 h-8 rounded-full border-2 border-[var(--color-bg-tertiary)]"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-[var(--color-bg-tertiary)] flex items-center justify-center">
+                <svg
+                  className="w-5 h-5 text-[var(--color-text-secondary)]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+              </div>
+            )}
+            <LogoutButton />
+          </div>
         </div>
       </nav>
 
       {/* Main content */}
       <main className="flex-1 overflow-hidden min-h-0">
-        {viewMode === 'tasks' ? (
-          <TasksView onGoToToday={handleGoToToday} />
-        ) : isMobile ? (
+        {isMobile ? (
           <MobileView
             onBlockClick={onBlockClick}
             onCreateEvent={onCreateEvent}

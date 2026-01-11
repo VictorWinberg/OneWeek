@@ -398,12 +398,10 @@ function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEventForDat
         ) : isMobile ? (
           <MobileView
             onBlockClick={onBlockClick}
-            onCreateEvent={onCreateEvent}
             onCreateEventForDate={onCreateEventForDate}
             viewMode={viewMode}
             onNextWeek={handleNextWeek}
             onPrevWeek={handlePrevWeek}
-            onGoToToday={handleGoToToday}
             onViewModeChange={handleViewModeChange}
           />
         ) : viewMode === 'day' ? (

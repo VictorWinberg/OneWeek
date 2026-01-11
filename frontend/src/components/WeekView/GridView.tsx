@@ -23,15 +23,19 @@ function DroppableGridDay({ date, dayBlocks, onBlockClick, onEmptyClick, isCurre
     data: { date },
   });
 
+  const handleClick = (e: React.MouseEvent) => {
+    // Don't trigger if clicking on an event card
+    if ((e.target as HTMLElement).closest('[data-event-card]')) {
+      return;
+    }
+    // Trigger for any click on the day (header or empty space)
+    onEmptyClick?.(date);
+  };
+
   return (
     <div
       ref={setNodeRef}
-      onClick={(e) => {
-        // Only trigger if clicking on empty space
-        if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.empty-space')) {
-          onEmptyClick?.(date);
-        }
-      }}
+      onClick={handleClick}
       className={`
         flex flex-col rounded-xl border overflow-hidden cursor-pointer transition-all
         ${

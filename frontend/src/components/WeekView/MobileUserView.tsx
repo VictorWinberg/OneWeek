@@ -1,6 +1,7 @@
 import { useDroppable } from '@dnd-kit/core';
 import { formatDayShort, isToday } from '@/utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
+import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { EventCard } from '@/components/WeekView/EventCard';
 import type { Block } from '@/types';
 import type { Calendar } from '@/types/calendar';
@@ -51,21 +52,44 @@ interface DroppableMobileCellProps {
   children: React.ReactNode;
   isToday: boolean;
   activeBlock: Block | null;
+  onClick?: () => void;
 }
 
-function DroppableMobileCell({ id, date, calendarId, children, isToday, activeBlock }: DroppableMobileCellProps) {
+function DroppableMobileCell({
+  id,
+  date,
+  calendarId,
+  children,
+  isToday,
+  activeBlock,
+  onClick,
+}: DroppableMobileCellProps) {
   const { setNodeRef, isOver } = useDroppable({
     id,
     data: { date, calendarId },
   });
 
+  const handleClick = (e: React.MouseEvent) => {
+    // Don't trigger if clicking on an event card
+    if ((e.target as HTMLElement).closest('[data-event-card]')) {
+      return;
+    }
+    // Trigger for any click on the cell
+    onClick?.();
+  };
+
   return (
     <td
       ref={setNodeRef}
+      onClick={handleClick}
       className={`
-        p-0.5 border-b border-r border-[var(--color-bg-tertiary)] last:border-r-0 align-top h-full flex-1 relative
+        p-0.5 border-b border-r border-[var(--color-bg-tertiary)] last:border-r-0 align-top h-full flex-1 relative cursor-pointer transition-colors
         ${isToday ? 'bg-[var(--color-accent)]/5' : ''}
-        ${isOver ? 'bg-[var(--color-accent)]/20 ring-2 ring-[var(--color-accent)] ring-inset' : ''}
+        ${
+          isOver
+            ? 'bg-[var(--color-accent)]/20 ring-2 ring-[var(--color-accent)] ring-inset'
+            : 'hover:bg-[var(--color-bg-tertiary)]/20'
+        }
       `}
     >
       {/* Time slot overlay for vertical dragging */}
@@ -100,18 +124,42 @@ interface MobileUserViewProps {
   blocks: Block[];
   calendars: Calendar[];
   onBlockClick: (block: Block) => void;
+  onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
   activeBlock?: Block | null;
+  onPrevWeek?: () => void;
+  onNextWeek?: () => void;
 }
 
-export function MobileUserView({ weekDays, blocks, calendars, onBlockClick, activeBlock }: MobileUserViewProps) {
+export function MobileUserView({
+  weekDays,
+  blocks,
+  calendars,
+  onBlockClick,
+  onCreateEventForDate,
+  activeBlock,
+  onPrevWeek,
+  onNextWeek,
+}: MobileUserViewProps) {
+  const { getContainerProps } = useSwipeNavigation({
+    onPrevWeek,
+    onNextWeek,
+    activeBlock,
+  });
+  const swipeContainerProps = getContainerProps();
   // Get blocks for a specific day and calendar
   const getBlocksForDayAndCalendar = (date: Date, calendarId: string) => {
     const dayBlocks = getBlocksForDay(blocks, date);
     return sortBlocksByTime(dayBlocks.filter((b) => b.calendarId === calendarId));
   };
 
+  const handleEmptySpaceClick = (date: Date, calendarId: string) => {
+    if (onCreateEventForDate) {
+      onCreateEventForDate(date, calendarId);
+    }
+  };
+
   return (
-    <div className="overflow-y-auto h-full">
+    <div {...swipeContainerProps} className="overflow-y-auto h-full">
       <div className="overflow-x-auto h-full flex flex-col">
         <table className="w-full flex-1 border-collapse text-xs flex flex-col" style={{ tableLayout: 'fixed' }}>
           <thead className="sticky top-0 z-10 bg-[var(--color-bg-secondary)] block w-full">
@@ -171,6 +219,7 @@ export function MobileUserView({ weekDays, blocks, calendars, onBlockClick, acti
                         calendarId={calendar.id}
                         isToday={today}
                         activeBlock={activeBlock || null}
+                        onClick={() => handleEmptySpaceClick(date, calendar.id)}
                       >
                         <div className="space-y-0.5 h-full flex flex-col">
                           {dayCalendarBlocks.length === 0 ? (

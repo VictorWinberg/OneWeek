@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
@@ -36,7 +35,6 @@ export function MobileView({
   onPrevWeek,
   onViewModeChange,
 }: MobileViewProps) {
-  const navigate = useNavigate();
   const { selectedDate } = useCalendarStore();
   const { config } = useConfigStore();
 
@@ -156,12 +154,6 @@ export function MobileView({
               }`}
             >
               Timvy
-            </button>
-            <button
-              onClick={() => navigate('/tasks')}
-              className="px-2 py-1.5 rounded-md text-xs font-medium transition-colors text-[var(--color-text-secondary)]"
-            >
-              Uppgifter
             </button>
           </div>
         </header>

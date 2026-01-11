@@ -85,7 +85,7 @@ interface MobileListViewProps {
   activeBlock?: Block | null;
 }
 
-export function MobileListView({ weekDays, blocks, onBlockClick, onCreateEventForDate }: MobileListViewProps) {
+export function MobileListView({ weekDays, blocks, onBlockClick, onCreateEventForDate, activeBlock: _activeBlock }: MobileListViewProps) {
   // Custom sort: timed events first (by time), then all-day events (by time)
   const sortBlocksForList = (blocks: Block[]): Block[] => {
     const timed = blocks.filter((b) => !b.allDay);

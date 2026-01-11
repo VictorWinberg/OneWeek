@@ -1,4 +1,5 @@
 import { useRef, useCallback } from 'react';
+import type { Block } from '@/types';
 
 interface UseSwipeNavigationOptions {
   onPrevWeek?: () => void;
@@ -18,7 +19,7 @@ interface UseSwipeNavigationOptions {
   /**
    * If an active block is being dragged, disable swipe navigation
    */
-  activeBlock?: unknown | null;
+  activeBlock?: Block | null;
 }
 
 interface SwipeState {

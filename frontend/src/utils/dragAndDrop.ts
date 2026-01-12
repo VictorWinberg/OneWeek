@@ -9,7 +9,7 @@ import {
   createAllDayEventTimes,
   preserveTimeOnNewDate,
   createDateWithTime,
-} from './dateUtils';
+} from '@/utils/dateUtils';
 
 /**
  * Types for mutation functions

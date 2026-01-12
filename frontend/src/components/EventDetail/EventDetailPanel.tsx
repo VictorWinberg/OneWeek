@@ -2,15 +2,13 @@ import { useEffect, useState } from 'react';
 import { rrulestr } from 'rrule';
 import type { Block } from '@/types';
 import { getInitial } from '@/types';
-import { formatBlockTime } from '@/services/calendarNormalizer';
-import { formatDateFull } from '@/utils/dateUtils';
 import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
 import { useMoveEvent, useDeleteEvent, useUpdateEvent } from '@/hooks/useCalendarQueries';
-import { ResponsibilitySelector } from './ResponsibilitySelector';
-import { RecurrenceSelector } from './RecurrenceSelector';
+import { ResponsibilitySelector } from '@/components/EventDetail/ResponsibilitySelector';
+import { RecurrenceSelector } from '@/components/EventDetail/RecurrenceSelector';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { RecurringUpdateDialog, type RecurringUpdateMode } from './RecurringUpdateDialog';
+import { RecurringUpdateDialog, type RecurringUpdateMode } from '@/components/EventDetail/RecurringUpdateDialog';
 import type { RecurrenceRule } from '@/types/block';
 import { eventsApi } from '@/services/api';
 
@@ -124,7 +122,7 @@ function parseRecurrence(recurrenceRules?: string[]): RecurrenceRule | null {
         5: 'SA',
         6: 'SU',
       };
-      rule.byDay = options.byweekday.map((wd: any) => {
+      rule.byDay = options.byweekday.map((wd: number | { weekday: number }) => {
         const weekdayNum = typeof wd === 'number' ? wd : wd.weekday;
         return weekdayMap[weekdayNum];
       }) as RecurrenceRule['byDay'];
@@ -148,7 +146,6 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showRecurringUpdateDialog, setShowRecurringUpdateDialog] = useState(false);
   const [showRecurringDeleteDialog, setShowRecurringDeleteDialog] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
   const [masterRecurrence, setMasterRecurrence] = useState<string[] | undefined>(undefined);
 
   const [editTitle, setEditTitle] = useState('');
@@ -179,27 +176,46 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
     } else {
       setMasterRecurrence(undefined);
     }
-  }, [block?.id, block?.recurringEventId]);
+  }, [block?.id, block?.recurringEventId, block?.calendarId, block?.recurrence]);
 
   useEffect(() => {
-    setIsEditing(false);
+    if (block) {
+      // Initialize form fields from block data when block changes
+      setEditTitle(block.title);
+      setEditDescription(block.description || '');
+
+      const startDateTime = new Date(block.startTime);
+      const endDateTime = new Date(block.endTime);
+
+      setEditStartDate(startDateTime);
+      setEditEndDate(endDateTime);
+      setEditAllDay(block.allDay);
+
+      setEditStartTime(
+        `${startDateTime.getHours().toString().padStart(2, '0')}:${startDateTime
+          .getMinutes()
+          .toString()
+          .padStart(2, '0')}`
+      );
+      setEditEndTime(
+        `${endDateTime.getHours().toString().padStart(2, '0')}:${endDateTime.getMinutes().toString().padStart(2, '0')}`
+      );
+
+      const recurrenceToUse = block.recurrence || masterRecurrence;
+      setEditRecurrenceRule(parseRecurrence(recurrenceToUse));
+    }
     setError(null);
-  }, [block?.id]);
+  }, [block, masterRecurrence]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (isEditing) {
-          setIsEditing(false);
-          setError(null);
-        } else {
-          onClose();
-        }
+        onClose();
       }
     };
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [onClose, isEditing]);
+  }, [onClose]);
 
   if (!block) return null;
 
@@ -277,35 +293,6 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
       console.error('Failed to delete event:', error);
       setShowRecurringDeleteDialog(false);
     }
-  };
-
-  const handleEditToggle = () => {
-    if (!isEditing && block) {
-      setEditTitle(block.title);
-      setEditDescription(block.description || '');
-
-      const startDateTime = new Date(block.startTime);
-      const endDateTime = new Date(block.endTime);
-
-      setEditStartDate(startDateTime);
-      setEditEndDate(endDateTime);
-      setEditAllDay(block.allDay);
-
-      setEditStartTime(
-        `${startDateTime.getHours().toString().padStart(2, '0')}:${startDateTime
-          .getMinutes()
-          .toString()
-          .padStart(2, '0')}`
-      );
-      setEditEndTime(
-        `${endDateTime.getHours().toString().padStart(2, '0')}:${endDateTime.getMinutes().toString().padStart(2, '0')}`
-      );
-
-      const recurrenceToUse = block.recurrence || masterRecurrence;
-      setEditRecurrenceRule(parseRecurrence(recurrenceToUse));
-    }
-    setIsEditing(!isEditing);
-    setError(null);
   };
 
   const handleSaveEdit = async () => {
@@ -388,7 +375,6 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
           endTime: endDateTime,
         });
 
-        setIsEditing(false);
         setError(null);
       }
 
@@ -414,23 +400,13 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
         >
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  placeholder="Titel"
-                  className="w-full text-xl font-bold bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 border border-[var(--color-bg-tertiary)] focus:border-[var(--color-accent)] focus:outline-none"
-                />
-              ) : (
-                <>
-                  <h2 className="text-xl font-bold text-[var(--color-text-primary)] truncate">{block.title}</h2>
-                  <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-                    {formatDateFull(new Date(block.startTime))}
-                  </p>
-                  <p className="text-sm text-[var(--color-text-secondary)]">{formatBlockTime(block)}</p>
-                </>
-              )}
+              <input
+                type="text"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="Titel"
+                className="w-full text-xl font-bold bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded-lg px-3 py-2 border border-[var(--color-bg-tertiary)] focus:border-[var(--color-accent)] focus:outline-none"
+              />
             </div>
             <button
               onClick={onClose}
@@ -460,234 +436,169 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
-          {isEditing ? (
-            <>
-              {/* Edit Form */}
+          {/* Edit Form */}
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Beskrivning</label>
+            <textarea
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              placeholder="Valfri beskrivning..."
+              rows={3}
+              className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded-lg border border-[var(--color-bg-tertiary)] focus:border-[var(--color-accent)] focus:outline-none resize-none"
+            />
+          </div>
+
+          {/* Change Responsibility */}
+          <ResponsibilitySelector
+            currentCalendarId={block.calendarId}
+            onSelect={handleChangeResponsibility}
+            disabled={moveEvent.isPending}
+          />
+
+          {moveEvent.isPending && (
+            <div className="flex items-center gap-2 text-[var(--color-text-secondary)]">
+              <div className="w-4 h-4 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm">Flyttar event...</span>
+            </div>
+          )}
+
+          {/* Date Range */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Startdatum *</label>
+              <input
+                type="date"
+                value={new Intl.DateTimeFormat('sv-SE').format(editStartDate)}
+                onChange={(e) => {
+                  const newStartDate = new Date(e.target.value + 'T12:00:00');
+                  setEditStartDate(newStartDate);
+                  // If end date is before start date, update it
+                  if (editEndDate < newStartDate) {
+                    setEditEndDate(newStartDate);
+                  }
+                }}
+                className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded-lg border border-[var(--color-bg-tertiary)] focus:border-[var(--color-accent)] focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Slutdatum *</label>
+              <input
+                type="date"
+                value={new Intl.DateTimeFormat('sv-SE').format(editEndDate)}
+                onChange={(e) => setEditEndDate(new Date(e.target.value + 'T12:00:00'))}
+                min={new Intl.DateTimeFormat('sv-SE').format(editStartDate)}
+                className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded-lg border border-[var(--color-bg-tertiary)] focus:border-[var(--color-accent)] focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {/* All Day Toggle */}
+          <div className="flex items-center gap-2">
+            <input
+              id="editAllDay"
+              type="checkbox"
+              checked={editAllDay}
+              onChange={(e) => setEditAllDay(e.target.checked)}
+              className="w-4 h-4 rounded border-[var(--color-bg-tertiary)] text-[var(--color-accent)] focus:ring-[var(--color-accent)]"
+            />
+            <label htmlFor="editAllDay" className="text-sm text-[var(--color-text-primary)]">
+              Heldag
+            </label>
+          </div>
+
+          {/* Time Selection */}
+          {!editAllDay && (
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Beskrivning</label>
-                <textarea
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  placeholder="Valfri beskrivning..."
-                  rows={3}
-                  className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded-lg border border-[var(--color-bg-tertiary)] focus:border-[var(--color-accent)] focus:outline-none resize-none"
-                />
-              </div>
-
-              {/* Change Responsibility */}
-              <ResponsibilitySelector
-                currentCalendarId={block.calendarId}
-                onSelect={handleChangeResponsibility}
-                disabled={moveEvent.isPending}
-              />
-
-              {moveEvent.isPending && (
-                <div className="flex items-center gap-2 text-[var(--color-text-secondary)]">
-                  <div className="w-4 h-4 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
-                  <span className="text-sm">Flyttar event...</span>
-                </div>
-              )}
-
-              {/* Date Range */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                    Startdatum *
-                  </label>
-                  <input
-                    type="date"
-                    value={new Intl.DateTimeFormat('sv-SE').format(editStartDate)}
-                    onChange={(e) => {
-                      const newStartDate = new Date(e.target.value + 'T12:00:00');
-                      setEditStartDate(newStartDate);
-                      // If end date is before start date, update it
-                      if (editEndDate < newStartDate) {
-                        setEditEndDate(newStartDate);
-                      }
-                    }}
-                    className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded-lg border border-[var(--color-bg-tertiary)] focus:border-[var(--color-accent)] focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                    Slutdatum *
-                  </label>
-                  <input
-                    type="date"
-                    value={new Intl.DateTimeFormat('sv-SE').format(editEndDate)}
-                    onChange={(e) => setEditEndDate(new Date(e.target.value + 'T12:00:00'))}
-                    min={new Intl.DateTimeFormat('sv-SE').format(editStartDate)}
-                    className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded-lg border border-[var(--color-bg-tertiary)] focus:border-[var(--color-accent)] focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* All Day Toggle */}
-              <div className="flex items-center gap-2">
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Starttid *</label>
                 <input
-                  id="editAllDay"
-                  type="checkbox"
-                  checked={editAllDay}
-                  onChange={(e) => setEditAllDay(e.target.checked)}
-                  className="w-4 h-4 rounded border-[var(--color-bg-tertiary)] text-[var(--color-accent)] focus:ring-[var(--color-accent)]"
+                  type="time"
+                  value={editStartTime}
+                  onChange={(e) => setEditStartTime(e.target.value)}
+                  className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded-lg border border-[var(--color-bg-tertiary)] focus:border-[var(--color-accent)] focus:outline-none"
                 />
-                <label htmlFor="editAllDay" className="text-sm text-[var(--color-text-primary)]">
-                  Heldag
-                </label>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Sluttid *</label>
+                <input
+                  type="time"
+                  value={editEndTime}
+                  onChange={(e) => setEditEndTime(e.target.value)}
+                  className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded-lg border border-[var(--color-bg-tertiary)] focus:border-[var(--color-accent)] focus:outline-none"
+                />
+              </div>
+            </div>
+          )}
 
-              {/* Time Selection */}
-              {!editAllDay && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                      Starttid *
-                    </label>
-                    <input
-                      type="time"
-                      value={editStartTime}
-                      onChange={(e) => setEditStartTime(e.target.value)}
-                      className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded-lg border border-[var(--color-bg-tertiary)] focus:border-[var(--color-accent)] focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                      Sluttid *
-                    </label>
-                    <input
-                      type="time"
-                      value={editEndTime}
-                      onChange={(e) => setEditEndTime(e.target.value)}
-                      className="w-full px-3 py-2 bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] rounded-lg border border-[var(--color-bg-tertiary)] focus:border-[var(--color-accent)] focus:outline-none"
-                    />
-                  </div>
+          {/* Recurrence */}
+          {(recurrenceDescription || block.recurringEventId) && (
+            <div className="p-3 bg-blue-900/20 border border-blue-700/50 rounded-lg">
+              <div className="flex items-start gap-2">
+                <svg
+                  className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-300">
+                    {block.recurringEventId
+                      ? 'Denna händelse är del av en återkommande serie'
+                      : 'Detta är en återkommande händelse'}
+                  </p>
+                  {recurrenceDescription && <p className="text-sm text-blue-200/80 mt-1">{recurrenceDescription}</p>}
+                  <p className="text-xs text-blue-200/60 mt-2">
+                    Ändringar av återkommande regler påverkar hela serien och alla framtida instanser.
+                  </p>
                 </div>
-              )}
+              </div>
+            </div>
+          )}
 
-              {/* Recurrence */}
-              {(recurrenceDescription || block.recurringEventId) && (
-                <div className="p-3 bg-blue-900/20 border border-blue-700/50 rounded-lg">
-                  <div className="flex items-start gap-2">
-                    <svg
-                      className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-blue-300">
-                        {block.recurringEventId
-                          ? 'Denna händelse är del av en återkommande serie'
-                          : 'Detta är en återkommande händelse'}
-                      </p>
-                      {recurrenceDescription && (
-                        <p className="text-sm text-blue-200/80 mt-1">{recurrenceDescription}</p>
-                      )}
-                      <p className="text-xs text-blue-200/60 mt-2">
-                        Ändringar av återkommande regler påverkar hela serien och alla framtida instanser.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+          <RecurrenceSelector
+            value={editRecurrenceRule}
+            onChange={setEditRecurrenceRule}
+            disabled={updateEvent.isPending}
+          />
 
-              <RecurrenceSelector
-                value={editRecurrenceRule}
-                onChange={setEditRecurrenceRule}
-                disabled={updateEvent.isPending}
-              />
-
-              {/* Error message */}
-              {error && (
-                <div className="p-3 bg-red-900/30 border border-red-700 rounded-lg text-red-200 text-sm">{error}</div>
-              )}
-            </>
-          ) : (
-            <>
-              {/* View Mode */}
-              {/* Recurrence Info */}
-              {(recurrenceDescription || block.recurringEventId) && (
-                <div className="p-3 bg-[var(--color-bg-tertiary)] rounded-lg">
-                  <div className="flex items-start gap-2">
-                    <svg
-                      className="w-5 h-5 text-[var(--color-accent)] mt-0.5 flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                      />
-                    </svg>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-[var(--color-text-primary)]">Återkommande händelse</p>
-                      {recurrenceDescription ? (
-                        <p className="text-sm text-[var(--color-text-secondary)] mt-1">{recurrenceDescription}</p>
-                      ) : (
-                        <p className="text-sm text-[var(--color-text-secondary)] mt-1">Del av en återkommande serie</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Description */}
-              {block.description && (
-                <div>
-                  <h3 className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">Beskrivning</h3>
-                  <p className="text-[var(--color-text-primary)] whitespace-pre-wrap">{block.description}</p>
-                </div>
-              )}
-            </>
+          {/* Error message */}
+          {error && (
+            <div className="p-3 bg-red-900/30 border border-red-700 rounded-lg text-red-200 text-sm">{error}</div>
           )}
         </div>
 
         {/* Footer */}
         <footer className="p-4 border-t border-[var(--color-bg-tertiary)] space-y-2">
-          {isEditing ? (
-            <div className="flex gap-3">
-              <button
-                onClick={handleEditToggle}
-                disabled={updateEvent.isPending}
-                className="flex-1 py-2 px-4 rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors disabled:opacity-50"
-              >
-                Avbryt
-              </button>
-              <button
-                onClick={handleSaveEdit}
-                disabled={updateEvent.isPending || !editTitle.trim()}
-                className="flex-1 py-2 px-4 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-50"
-              >
-                {updateEvent.isPending ? 'Sparar...' : 'Spara'}
-              </button>
-            </div>
-          ) : (
-            <>
-              <button
-                onClick={handleEditToggle}
-                className="w-full py-2 px-4 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium hover:bg-[var(--color-accent-hover)] transition-colors"
-              >
-                Redigera event
-              </button>
-              <button
-                onClick={handleDeleteClick}
-                disabled={deleteEvent.isPending}
-                className="w-full py-2 px-4 rounded-lg bg-red-900/30 text-red-300 hover:bg-red-900/50 transition-colors disabled:opacity-50"
-              >
-                Ta bort event
-              </button>
-            </>
-          )}
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              disabled={updateEvent.isPending}
+              className="flex-1 py-2 px-4 rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors disabled:opacity-50"
+            >
+              Avbryt
+            </button>
+            <button
+              onClick={handleSaveEdit}
+              disabled={updateEvent.isPending || !editTitle.trim()}
+              className="flex-1 py-2 px-4 rounded-lg bg-[var(--color-accent)] text-[var(--color-bg-primary)] font-medium hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-50"
+            >
+              {updateEvent.isPending ? 'Sparar...' : 'Spara'}
+            </button>
+          </div>
+          <button
+            onClick={handleDeleteClick}
+            disabled={deleteEvent.isPending}
+            className="w-full py-2 px-4 rounded-lg bg-red-900/30 text-red-300 hover:bg-red-900/50 transition-colors disabled:opacity-50"
+          >
+            Ta bort event
+          </button>
         </footer>
       </div>
 

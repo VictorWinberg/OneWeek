@@ -1,4 +1,4 @@
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay, addDays, getWeek } from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay, addDays, getWeek, parseISO, isValid } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
 export function getWeekDays(date: Date): Date[] {
@@ -108,4 +108,28 @@ export function createDateWithTime(date: Date, hour: number, minute: number): Da
   const result = new Date(date);
   result.setHours(hour, minute, 0, 0);
   return result;
+}
+
+/**
+ * Get Monday of the week for a given date as a formatted string (yyyy-MM-dd)
+ */
+export function getWeekMonday(date: Date): string {
+  const monday = startOfWeek(date, { weekStartsOn: 1 });
+  return format(monday, 'yyyy-MM-dd');
+}
+
+/**
+ * Parse date from URL parameter string
+ */
+export function parseDateParam(dateParam: string | undefined): Date | null {
+  if (!dateParam) return null;
+  try {
+    const parsed = parseISO(dateParam);
+    if (isValid(parsed)) {
+      return parsed;
+    }
+  } catch {
+    // Invalid date format
+  }
+  return null;
 }

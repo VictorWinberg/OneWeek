@@ -38,16 +38,7 @@ export function LogoutButton() {
     <div className="flex items-center gap-3">
       {user && (
         <div className="flex items-center gap-2">
-          {user.picture && (
-            <img
-              src={user.picture}
-              alt={user.name}
-              className="w-8 h-8 rounded-full"
-            />
-          )}
-          <span className="text-sm text-[var(--color-text-secondary)]">
-            {user.name}
-          </span>
+          {user.picture && <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full" />}
         </div>
       )}
       <button
@@ -59,4 +50,3 @@ export function LogoutButton() {
     </div>
   );
 }
-

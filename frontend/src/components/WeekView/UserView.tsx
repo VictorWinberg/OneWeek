@@ -5,7 +5,7 @@ import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
 import { useWeekEvents, usePrefetchAdjacentWeeks, useUpdateEvent, useMoveEvent } from '@/hooks/useCalendarQueries';
 import { getWeekDays, formatWeekHeader, getWeekNumber, formatDayShort, isToday } from '@/utils/dateUtils';
-import { EventCard } from './EventCard';
+import { EventCard } from '@/components/WeekView/EventCard';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
 import type { Block } from '@/types';
 

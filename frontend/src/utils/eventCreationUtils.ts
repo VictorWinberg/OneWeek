@@ -4,7 +4,7 @@
  */
 
 import type { Calendar } from '@/types/calendar';
-import { parseTimeString } from './timeUtils';
+import { parseTimeString } from '@/utils/timeUtils';
 
 interface UserInfo {
   email?: string;

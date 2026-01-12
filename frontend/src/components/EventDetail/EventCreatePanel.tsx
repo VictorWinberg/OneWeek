@@ -3,7 +3,7 @@ import { useConfigStore } from '@/stores/configStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useCreateEvent } from '@/hooks/useCalendarQueries';
 import { getInitial } from '@/types';
-import { RecurrenceSelector } from './RecurrenceSelector';
+import { RecurrenceSelector } from '@/components/EventDetail/RecurrenceSelector';
 import { calculateSmartDefaultTimes, calculateEndTimeWithDuration } from '@/utils/timeUtils';
 import { getDefaultCalendarId, prepareEventData } from '@/utils/eventCreationUtils';
 import type { RecurrenceRule } from '@/types/block';
@@ -30,8 +30,7 @@ export function EventCreatePanel({
   const createEvent = useCreateEvent();
 
   // Get the default calendar using utility
-  const getDefaultCalendarIdForForm = () =>
-    getDefaultCalendarId(config.calendars, user, defaultCalendarId);
+  const getDefaultCalendarIdForForm = () => getDefaultCalendarId(config.calendars, user, defaultCalendarId);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');

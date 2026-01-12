@@ -16,7 +16,7 @@ import {
   createAllDayEventTimes,
   createTimedEventTimes,
   createDateWithTime,
-} from '../dateUtils';
+} from '@/utils/dateUtils';
 
 describe('dateUtils', () => {
   describe('getWeekDays', () => {

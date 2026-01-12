@@ -6,7 +6,7 @@ import {
   handleCalendarAndDayDrop,
   handleDragDrop,
   type EventMutations,
-} from '../dragAndDrop';
+} from '@/utils/dragAndDrop';
 import {
   createMockBlock,
   createMockAllDayBlock,

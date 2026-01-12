@@ -8,7 +8,7 @@ import {
   validateTimeRange,
   calculateEndTimeWithDuration,
   calculateNextHourTimeSlot,
-} from '../timeUtils';
+} from '@/utils/timeUtils';
 
 describe('timeUtils', () => {
   describe('timeToMinutes', () => {

@@ -25,6 +25,7 @@ interface MobileViewProps {
   onNextWeek?: () => void;
   onPrevWeek?: () => void;
   onViewModeChange?: (mode: UrlViewMode) => void;
+  onGoToToday?: () => void;
 }
 
 export function MobileView({
@@ -34,6 +35,7 @@ export function MobileView({
   onNextWeek,
   onPrevWeek,
   onViewModeChange,
+  onGoToToday,
 }: MobileViewProps) {
   const { selectedDate } = useCalendarStore();
   const { config } = useConfigStore();
@@ -100,7 +102,12 @@ export function MobileView({
             </button>
 
             <div className="flex flex-col items-center">
-              <h1 className="text-lg font-bold text-[var(--color-text-primary)]">{formatWeekHeader(selectedDate)}</h1>
+              <h1
+                onClick={onGoToToday}
+                className="text-lg font-bold text-[var(--color-text-primary)] cursor-pointer hover:text-[var(--color-accent)] transition-colors"
+              >
+                {formatWeekHeader(selectedDate)}
+              </h1>
               <span className="text-xs text-[var(--color-text-secondary)]">v.{weekNumber}</span>
             </div>
 

@@ -109,6 +109,7 @@ export function MainLayout({ viewMode, onBlockClick, onCreateEventForDate }: Mai
             onNextWeek={handleNextWeek}
             onPrevWeek={handlePrevWeek}
             onViewModeChange={handleViewModeChange}
+            onGoToToday={handleGoToToday}
           />
         ) : viewMode === 'day' ? (
           <DayView

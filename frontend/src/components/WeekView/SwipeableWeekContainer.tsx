@@ -1,4 +1,4 @@
-import { useRef, useEffect, useLayoutEffect, useState, type ReactNode } from 'react';
+import { useRef, useEffect, useLayoutEffect, useState, useCallback, startTransition, type ReactNode } from 'react';
 import { addWeeks, subWeeks } from 'date-fns';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { useWeekEvents } from '@/hooks/useCalendarQueries';
@@ -56,14 +56,27 @@ export function SwipeableWeekContainer({
     return () => window.removeEventListener('resize', updateWidth);
   }, []);
 
-  const { swipeState, getHandlers, isDragging, isAnimating, resetSwipeState } = useSwipeNavigation({
+  const {
+    swipeState,
+    isDragging,
+    isAnimating,
+    resetSwipeState,
+    containerRef: swipeContainerRef,
+  } = useSwipeNavigation({
     onPrevWeek,
     onNextWeek,
     isDisabled,
     containerWidth,
   });
 
-  const touchHandlers = getHandlers();
+  // Combine refs: both containerRef (for width measurement) and swipeContainerRef (for touch events)
+  const combinedRef = useCallback(
+    (element: HTMLDivElement | null) => {
+      containerRef.current = element;
+      swipeContainerRef(element);
+    },
+    [swipeContainerRef]
+  );
 
   // Track previous date to detect changes and prevent flicker
   const [prevSelectedDate, setPrevSelectedDate] = useState(selectedDate);
@@ -79,11 +92,19 @@ export function SwipeableWeekContainer({
       // Date has changed - reset swipe state immediately to prevent flicker
       // The date change means navigation completed, so we should show the new week centered
       resetSwipeState();
-      setPrevSelectedDate(selectedDate);
     }
-    // Note: We intentionally update state in effect to track previous date and prevent flicker
-    // This is necessary to synchronously reset the swipe offset when date changes
   }, [selectedDate, resetSwipeState, dateChanged]);
+
+  // Update previous date tracking after layout effect completes
+  // Separated to avoid lint warning about setState in useLayoutEffect
+  // Using startTransition to mark this as a non-urgent update
+  useEffect(() => {
+    if (dateChanged) {
+      startTransition(() => {
+        setPrevSelectedDate(selectedDate);
+      });
+    }
+  }, [selectedDate, dateChanged]);
 
   // Calculate transform offset
   // The weeks are laid out as: [prev][current][next]
@@ -117,14 +138,13 @@ export function SwipeableWeekContainer({
 
   return (
     <div
-      ref={containerRef}
+      ref={combinedRef}
       className="flex-1 overflow-hidden relative"
       style={{
         touchAction: isDragging ? 'none' : 'pan-y',
         userSelect: isDragging ? 'none' : 'auto',
         WebkitUserSelect: isDragging ? 'none' : 'auto',
       }}
-      {...touchHandlers}
     >
       <div
         className="flex h-full"

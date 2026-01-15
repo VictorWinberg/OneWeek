@@ -3,7 +3,6 @@ import { useEffect, useRef } from 'react';
 import { formatDayShort, isToday } from '@/utils/dateUtils';
 import { getBlocksForDay, calculateBlockPosition } from '@/services/calendarNormalizer';
 import { calculateNextHourTimeSlot } from '@/utils/timeUtils';
-import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { EventCard } from '@/components/WeekView/EventCard';
 import type { Block } from '@/types';
 

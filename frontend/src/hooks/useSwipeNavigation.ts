@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useState } from 'react';
 import type { Block } from '@/types';
 
 interface UseSwipeNavigationOptions {
@@ -20,6 +20,14 @@ interface UseSwipeNavigationOptions {
    * If an active block is being dragged, disable swipe navigation
    */
   activeBlock?: Block | null;
+  /**
+   * Disable swipe navigation
+   */
+  isDisabled?: boolean;
+  /**
+   * Container width for calculating swipe limits
+   */
+  containerWidth?: number;
 }
 
 interface SwipeState {
@@ -27,6 +35,10 @@ interface SwipeState {
   startY: number;
   currentX: number;
   isSwiping: boolean;
+}
+
+export interface SwipeNavigationState {
+  offsetX: number;
 }
 
 /**
@@ -40,14 +52,19 @@ export function useSwipeNavigation({
   minHorizontalMovement = 10,
   maxVerticalMovement = 50,
   activeBlock,
+  isDisabled = false,
+  containerWidth: _containerWidth = 0,
 }: UseSwipeNavigationOptions) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const swipeStateRef = useRef<SwipeState | null>(null);
+  const [swipeState, setSwipeState] = useState<SwipeNavigationState>({ offsetX: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
-      // Don't interfere if there's no navigation handlers
-      if (!onPrevWeek && !onNextWeek) return;
+      // Don't interfere if disabled or no navigation handlers
+      if (isDisabled || (!onPrevWeek && !onNextWeek)) return;
 
       // Don't start swipe if a block is being dragged
       if (activeBlock) return;
@@ -70,13 +87,15 @@ export function useSwipeNavigation({
         currentX: touch.clientX,
         isSwiping: false,
       };
+      setIsDragging(false);
+      setIsAnimating(false);
     },
-    [onPrevWeek, onNextWeek, activeBlock]
+    [onPrevWeek, onNextWeek, activeBlock, isDisabled]
   );
 
   const handleTouchMove = useCallback(
     (e: React.TouchEvent) => {
-      if (!swipeStateRef.current || !containerRef.current) return;
+      if (!swipeStateRef.current) return;
 
       const touch = e.touches[0];
       const deltaX = touch.clientX - swipeStateRef.current.startX;
@@ -96,6 +115,7 @@ export function useSwipeNavigation({
 
         // Mark as swiping
         swipeStateRef.current.isSwiping = true;
+        setIsDragging(true);
       }
 
       // Prevent default scrolling during horizontal swipe
@@ -106,26 +126,24 @@ export function useSwipeNavigation({
       // Update current position
       swipeStateRef.current.currentX = touch.clientX;
 
-      // Apply transform to follow finger
-      const translateX = deltaX;
-      containerRef.current.style.transform = `translateX(${translateX}px)`;
-      containerRef.current.style.transition = 'none';
+      // Update offsetX state
+      setSwipeState({ offsetX: deltaX });
     },
     [minHorizontalMovement, maxVerticalMovement]
   );
 
   const handleTouchEnd = useCallback(() => {
-    if (!swipeStateRef.current || !containerRef.current) return;
+    if (!swipeStateRef.current) return;
 
     const deltaX = swipeStateRef.current.currentX - swipeStateRef.current.startX;
     const absDeltaX = Math.abs(deltaX);
 
-    // Reset transform
-    containerRef.current.style.transform = '';
-    containerRef.current.style.transition = '';
+    setIsDragging(false);
 
     // Check if threshold is met
     if (swipeStateRef.current.isSwiping && absDeltaX >= threshold) {
+      setIsAnimating(true);
+
       if (deltaX > 0 && onPrevWeek) {
         // Swiped right -> go to previous week
         onPrevWeek();
@@ -133,10 +151,24 @@ export function useSwipeNavigation({
         // Swiped left -> go to next week
         onNextWeek();
       }
+
+      // Reset animation state after transition
+      setTimeout(() => {
+        setIsAnimating(false);
+      }, 300);
     }
 
+    // Reset swipe state
     swipeStateRef.current = null;
+    setSwipeState({ offsetX: 0 });
   }, [threshold, onPrevWeek, onNextWeek]);
+
+  const resetSwipeState = useCallback(() => {
+    swipeStateRef.current = null;
+    setSwipeState({ offsetX: 0 });
+    setIsDragging(false);
+    setIsAnimating(false);
+  }, []);
 
   const getContainerProps = useCallback(() => {
     return {
@@ -150,8 +182,17 @@ export function useSwipeNavigation({
     };
   }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
 
+  // Container ref callback function
+  const containerRefCallback = useCallback((element: HTMLDivElement | null) => {
+    containerRef.current = element;
+  }, []);
+
   return {
-    containerRef,
+    swipeState,
+    isDragging,
+    isAnimating,
+    resetSwipeState,
+    containerRef: containerRefCallback,
     getContainerProps,
   };
 }

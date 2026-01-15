@@ -1,211 +1,156 @@
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useCallback } from 'react';
 
 interface UseSwipeNavigationOptions {
   onPrevWeek?: () => void;
   onNextWeek?: () => void;
-  isDisabled?: boolean;
-  containerWidth?: number;
+  /**
+   * Minimum distance in pixels to trigger navigation (default: 100)
+   */
+  threshold?: number;
+  /**
+   * Minimum horizontal movement to start swipe (default: 10)
+   */
+  minHorizontalMovement?: number;
+  /**
+   * Maximum vertical movement allowed for horizontal swipe (default: 50)
+   */
+  maxVerticalMovement?: number;
+  /**
+   * If an active block is being dragged, disable swipe navigation
+   */
+  activeBlock?: unknown | null;
 }
 
 interface SwipeState {
-  isDragging: boolean;
-  offsetX: number;
-  isAnimating: boolean;
+  startX: number;
+  startY: number;
+  currentX: number;
+  isSwiping: boolean;
 }
 
-interface TouchHandlers {
-  onTouchStart: (e: React.TouchEvent) => void;
-  onTouchMove: (e: React.TouchEvent) => void;
-  onTouchEnd: (e: React.TouchEvent) => void;
-}
-
+/**
+ * Hook for handling horizontal swipe navigation between weeks
+ * Provides drag-like behavior where the view follows the finger
+ */
 export function useSwipeNavigation({
   onPrevWeek,
   onNextWeek,
-  isDisabled = false,
-  containerWidth = 0,
+  threshold = 100,
+  minHorizontalMovement = 10,
+  maxVerticalMovement = 50,
+  activeBlock,
 }: UseSwipeNavigationOptions) {
-  const [swipeState, setSwipeState] = useState<SwipeState>({
-    isDragging: false,
-    offsetX: 0,
-    isAnimating: false,
-  });
-
-  const touchStartX = useRef<number | null>(null);
-  const touchStartY = useRef<number | null>(null);
-  const isHorizontalSwipe = useRef<boolean | null>(null);
-  const lastOffsetX = useRef<number>(0);
-
-  // Thresholds
-  const minSwipeDistance = 50; // Minimum distance to register as swipe
-  const maxVerticalDistance = 30; // Max vertical movement to still consider horizontal
-  const swipeThreshold = containerWidth * 0.3; // 30% of container width to trigger navigation
-
-  // Reset state when navigation happens
-  useEffect(() => {
-    if (swipeState.isAnimating) {
-      const timer = setTimeout(() => {
-        setSwipeState({
-          isDragging: false,
-          offsetX: 0,
-          isAnimating: false,
-        });
-        touchStartX.current = null;
-        touchStartY.current = null;
-        isHorizontalSwipe.current = null;
-        lastOffsetX.current = 0;
-      }, 300); // Match transition duration
-      return () => clearTimeout(timer);
-    }
-  }, [swipeState.isAnimating]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const swipeStateRef = useRef<SwipeState | null>(null);
 
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
-      if (isDisabled) return;
+      // Don't interfere if there's no navigation handlers
+      if (!onPrevWeek && !onNextWeek) return;
+
+      // Don't start swipe if a block is being dragged
+      if (activeBlock) return;
+
+      // Don't start swipe if touching an interactive element
+      const target = e.target as HTMLElement;
+      if (
+        target.closest('button') ||
+        target.closest('a') ||
+        target.closest('[role="button"]') ||
+        target.closest('[data-event-card]')
+      ) {
+        return;
+      }
 
       const touch = e.touches[0];
-      touchStartX.current = touch.clientX;
-      touchStartY.current = touch.clientY;
-      isHorizontalSwipe.current = null;
-
-      setSwipeState((prev) => ({
-        ...prev,
-        isDragging: false,
-        isAnimating: false,
-      }));
+      swipeStateRef.current = {
+        startX: touch.clientX,
+        startY: touch.clientY,
+        currentX: touch.clientX,
+        isSwiping: false,
+      };
     },
-    [isDisabled]
+    [onPrevWeek, onNextWeek, activeBlock]
   );
 
   const handleTouchMove = useCallback(
     (e: React.TouchEvent) => {
-      if (isDisabled || touchStartX.current === null || touchStartY.current === null) {
-        return;
-      }
+      if (!swipeStateRef.current || !containerRef.current) return;
 
       const touch = e.touches[0];
-      const deltaX = touch.clientX - touchStartX.current;
-      const deltaY = touch.clientY - touchStartY.current;
+      const deltaX = touch.clientX - swipeStateRef.current.startX;
+      const deltaY = Math.abs(touch.clientY - swipeStateRef.current.startY);
+      const absDeltaX = Math.abs(deltaX);
 
-      // Determine if this is a horizontal or vertical swipe on first significant movement
-      if (isHorizontalSwipe.current === null) {
-        if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
-          isHorizontalSwipe.current = Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaY) < maxVerticalDistance;
+      // Check if this is a horizontal swipe
+      if (!swipeStateRef.current.isSwiping) {
+        // Need minimum horizontal movement to start
+        if (absDeltaX < minHorizontalMovement) return;
+
+        // If vertical movement is too much, cancel swipe
+        if (deltaY > maxVerticalMovement) {
+          swipeStateRef.current = null;
+          return;
         }
+
+        // Mark as swiping
+        swipeStateRef.current.isSwiping = true;
       }
 
-      // If it's a horizontal swipe, prevent default scrolling and update offset
-      if (isHorizontalSwipe.current) {
+      // Prevent default scrolling during horizontal swipe
+      if (swipeStateRef.current.isSwiping && absDeltaX > minHorizontalMovement) {
         e.preventDefault();
-
-        // Add resistance at edges
-        let adjustedDeltaX = deltaX;
-        if (containerWidth > 0) {
-          // Add resistance when dragging beyond limits
-          const maxDrag = containerWidth;
-          if (Math.abs(deltaX) > maxDrag) {
-            const excess = Math.abs(deltaX) - maxDrag;
-            const resistance = 0.3;
-            adjustedDeltaX = (deltaX > 0 ? 1 : -1) * (maxDrag + excess * resistance);
-          }
-        }
-
-        lastOffsetX.current = adjustedDeltaX;
-        setSwipeState({
-          isDragging: true,
-          offsetX: adjustedDeltaX,
-          isAnimating: false,
-        });
       }
+
+      // Update current position
+      swipeStateRef.current.currentX = touch.clientX;
+
+      // Apply transform to follow finger
+      const translateX = deltaX;
+      containerRef.current.style.transform = `translateX(${translateX}px)`;
+      containerRef.current.style.transition = 'none';
     },
-    [isDisabled, containerWidth, maxVerticalDistance]
+    [minHorizontalMovement, maxVerticalMovement]
   );
 
-  const handleTouchEnd = useCallback(
-    (_e: React.TouchEvent) => {
-      if (isDisabled || touchStartX.current === null || !isHorizontalSwipe.current) {
-        touchStartX.current = null;
-        touchStartY.current = null;
-        isHorizontalSwipe.current = null;
-        return;
+  const handleTouchEnd = useCallback(() => {
+    if (!swipeStateRef.current || !containerRef.current) return;
+
+    const deltaX = swipeStateRef.current.currentX - swipeStateRef.current.startX;
+    const absDeltaX = Math.abs(deltaX);
+
+    // Reset transform
+    containerRef.current.style.transform = '';
+    containerRef.current.style.transition = '';
+
+    // Check if threshold is met
+    if (swipeStateRef.current.isSwiping && absDeltaX >= threshold) {
+      if (deltaX > 0 && onPrevWeek) {
+        // Swiped right -> go to previous week
+        onPrevWeek();
+      } else if (deltaX < 0 && onNextWeek) {
+        // Swiped left -> go to next week
+        onNextWeek();
       }
+    }
 
-      const deltaX = lastOffsetX.current;
-      const shouldNavigate = Math.abs(deltaX) > Math.max(minSwipeDistance, swipeThreshold);
+    swipeStateRef.current = null;
+  }, [threshold, onPrevWeek, onNextWeek]);
 
-      if (shouldNavigate) {
-        if (deltaX > 0 && onPrevWeek) {
-          // Swipe right -> go to previous week
-          // Animate to full width before navigation
-          setSwipeState({
-            isDragging: false,
-            offsetX: containerWidth,
-            isAnimating: true,
-          });
-          // Delay navigation to allow animation
-          setTimeout(() => {
-            onPrevWeek();
-          }, 150);
-        } else if (deltaX < 0 && onNextWeek) {
-          // Swipe left -> go to next week
-          setSwipeState({
-            isDragging: false,
-            offsetX: -containerWidth,
-            isAnimating: true,
-          });
-          setTimeout(() => {
-            onNextWeek();
-          }, 150);
-        } else {
-          // Snap back
-          setSwipeState({
-            isDragging: false,
-            offsetX: 0,
-            isAnimating: true,
-          });
-        }
-      } else {
-        // Snap back to center
-        setSwipeState({
-          isDragging: false,
-          offsetX: 0,
-          isAnimating: true,
-        });
-      }
-
-      touchStartX.current = null;
-      touchStartY.current = null;
-      lastOffsetX.current = 0;
-    },
-    [isDisabled, onPrevWeek, onNextWeek, containerWidth, swipeThreshold, minSwipeDistance]
-  );
-
-  const getHandlers = useCallback((): TouchHandlers => {
+  const getContainerProps = useCallback(() => {
     return {
+      ref: containerRef,
       onTouchStart: handleTouchStart,
       onTouchMove: handleTouchMove,
       onTouchEnd: handleTouchEnd,
+      style: {
+        touchAction: 'pan-y pinch-zoom' as const, // Allow vertical scrolling but handle horizontal swipes
+      },
     };
   }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
 
-  const resetSwipeState = useCallback(() => {
-    setSwipeState({
-      isDragging: false,
-      offsetX: 0,
-      isAnimating: false,
-    });
-    touchStartX.current = null;
-    touchStartY.current = null;
-    isHorizontalSwipe.current = null;
-    lastOffsetX.current = 0;
-  }, []);
-
   return {
-    swipeState,
-    getHandlers,
-    isDragging: swipeState.isDragging,
-    offsetX: swipeState.offsetX,
-    isAnimating: swipeState.isAnimating,
-    resetSwipeState,
+    containerRef,
+    getContainerProps,
   };
 }

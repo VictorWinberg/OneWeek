@@ -60,6 +60,7 @@ export function EventCard({
   return (
     <button
       ref={setNodeRef}
+      data-event-card
       style={style}
       onClick={handleClick}
       {...(draggable ? { ...listeners, ...attributes } : {})}

@@ -62,11 +62,7 @@ function App() {
   // Main authenticated app with routing
   return (
     <>
-      <AppRoutes
-        onBlockClick={handleBlockClick}
-        onCreateEvent={eventPanel.openPanel}
-        onCreateEventForDate={eventPanel.openPanelWithDate}
-      />
+      <AppRoutes onBlockClick={handleBlockClick} onCreateEventForDate={eventPanel.openPanelWithDate} />
       <EventDetailPanel block={selectedBlock} onClose={handleCloseDetail} />
       <EventCreatePanel
         isOpen={eventPanel.isOpen}

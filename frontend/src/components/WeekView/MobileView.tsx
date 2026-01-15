@@ -163,9 +163,23 @@ export function MobileView({
         {/* Content */}
         <div className="flex-1 overflow-hidden">
           {mobileViewMode === 'list' ? (
-            <MobileListView weekDays={weekDays} blocks={blocks} onBlockClick={onBlockClick} activeBlock={activeBlock} />
+            <MobileListView
+              weekDays={weekDays}
+              blocks={blocks}
+              onBlockClick={onBlockClick}
+              onCreateEventForDate={onCreateEventForDate}
+              activeBlock={activeBlock}
+            />
           ) : mobileViewMode === 'grid' ? (
-            <MobileGridView weekDays={weekDays} blocks={blocks} onBlockClick={onBlockClick} activeBlock={activeBlock} />
+            <MobileGridView
+              weekDays={weekDays}
+              blocks={blocks}
+              onBlockClick={onBlockClick}
+              onCreateEventForDate={onCreateEventForDate}
+              activeBlock={activeBlock}
+              onPrevWeek={onPrevWeek}
+              onNextWeek={onNextWeek}
+            />
           ) : mobileViewMode === 'hour' ? (
             <MobileHourView
               weekDays={weekDays}
@@ -180,7 +194,10 @@ export function MobileView({
               blocks={blocks}
               calendars={calendars}
               onBlockClick={onBlockClick}
+              onCreateEventForDate={onCreateEventForDate}
               activeBlock={activeBlock}
+              onPrevWeek={onPrevWeek}
+              onNextWeek={onNextWeek}
             />
           )}
         </div>

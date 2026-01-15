@@ -1,6 +1,7 @@
 import { useDroppable } from '@dnd-kit/core';
 import { formatDayShort, isToday } from '@/utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
+import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { EventCard } from '@/components/WeekView/EventCard';
 import type { Block } from '@/types';
 
@@ -8,26 +9,37 @@ interface DroppableGridDayProps {
   date: Date;
   dayBlocks: Block[];
   onBlockClick: (block: Block) => void;
+  onEmptyClick?: (date: Date) => void;
   isCurrentDay: boolean;
 }
 
-function DroppableGridDay({ date, dayBlocks, onBlockClick, isCurrentDay }: DroppableGridDayProps) {
+function DroppableGridDay({ date, dayBlocks, onBlockClick, onEmptyClick, isCurrentDay }: DroppableGridDayProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `grid-day-${date.toISOString()}`,
     data: { date },
   });
 
+  const handleClick = (e: React.MouseEvent) => {
+    // Don't trigger if clicking on an event card
+    if ((e.target as HTMLElement).closest('[data-event-card]')) {
+      return;
+    }
+    // Trigger for any click on the day (header or empty space)
+    onEmptyClick?.(date);
+  };
+
   return (
     <div
       ref={setNodeRef}
+      onClick={handleClick}
       className={`
-        rounded-lg border overflow-hidden
+        rounded-lg border overflow-hidden cursor-pointer transition-all
         ${
           isCurrentDay
             ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/5'
             : 'border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)]'
         }
-        ${isOver ? 'ring-2 ring-[var(--color-accent)]' : ''}
+        ${isOver ? 'ring-2 ring-[var(--color-accent)]' : 'hover:border-[var(--color-text-secondary)]/30'}
       `}
     >
       {/* Day Header */}
@@ -83,12 +95,35 @@ interface MobileGridViewProps {
   weekDays: Date[];
   blocks: Block[];
   onBlockClick: (block: Block) => void;
+  onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
   activeBlock?: Block | null;
+  onPrevWeek?: () => void;
+  onNextWeek?: () => void;
 }
 
-export function MobileGridView({ weekDays, blocks, onBlockClick }: MobileGridViewProps) {
+export function MobileGridView({
+  weekDays,
+  blocks,
+  onBlockClick,
+  onCreateEventForDate,
+  activeBlock,
+  onPrevWeek,
+  onNextWeek,
+}: MobileGridViewProps) {
+  const { getContainerProps } = useSwipeNavigation({
+    onPrevWeek,
+    onNextWeek,
+    activeBlock,
+  });
+  const swipeContainerProps = getContainerProps();
+  const handleEmptySpaceClick = (date: Date) => {
+    if (onCreateEventForDate) {
+      onCreateEventForDate(date);
+    }
+  };
+
   return (
-    <div className="overflow-y-auto h-full">
+    <div {...swipeContainerProps} className="overflow-y-auto h-full">
       <div className="grid grid-cols-2 gap-2 p-2">
         {weekDays.map((date) => {
           const dayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date));
@@ -100,6 +135,7 @@ export function MobileGridView({ weekDays, blocks, onBlockClick }: MobileGridVie
               date={date}
               dayBlocks={dayBlocks}
               onBlockClick={onBlockClick}
+              onEmptyClick={handleEmptySpaceClick}
               isCurrentDay={isCurrentDay}
             />
           );

@@ -80,42 +80,48 @@ export function useUpdateTask(taskListId: string = DEFAULT_TASK_LIST_ID) {
       };
     }) => tasksApi.updateTask(taskListId, taskId, updates),
     onMutate: async ({ taskId, updates }) => {
-      await queryClient.cancelQueries({ queryKey: taskKeys.tasks(taskListId) });
+      await queryClient.cancelQueries({ queryKey: taskKeys.tasks(taskListId), exact: false });
 
-      const previousData = queryClient.getQueryData<Task[]>(taskKeys.tasks(taskListId));
+      // Get all matching queries to restore them on error
+      const previousQueries = queryClient.getQueriesData<Task[]>({
+        queryKey: taskKeys.tasks(taskListId),
+        exact: false,
+      });
 
-      if (previousData) {
-        queryClient.setQueryData<Task[]>(
-          taskKeys.tasks(taskListId),
-          previousData.map((task) =>
-            task.id === taskId
-              ? {
-                  ...task,
-                  ...(updates.title !== undefined && { title: updates.title }),
-                  ...(updates.notes !== undefined && { notes: updates.notes }),
-                  // Convert null to undefined for due field to match Task type
-                  ...(updates.due !== undefined && { due: updates.due === null ? undefined : updates.due }),
-                  ...(updates.status !== undefined && { status: updates.status }),
-                  metadata: {
-                    ...task.metadata,
-                    ...(updates.assignedUser !== undefined && { assignedUser: updates.assignedUser }),
-                    ...(updates.assignedUserEmail !== undefined && { assignedUserEmail: updates.assignedUserEmail }),
-                  },
-                }
-              : task
-          )
+      // Update all matching queries optimistically
+      queryClient.setQueriesData<Task[]>({ queryKey: taskKeys.tasks(taskListId), exact: false }, (oldData) => {
+        if (!oldData) return oldData;
+        return oldData.map((task) =>
+          task.id === taskId
+            ? {
+                ...task,
+                ...(updates.title !== undefined && { title: updates.title }),
+                ...(updates.notes !== undefined && { notes: updates.notes }),
+                // Convert null to undefined for due field to match Task type
+                ...(updates.due !== undefined && { due: updates.due === null ? undefined : updates.due }),
+                ...(updates.status !== undefined && { status: updates.status }),
+                metadata: {
+                  ...task.metadata,
+                  ...(updates.assignedUser !== undefined && { assignedUser: updates.assignedUser }),
+                  ...(updates.assignedUserEmail !== undefined && { assignedUserEmail: updates.assignedUserEmail }),
+                },
+              }
+            : task
         );
-      }
+      });
 
-      return { previousData };
+      return { previousQueries };
+    },
+    onSuccess: () => {
+      // Invalidate to refetch with latest data from server
+      queryClient.invalidateQueries({ queryKey: taskKeys.tasks(taskListId), exact: false });
     },
     onError: (_err, _variables, context) => {
-      if (context?.previousData) {
-        queryClient.setQueryData(taskKeys.tasks(taskListId), context.previousData);
+      if (context?.previousQueries) {
+        context.previousQueries.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
       }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: taskKeys.tasks(taskListId) });
     },
   });
 }

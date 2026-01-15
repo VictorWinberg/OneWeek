@@ -3,7 +3,7 @@ import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
 import { useWeekEvents, usePrefetchAdjacentWeeks, useUpdateEvent, useMoveEvent } from '@/hooks/useCalendarQueries';
-import { getWeekDays, formatWeekHeader, getWeekNumber } from '@/utils/dateUtils';
+import { formatWeekHeader, getWeekNumber, getWeekDays } from '@/utils/dateUtils';
 import { urlToMobileViewMode, mobileToUrlViewMode, type MobileViewMode, type UrlViewMode } from '@/utils/viewModeUtils';
 import { useMobileDragAndDrop } from '@/hooks/useDragAndDrop';
 import { EventCard } from '@/components/WeekView/EventCard';
@@ -20,6 +20,7 @@ interface MobileViewProps {
   onNextWeek?: () => void;
   onPrevWeek?: () => void;
   onViewModeChange?: (mode: UrlViewMode) => void;
+  onGoToToday?: () => void;
 }
 
 export function MobileView({
@@ -29,22 +30,23 @@ export function MobileView({
   onNextWeek,
   onPrevWeek,
   onViewModeChange,
+  onGoToToday,
 }: MobileViewProps) {
   const { selectedDate } = useCalendarStore();
   const { config } = useConfigStore();
 
-  // Fetch events using React Query
+  // Fetch events using React Query (for drag and drop)
   const { data: blocks = [], isLoading, error } = useWeekEvents(selectedDate);
   const { prefetch } = usePrefetchAdjacentWeeks(selectedDate);
   const updateEventTime = useUpdateEvent();
   const moveEvent = useMoveEvent();
 
-  const weekDays = getWeekDays(selectedDate);
   const weekNumber = getWeekNumber(selectedDate);
   const calendars = config.calendars;
+  const weekDays = getWeekDays(selectedDate);
 
   // Compute current mobile view mode from URL mode
-  const mobileViewMode = urlToMobileViewMode(urlViewMode, 'list');
+  const mobileViewMode = urlToMobileViewMode(urlViewMode, 'grid');
 
   // Handle view mode changes - all modes now map directly to URL
   const handleViewModeChange = (newMobileMode: MobileViewMode) => {
@@ -95,7 +97,12 @@ export function MobileView({
             </button>
 
             <div className="flex flex-col items-center">
-              <h1 className="text-lg font-bold text-[var(--color-text-primary)]">{formatWeekHeader(selectedDate)}</h1>
+              <h1
+                onClick={onGoToToday}
+                className="text-lg font-bold text-[var(--color-text-primary)] cursor-pointer hover:text-[var(--color-accent)] transition-colors"
+              >
+                {formatWeekHeader(selectedDate)}
+              </h1>
               <span className="text-xs text-[var(--color-text-secondary)]">v.{weekNumber}</span>
             </div>
 
@@ -111,16 +118,6 @@ export function MobileView({
 
           <div className="flex items-center justify-center gap-1 bg-[var(--color-bg-tertiary)] rounded-lg p-1">
             <button
-              onClick={() => handleViewModeChange('list')}
-              className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                mobileViewMode === 'list'
-                  ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
-                  : 'text-[var(--color-text-secondary)]'
-              }`}
-            >
-              Agenda
-            </button>
-            <button
               onClick={() => handleViewModeChange('grid')}
               className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
                 mobileViewMode === 'grid'
@@ -129,6 +126,16 @@ export function MobileView({
               }`}
             >
               Översikt
+            </button>
+            <button
+              onClick={() => handleViewModeChange('list')}
+              className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                mobileViewMode === 'list'
+                  ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
+                  : 'text-[var(--color-text-secondary)]'
+              }`}
+            >
+              Agenda
             </button>
             <button
               onClick={() => handleViewModeChange('calendar')}
@@ -169,6 +176,8 @@ export function MobileView({
               onBlockClick={onBlockClick}
               onCreateEventForDate={onCreateEventForDate}
               activeBlock={activeBlock}
+              onPrevWeek={onPrevWeek}
+              onNextWeek={onNextWeek}
             />
           ) : mobileViewMode === 'grid' ? (
             <MobileGridView

@@ -11,7 +11,7 @@ export type UrlViewMode = 'day' | 'grid' | 'user' | 'hour';
  */
 export function urlToMobileViewMode(
   urlMode: UrlViewMode | undefined,
-  defaultMode: MobileViewMode = 'list'
+  defaultMode: MobileViewMode = 'grid'
 ): MobileViewMode {
   if (!urlMode) return defaultMode;
 
@@ -25,7 +25,7 @@ export function urlToMobileViewMode(
     case 'hour':
       return 'hour';
     default:
-      return 'list';
+      return 'grid';
   }
 }
 
@@ -43,7 +43,7 @@ export function mobileToUrlViewMode(mobileMode: MobileViewMode): UrlViewMode {
     case 'hour':
       return 'hour';
     default:
-      return 'day';
+      return 'grid';
   }
 }
 
@@ -60,4 +60,3 @@ export function isValidUrlViewMode(mode: string): mode is UrlViewMode {
 export function isValidMobileViewMode(mode: string): mode is MobileViewMode {
   return ['list', 'calendar', 'grid', 'hour'].includes(mode);
 }
-

@@ -13,16 +13,6 @@ export function ViewModeSelector({ currentViewMode, onViewModeChange }: ViewMode
   return (
     <div className="flex items-center gap-1 bg-[var(--color-bg-tertiary)] rounded-lg p-1">
       <button
-        onClick={() => handleViewModeChange('day')}
-        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-          currentViewMode === 'day'
-            ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
-            : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-        }`}
-      >
-        Dagvy
-      </button>
-      <button
         onClick={() => handleViewModeChange('grid')}
         className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
           currentViewMode === 'grid'
@@ -31,6 +21,16 @@ export function ViewModeSelector({ currentViewMode, onViewModeChange }: ViewMode
         }`}
       >
         Översikt
+      </button>
+      <button
+        onClick={() => handleViewModeChange('day')}
+        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+          currentViewMode === 'day'
+            ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
+            : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+        }`}
+      >
+        Agenda
       </button>
       <button
         onClick={() => handleViewModeChange('user')}

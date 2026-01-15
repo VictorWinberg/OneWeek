@@ -1,6 +1,7 @@
 import { useDroppable } from '@dnd-kit/core';
 import { formatDayHeader, isToday } from '@/utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
+import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { EventCard } from '@/components/WeekView/EventCard';
 import type { Block } from '@/types';
 
@@ -83,9 +84,19 @@ interface MobileListViewProps {
   onBlockClick: (block: Block) => void;
   onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
   activeBlock?: Block | null;
+  onPrevWeek?: () => void;
+  onNextWeek?: () => void;
 }
 
-export function MobileListView({ weekDays, blocks, onBlockClick, onCreateEventForDate, activeBlock: _activeBlock }: MobileListViewProps) {
+export function MobileListView({
+  weekDays,
+  blocks,
+  onBlockClick,
+  onCreateEventForDate,
+  activeBlock,
+  onPrevWeek,
+  onNextWeek,
+}: MobileListViewProps) {
   // Custom sort: timed events first (by time), then all-day events (by time)
   const sortBlocksForList = (blocks: Block[]): Block[] => {
     const timed = blocks.filter((b) => !b.allDay);
@@ -99,8 +110,15 @@ export function MobileListView({ weekDays, blocks, onBlockClick, onCreateEventFo
     }
   };
 
+  const { getContainerProps } = useSwipeNavigation({
+    onPrevWeek,
+    onNextWeek,
+    activeBlock,
+  });
+  const swipeContainerProps = getContainerProps();
+
   return (
-    <div className="overflow-y-auto h-full">
+    <div {...swipeContainerProps} className="overflow-y-auto h-full">
       {weekDays.map((date) => {
         const dayBlocks = sortBlocksForList(getBlocksForDay(blocks, date));
         const isCurrentDay = isToday(date);

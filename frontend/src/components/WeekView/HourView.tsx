@@ -120,7 +120,12 @@ export function HourView({ onBlockClick, onCreateEventForDate, onNextWeek, onPre
         {/* Header */}
         <header className="flex items-center justify-between p-4 border-b border-[var(--color-bg-tertiary)] flex-shrink-0">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{formatWeekHeader(selectedDate)}</h1>
+            <h1
+              onClick={onGoToToday}
+              className="text-xl font-bold text-[var(--color-text-primary)] cursor-pointer hover:text-[var(--color-accent)] transition-colors"
+            >
+              {formatWeekHeader(selectedDate)}
+            </h1>
             <span className="text-sm text-[var(--color-text-secondary)] bg-[var(--color-bg-tertiary)] px-2 py-1 rounded">
               v.{weekNumber}
             </span>

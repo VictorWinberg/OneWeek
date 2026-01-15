@@ -10,7 +10,7 @@ interface AppRoutesProps {
 }
 
 function RedirectToLastViewMode() {
-  const [lastViewMode] = useLocalStorage<ViewMode>('lastViewMode', 'day');
+  const [lastViewMode] = useLocalStorage<ViewMode>('lastViewMode', 'grid');
   return <Navigate to={`/${lastViewMode}`} replace />;
 }
 

@@ -100,6 +100,11 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
     }
   };
 
+  const handleNewTaskSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    handleCreateTask();
+  };
+
   const handleStartEdit = useCallback((task: Task) => {
     setEditingTaskId(task.id);
     setEditingTitle(task.title);
@@ -276,7 +281,10 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
-        <div className="flex items-center gap-2 p-3 mb-2 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-bg-tertiary)] border-dashed">
+        <form
+          onSubmit={handleNewTaskSubmit}
+          className="flex items-center gap-2 p-3 mb-2 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-bg-tertiary)] border-dashed"
+        >
           <div className="flex-shrink-0 w-5 h-5 rounded border-2 border-[var(--color-text-secondary)]/30" />
           <input
             ref={newTaskInputRef}
@@ -338,7 +346,7 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
               {newTaskAssignee ? users.find((u) => u.id === newTaskAssignee)?.name || 'Ingen' : 'Ingen'}
             </span>
           </label>
-        </div>
+        </form>
 
         {activeTasks.length === 0 ? (
           <div className="text-center py-8">

@@ -6,7 +6,6 @@ import type { ViewMode } from '@/types/viewMode';
 
 interface AppRoutesProps {
   onBlockClick: (block: Block) => void;
-  onCreateEvent: () => void;
   onCreateEventForDate: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
 }
 
@@ -15,7 +14,7 @@ function RedirectToLastViewMode() {
   return <Navigate to={`/${lastViewMode}`} replace />;
 }
 
-export function AppRoutes({ onBlockClick, onCreateEvent, onCreateEventForDate }: AppRoutesProps) {
+export function AppRoutes({ onBlockClick, onCreateEventForDate }: AppRoutesProps) {
   return (
     <Routes>
       <Route path="/" element={<RedirectToLastViewMode />} />
@@ -25,7 +24,6 @@ export function AppRoutes({ onBlockClick, onCreateEvent, onCreateEventForDate }:
           <MainLayout
             viewMode="day"
             onBlockClick={onBlockClick}
-            onCreateEvent={onCreateEvent}
             onCreateEventForDate={onCreateEventForDate}
           />
         }
@@ -36,7 +34,6 @@ export function AppRoutes({ onBlockClick, onCreateEvent, onCreateEventForDate }:
           <MainLayout
             viewMode="grid"
             onBlockClick={onBlockClick}
-            onCreateEvent={onCreateEvent}
             onCreateEventForDate={onCreateEventForDate}
           />
         }
@@ -47,7 +44,6 @@ export function AppRoutes({ onBlockClick, onCreateEvent, onCreateEventForDate }:
           <MainLayout
             viewMode="user"
             onBlockClick={onBlockClick}
-            onCreateEvent={onCreateEvent}
             onCreateEventForDate={onCreateEventForDate}
           />
         }
@@ -58,7 +54,6 @@ export function AppRoutes({ onBlockClick, onCreateEvent, onCreateEventForDate }:
           <MainLayout
             viewMode="hour"
             onBlockClick={onBlockClick}
-            onCreateEvent={onCreateEvent}
             onCreateEventForDate={onCreateEventForDate}
           />
         }
@@ -68,7 +63,6 @@ export function AppRoutes({ onBlockClick, onCreateEvent, onCreateEventForDate }:
         element={
           <MainLayout
             onBlockClick={onBlockClick}
-            onCreateEvent={onCreateEvent}
             onCreateEventForDate={onCreateEventForDate}
           />
         }

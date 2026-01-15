@@ -18,11 +18,10 @@ import type { ViewMode } from '@/types/viewMode';
 interface MainLayoutProps {
   viewMode?: ViewMode;
   onBlockClick: (block: Block) => void;
-  onCreateEvent: () => void;
   onCreateEventForDate: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
 }
 
-export function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEventForDate }: MainLayoutProps) {
+export function MainLayout({ viewMode, onBlockClick, onCreateEventForDate }: MainLayoutProps) {
   const { date } = useParams<{ date?: string }>();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -114,7 +113,6 @@ export function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEven
         ) : viewMode === 'day' ? (
           <DayView
             onBlockClick={onBlockClick}
-            onCreateEvent={onCreateEvent}
             onCreateEventForDate={onCreateEventForDate}
             onNextWeek={handleNextWeek}
             onPrevWeek={handlePrevWeek}
@@ -123,7 +121,6 @@ export function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEven
         ) : viewMode === 'grid' ? (
           <GridView
             onBlockClick={onBlockClick}
-            onCreateEvent={onCreateEvent}
             onCreateEventForDate={onCreateEventForDate}
             onNextWeek={handleNextWeek}
             onPrevWeek={handlePrevWeek}
@@ -132,7 +129,6 @@ export function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEven
         ) : viewMode === 'hour' ? (
           <HourView
             onBlockClick={onBlockClick}
-            onCreateEvent={onCreateEvent}
             onCreateEventForDate={onCreateEventForDate}
             onNextWeek={handleNextWeek}
             onPrevWeek={handlePrevWeek}
@@ -141,7 +137,6 @@ export function MainLayout({ viewMode, onBlockClick, onCreateEvent, onCreateEven
         ) : (
           <UserView
             onBlockClick={onBlockClick}
-            onCreateEvent={onCreateEvent}
             onCreateEventForDate={onCreateEventForDate}
             onNextWeek={handleNextWeek}
             onPrevWeek={handlePrevWeek}

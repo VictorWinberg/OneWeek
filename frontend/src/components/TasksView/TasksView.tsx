@@ -96,12 +96,14 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
   const handleNewTaskKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      e.stopPropagation();
       handleCreateTask();
     }
   };
 
   const handleNewTaskSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     handleCreateTask();
   };
 
@@ -281,20 +283,20 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
-        <form
-          onSubmit={handleNewTaskSubmit}
-          className="flex items-center gap-2 p-3 mb-2 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-bg-tertiary)] border-dashed"
-        >
+        <div className="flex items-center gap-2 p-3 mb-2 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-bg-tertiary)] border-dashed">
           <div className="flex-shrink-0 w-5 h-5 rounded border-2 border-[var(--color-text-secondary)]/30" />
-          <input
-            ref={newTaskInputRef}
-            type="text"
-            value={newTaskTitle}
-            onChange={(e) => setNewTaskTitle(e.target.value)}
-            onKeyDown={handleNewTaskKeyDown}
-            placeholder="Lägg till uppgift..."
-            className="flex-1 min-w-0 bg-transparent text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none"
-          />
+          <form onSubmit={handleNewTaskSubmit} className="flex-1 min-w-0">
+            <input
+              ref={newTaskInputRef}
+              type="text"
+              value={newTaskTitle}
+              onChange={(e) => setNewTaskTitle(e.target.value)}
+              onKeyDown={handleNewTaskKeyDown}
+              enterKeyHint="done"
+              placeholder="Lägg till uppgift..."
+              className="w-full bg-transparent text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none"
+            />
+          </form>
           <label className="flex-shrink-0 relative cursor-pointer flex items-center">
             <input
               type="date"
@@ -346,7 +348,7 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
               {newTaskAssignee ? users.find((u) => u.id === newTaskAssignee)?.name || 'Ingen' : 'Ingen'}
             </span>
           </label>
-        </form>
+        </div>
 
         {activeTasks.length === 0 ? (
           <div className="text-center py-8">

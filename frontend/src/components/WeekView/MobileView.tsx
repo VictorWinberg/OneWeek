@@ -49,7 +49,7 @@ export function MobileView({
   const weekDays = getWeekDays(selectedDate);
 
   // Compute current mobile view mode from URL mode
-  const mobileViewMode = urlToMobileViewMode(urlViewMode, 'list');
+  const mobileViewMode = urlToMobileViewMode(urlViewMode, 'grid');
 
   // Handle view mode changes - all modes now map directly to URL
   const handleViewModeChange = (newMobileMode: MobileViewMode) => {
@@ -116,16 +116,6 @@ export function MobileView({
 
           <div className="flex items-center justify-center gap-1 bg-[var(--color-bg-tertiary)] rounded-lg p-1">
             <button
-              onClick={() => handleViewModeChange('list')}
-              className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                mobileViewMode === 'list'
-                  ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
-                  : 'text-[var(--color-text-secondary)]'
-              }`}
-            >
-              Agenda
-            </button>
-            <button
               onClick={() => handleViewModeChange('grid')}
               className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
                 mobileViewMode === 'grid'
@@ -134,6 +124,16 @@ export function MobileView({
               }`}
             >
               Översikt
+            </button>
+            <button
+              onClick={() => handleViewModeChange('list')}
+              className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                mobileViewMode === 'list'
+                  ? 'bg-[var(--color-accent)] text-[var(--color-bg-primary)]'
+                  : 'text-[var(--color-text-secondary)]'
+              }`}
+            >
+              Agenda
             </button>
             <button
               onClick={() => handleViewModeChange('calendar')}

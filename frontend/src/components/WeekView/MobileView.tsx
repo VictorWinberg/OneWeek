@@ -4,12 +4,7 @@ import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
 import { useWeekEvents, usePrefetchAdjacentWeeks, useUpdateEvent, useMoveEvent } from '@/hooks/useCalendarQueries';
 import { formatWeekHeader, getWeekNumber, getWeekDays } from '@/utils/dateUtils';
-import {
-  urlToMobileViewMode,
-  mobileToUrlViewMode,
-  type MobileViewMode,
-  type UrlViewMode,
-} from '@/utils/viewModeUtils';
+import { urlToMobileViewMode, mobileToUrlViewMode, type MobileViewMode, type UrlViewMode } from '@/utils/viewModeUtils';
 import { useMobileDragAndDrop } from '@/hooks/useDragAndDrop';
 import { EventCard } from '@/components/WeekView/EventCard';
 import { MobileListView } from '@/components/WeekView/MobileListView';

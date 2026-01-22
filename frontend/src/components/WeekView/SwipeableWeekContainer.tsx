@@ -99,7 +99,6 @@ export function SwipeableWeekContainer({
     isAnimating,
     resetSwipeState,
     containerRef: swipeContainerRef,
-    getContainerProps,
   } = useSwipeNavigation({
     onPrevWeek,
     onNextWeek,
@@ -108,10 +107,8 @@ export function SwipeableWeekContainer({
     activeBlock,
   });
 
-  // Get touch event handlers from hook
-  const swipeProps = getContainerProps();
-
   // Combine refs: both containerRef (for width measurement) and swipeContainerRef (for touch events)
+  // Note: Touch events are now handled via native listeners in useSwipeNavigation hook
   const combinedRef = useCallback(
     (element: HTMLDivElement | null) => {
       containerRef.current = element;
@@ -185,9 +182,6 @@ export function SwipeableWeekContainer({
     <div
       ref={combinedRef}
       className="h-full overflow-hidden relative"
-      onTouchStart={swipeProps.onTouchStart}
-      onTouchMove={swipeProps.onTouchMove}
-      onTouchEnd={swipeProps.onTouchEnd}
       style={{
         touchAction: isDragging ? 'none' : 'pan-y',
         userSelect: isDragging ? 'none' : 'auto',

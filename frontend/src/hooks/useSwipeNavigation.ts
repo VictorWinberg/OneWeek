@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState } from 'react';
+import { useRef, useCallback, useState, useEffect } from 'react';
 import type { Block } from '@/types';
 
 interface UseSwipeNavigationOptions {
@@ -53,7 +53,7 @@ export function useSwipeNavigation({
   maxVerticalMovement = 50,
   activeBlock,
   isDisabled = false,
-  containerWidth: _containerWidth = 0,
+  containerWidth: _containerWidth = 0, // Currently unused but kept for API compatibility
 }: UseSwipeNavigationOptions) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const swipeStateRef = useRef<SwipeState | null>(null);
@@ -62,7 +62,7 @@ export function useSwipeNavigation({
   const [isAnimating, setIsAnimating] = useState(false);
 
   const handleTouchStart = useCallback(
-    (e: React.TouchEvent) => {
+    (e: TouchEvent) => {
       // Don't interfere if disabled or no navigation handlers
       if (isDisabled || (!onPrevWeek && !onNextWeek)) return;
 
@@ -94,7 +94,7 @@ export function useSwipeNavigation({
   );
 
   const handleTouchMove = useCallback(
-    (e: React.TouchEvent) => {
+    (e: TouchEvent) => {
       if (!swipeStateRef.current) return;
 
       const touch = e.touches[0];
@@ -163,6 +163,23 @@ export function useSwipeNavigation({
     setSwipeState({ offsetX: 0 });
   }, [threshold, onPrevWeek, onNextWeek]);
 
+  // Attach native event listeners with passive: false to allow preventDefault
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element) return;
+
+    // Use native listeners with { passive: false } to allow preventDefault
+    element.addEventListener('touchstart', handleTouchStart, { passive: true });
+    element.addEventListener('touchmove', handleTouchMove, { passive: false });
+    element.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      element.removeEventListener('touchstart', handleTouchStart);
+      element.removeEventListener('touchmove', handleTouchMove);
+      element.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
+
   const resetSwipeState = useCallback(() => {
     swipeStateRef.current = null;
     setSwipeState({ offsetX: 0 });
@@ -170,17 +187,16 @@ export function useSwipeNavigation({
     setIsAnimating(false);
   }, []);
 
+  // getContainerProps is no longer needed since we use native listeners
+  // Keeping for backwards compatibility but it won't attach handlers
   const getContainerProps = useCallback(() => {
     return {
       ref: containerRef,
-      onTouchStart: handleTouchStart,
-      onTouchMove: handleTouchMove,
-      onTouchEnd: handleTouchEnd,
       style: {
         touchAction: 'pan-y pinch-zoom' as const, // Allow vertical scrolling but handle horizontal swipes
       },
     };
-  }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
+  }, []);
 
   // Container ref callback function
   const containerRefCallback = useCallback((element: HTMLDivElement | null) => {

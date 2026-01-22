@@ -6,6 +6,7 @@ import { getWeekDays } from '@/utils/dateUtils';
 import type { Block } from '@/types';
 
 interface WeekData {
+  date: Date;
   weekDays: Date[];
   blocks: Block[];
   isLoading: boolean;
@@ -16,6 +17,7 @@ interface SwipeableWeekContainerProps {
   onPrevWeek?: () => void;
   onNextWeek?: () => void;
   isDisabled?: boolean;
+  activeBlock?: Block | null;
   children: (weekData: WeekData) => ReactNode;
 }
 
@@ -24,6 +26,7 @@ export function SwipeableWeekContainer({
   onPrevWeek,
   onNextWeek,
   isDisabled = false,
+  activeBlock,
   children,
 }: SwipeableWeekContainerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -67,6 +70,7 @@ export function SwipeableWeekContainer({
     onNextWeek,
     isDisabled,
     containerWidth,
+    activeBlock,
   });
 
   // Combine refs: both containerRef (for width measurement) and swipeContainerRef (for touch events)
@@ -119,18 +123,21 @@ export function SwipeableWeekContainer({
 
   // Prepare week data for each position
   const prevWeekData: WeekData = {
+    date: prevWeekDate,
     weekDays: prevWeekDays,
     blocks: prevBlocks,
     isLoading: isPrevLoading,
   };
 
   const currentWeekData: WeekData = {
+    date: selectedDate,
     weekDays: currentWeekDays,
     blocks: currentBlocks,
     isLoading: isCurrentLoading,
   };
 
   const nextWeekData: WeekData = {
+    date: nextWeekDate,
     weekDays: nextWeekDays,
     blocks: nextBlocks,
     isLoading: isNextLoading,
@@ -139,7 +146,7 @@ export function SwipeableWeekContainer({
   return (
     <div
       ref={combinedRef}
-      className="flex-1 overflow-hidden relative"
+      className="h-full overflow-hidden relative"
       style={{
         touchAction: isDragging ? 'none' : 'pan-y',
         userSelect: isDragging ? 'none' : 'auto',
@@ -157,7 +164,7 @@ export function SwipeableWeekContainer({
       >
         {/* Previous Week */}
         <div
-          className="h-full overflow-hidden"
+          className="h-full overflow-hidden flex flex-col"
           style={{
             width: `${containerWidth}px`,
             flexShrink: 0,
@@ -168,7 +175,7 @@ export function SwipeableWeekContainer({
 
         {/* Current Week */}
         <div
-          className="h-full overflow-hidden"
+          className="h-full overflow-hidden flex flex-col"
           style={{
             width: `${containerWidth}px`,
             flexShrink: 0,
@@ -179,7 +186,7 @@ export function SwipeableWeekContainer({
 
         {/* Next Week */}
         <div
-          className="h-full overflow-hidden"
+          className="h-full overflow-hidden flex flex-col"
           style={{
             width: `${containerWidth}px`,
             flexShrink: 0,

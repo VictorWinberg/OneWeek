@@ -40,15 +40,14 @@ export function MobileView({
   const updateEventTime = useUpdateEvent();
   const moveEvent = useMoveEvent();
 
-  // Get blocks for current week for drag and drop hook (hooks must be at component level)
-  const { data: currentWeekBlocks = [] } = useWeekEvents(selectedDate);
-
   const calendars = config.calendars;
   const [activeBlock, setActiveBlock] = useState<Block | null>(null);
+  const [allBlocks, setAllBlocks] = useState<Block[]>([]);
 
-  // Use mobile drag and drop hook with current week's blocks
+  // Use mobile drag and drop hook with all blocks from three weeks (prev/current/next)
+  // This ensures drag and drop works from any week position
   const { activeBlock: currentActiveBlock, handleDragStart, handleDragEnd, sensors } = useMobileDragAndDrop(
-    currentWeekBlocks,
+    allBlocks,
     {
       updateEventTime,
       moveEvent,
@@ -77,28 +76,29 @@ export function MobileView({
   };
 
   return (
-    <SwipeableWeekContainer
-      selectedDate={selectedDate}
-      onPrevWeek={onPrevWeek}
-      onNextWeek={onNextWeek}
-      activeBlock={activeBlock}
-    >
-      {({ date, weekDays, blocks, isLoading }) => {
-        const weekNumber = getWeekNumber(date);
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <SwipeableWeekContainer
+        selectedDate={selectedDate}
+        onPrevWeek={onPrevWeek}
+        onNextWeek={onNextWeek}
+        activeBlock={activeBlock}
+        onAllBlocksChange={setAllBlocks}
+      >
+        {({ date, weekDays, blocks, isLoading }) => {
+          const weekNumber = getWeekNumber(date);
 
-        if (isLoading) {
-          return (
-            <div className="flex-1 flex items-center justify-center p-8">
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-8 h-8 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
-                <p className="text-[var(--color-text-secondary)]">Laddar events...</p>
+          if (isLoading) {
+            return (
+              <div className="flex-1 flex items-center justify-center p-8">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-8 h-8 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
+                  <p className="text-[var(--color-text-secondary)]">Laddar events...</p>
+                </div>
               </div>
-            </div>
-          );
-        }
+            );
+          }
 
-        return (
-          <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          return (
             <div className="flex flex-col h-full overflow-hidden">
               {/* Header */}
               <header className="flex flex-col gap-2 p-4 border-b border-[var(--color-bg-tertiary)]">
@@ -213,43 +213,43 @@ export function MobileView({
                 )}
               </div>
 
-              {/* Drag Overlay */}
-              <DragOverlay>
-                {currentActiveBlock ? (
-                  <div
-                    className="opacity-90"
-                    style={
-                      mobileViewMode === 'hour' && !currentActiveBlock.allDay
-                        ? {
-                            // Calculate height based on event duration to match the original size
-                            height: `${Math.max(
-                              ((currentActiveBlock.endTime.getTime() - currentActiveBlock.startTime.getTime()) /
-                                (1000 * 60 * 60)) *
-                                50,
-                              25
-                            )}px`,
-                            width: '100%',
-                            minWidth: '42px',
-                          }
-                        : undefined
-                    }
-                  >
-                    <EventCard
-                      block={currentActiveBlock}
-                      onClick={() => {}}
-                      compact={true}
-                      fillHeight={mobileViewMode === 'hour' ? true : false}
-                      hideTime={mobileViewMode === 'hour'}
-                      extraCompact={mobileViewMode === 'hour'}
-                      isAllDay={currentActiveBlock.allDay}
-                    />
-                  </div>
-                ) : null}
-              </DragOverlay>
             </div>
-          </DndContext>
-        );
-      }}
-    </SwipeableWeekContainer>
+          );
+        }}
+      </SwipeableWeekContainer>
+      {/* Drag Overlay - outside SwipeableWeekContainer to work across all week panels */}
+      <DragOverlay>
+        {currentActiveBlock ? (
+          <div
+            className="opacity-90"
+            style={
+              mobileViewMode === 'hour' && !currentActiveBlock.allDay
+                ? {
+                    // Calculate height based on event duration to match the original size
+                    height: `${Math.max(
+                      ((currentActiveBlock.endTime.getTime() - currentActiveBlock.startTime.getTime()) /
+                        (1000 * 60 * 60)) *
+                        50,
+                      25
+                    )}px`,
+                    width: '100%',
+                    minWidth: '42px',
+                  }
+                : undefined
+            }
+          >
+            <EventCard
+              block={currentActiveBlock}
+              onClick={() => {}}
+              compact={true}
+              fillHeight={mobileViewMode === 'hour' ? true : false}
+              hideTime={mobileViewMode === 'hour'}
+              extraCompact={mobileViewMode === 'hour'}
+              isAllDay={currentActiveBlock.allDay}
+            />
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }

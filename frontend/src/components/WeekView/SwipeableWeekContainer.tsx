@@ -19,6 +19,7 @@ interface SwipeableWeekContainerProps {
   isDisabled?: boolean;
   activeBlock?: Block | null;
   children: (weekData: WeekData) => ReactNode;
+  onAllBlocksChange?: (blocks: Block[]) => void;
 }
 
 export function SwipeableWeekContainer({
@@ -28,6 +29,7 @@ export function SwipeableWeekContainer({
   isDisabled = false,
   activeBlock,
   children,
+  onAllBlocksChange,
 }: SwipeableWeekContainerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -46,17 +48,49 @@ export function SwipeableWeekContainer({
   const prevWeekDays = getWeekDays(prevWeekDate);
   const nextWeekDays = getWeekDays(nextWeekDate);
 
-  // Measure container width for swipe calculations
+  // Merge all blocks from three weeks for drag and drop
+  const allBlocks = [...prevBlocks, ...currentBlocks, ...nextBlocks];
+
+  // Notify parent of all blocks for drag and drop
+  useEffect(() => {
+    if (onAllBlocksChange) {
+      onAllBlocksChange(allBlocks);
+    }
+  }, [allBlocks, onAllBlocksChange]);
+
+  // Measure container width for swipe calculations using ResizeObserver
   useEffect(() => {
     const updateWidth = () => {
       if (containerRef.current) {
-        setContainerWidth(containerRef.current.offsetWidth);
+        const width = containerRef.current.offsetWidth;
+        // Only update if width is valid (greater than 0)
+        if (width > 0) {
+          setContainerWidth(width);
+        }
       }
     };
 
+    // Initial measurement
     updateWidth();
-    window.addEventListener('resize', updateWidth);
-    return () => window.removeEventListener('resize', updateWidth);
+
+    // Use ResizeObserver for better performance and immediate updates
+    if (containerRef.current && typeof ResizeObserver !== 'undefined') {
+      const resizeObserver = new ResizeObserver(() => {
+        updateWidth();
+      });
+      resizeObserver.observe(containerRef.current);
+
+      // Fallback to window resize for older browsers
+      window.addEventListener('resize', updateWidth);
+      return () => {
+        resizeObserver.disconnect();
+        window.removeEventListener('resize', updateWidth);
+      };
+    } else {
+      // Fallback for browsers without ResizeObserver
+      window.addEventListener('resize', updateWidth);
+      return () => window.removeEventListener('resize', updateWidth);
+    }
   }, []);
 
   const {
@@ -115,7 +149,9 @@ export function SwipeableWeekContainer({
   // Default position shows current week (translateX = -100%)
   // When dragging right (positive offset), we reveal prev week
   // When dragging left (negative offset), we reveal next week
-  const baseOffset = -containerWidth; // Start at current week (-100%)
+  // Use window.innerWidth as fallback if containerWidth is 0 (initial render)
+  const effectiveWidth = containerWidth > 0 ? containerWidth : typeof window !== 'undefined' ? window.innerWidth : 0;
+  const baseOffset = -effectiveWidth; // Start at current week (-100%)
   // If date changed, ignore swipe offset to prevent flicker during the transition
   // Only ignore if we're not currently dragging (to allow smooth swipe animation)
   const effectiveOffsetX = dateChanged && !isDragging && !isAnimating ? 0 : swipeState.offsetX;
@@ -156,7 +192,7 @@ export function SwipeableWeekContainer({
       <div
         className="flex h-full"
         style={{
-          width: `${containerWidth * 3}px`,
+          width: `${effectiveWidth * 3}px`,
           transform: `translateX(${transformX}px)`,
           transition: isAnimating ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
           willChange: isDragging ? 'transform' : 'auto',
@@ -166,7 +202,7 @@ export function SwipeableWeekContainer({
         <div
           className="h-full overflow-hidden flex flex-col"
           style={{
-            width: `${containerWidth}px`,
+            width: `${effectiveWidth}px`,
             flexShrink: 0,
           }}
         >
@@ -177,7 +213,7 @@ export function SwipeableWeekContainer({
         <div
           className="h-full overflow-hidden flex flex-col"
           style={{
-            width: `${containerWidth}px`,
+            width: `${effectiveWidth}px`,
             flexShrink: 0,
           }}
         >
@@ -188,7 +224,7 @@ export function SwipeableWeekContainer({
         <div
           className="h-full overflow-hidden flex flex-col"
           style={{
-            width: `${containerWidth}px`,
+            width: `${effectiveWidth}px`,
             flexShrink: 0,
           }}
         >

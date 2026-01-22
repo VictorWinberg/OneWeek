@@ -2,7 +2,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { isToday, formatDayShort, formatDayNumber } from '@/utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
 import { EventCard } from '@/components/WeekView/EventCard';
-import { DesktopView } from '@/components/WeekView/DesktopView';
+import type { DesktopViewRenderProps } from '@/components/WeekView/DesktopView';
 import type { Block } from '@/types';
 
 interface DroppableDayEventsProps {
@@ -51,99 +51,82 @@ function DroppableDayEvents({ date, blocks, onBlockClick, onCreateEventForDate }
   );
 }
 
-interface DayViewProps {
-  onBlockClick: (block: Block) => void;
-  onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
-  onNextWeek?: () => void;
-  onPrevWeek?: () => void;
-  onGoToToday?: () => void;
-}
+export type DayViewProps = DesktopViewRenderProps;
 
-export function DayView({ onBlockClick, onCreateEventForDate, onNextWeek, onPrevWeek, onGoToToday }: DayViewProps) {
+export function DayView({ blocks, weekDays, onBlockClick, onCreateEventForDate }: DayViewProps) {
   return (
-    <DesktopView
-      onBlockClick={onBlockClick}
-      onCreateEventForDate={onCreateEventForDate}
-      onNextWeek={onNextWeek}
-      onPrevWeek={onPrevWeek}
-      onGoToToday={onGoToToday}
-      contentClassName="flex-1 flex flex-col overflow-hidden"
-    >
-      {({ blocks, weekDays, onBlockClick, onCreateEventForDate }) => (
-        <>
-          {/* Day Headers */}
-          <div className="flex border-b border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)]">
-            {weekDays.map((date) => {
-              const today = isToday(date);
-              return (
-                <div
-                  key={`header-${date.toISOString()}`}
-                  className={`
-                    flex-1 p-3 text-center border-r border-[var(--color-bg-tertiary)] last:border-r-0 min-w-[80px] relative
-                    ${today ? 'before:absolute before:inset-0 before:bg-[var(--color-accent)]/10' : ''}
-                  `}
-                >
-                  <div className="text-xs uppercase tracking-wide text-[var(--color-text-secondary)] relative">
-                    {formatDayShort(date)}
-                  </div>
-                  <div
-                    className={`
-                      text-2xl font-bold mt-1 relative
-                      ${today ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'}
-                    `}
-                  >
-                    {formatDayNumber(date)}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+    <>
+      {/* Day Headers */}
+      <div className="flex border-b border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)]">
+        {weekDays.map((date) => {
+          const today = isToday(date);
+          return (
+            <div
+              key={`header-${date.toISOString()}`}
+              className={`
+                flex-1 p-3 text-center border-r border-[var(--color-bg-tertiary)] last:border-r-0 min-w-[80px] relative
+                ${today ? 'before:absolute before:inset-0 before:bg-[var(--color-accent)]/10' : ''}
+              `}
+            >
+              <div className="text-xs uppercase tracking-wide text-[var(--color-text-secondary)] relative">
+                {formatDayShort(date)}
+              </div>
+              <div
+                className={`
+                  text-2xl font-bold mt-1 relative
+                  ${today ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'}
+                `}
+              >
+                {formatDayNumber(date)}
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
-          {/* All-day events section - always visible */}
-          <div className="flex border-b border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)]">
-            {weekDays.map((date) => {
-              const allDayBlocks = getBlocksForDay(blocks, date).filter((b) => b.allDay);
-              const today = isToday(date);
+      {/* All-day events section - always visible */}
+      <div className="flex border-b border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)]">
+        {weekDays.map((date) => {
+          const allDayBlocks = getBlocksForDay(blocks, date).filter((b) => b.allDay);
+          const today = isToday(date);
 
-              return (
-                <div
-                  key={`allday-${date.toISOString()}`}
-                  className={`
-                    flex-1 border-r border-[var(--color-bg-tertiary)] last:border-r-0 p-2 space-y-1 min-w-[80px] min-h-[60px]
-                    ${today ? 'bg-[var(--color-accent)]/5' : ''}
-                  `}
-                >
-                  {allDayBlocks.map((block) => (
-                    <EventCard
-                      key={`${block.calendarId}-${block.id}`}
-                      block={block}
-                      onClick={() => onBlockClick(block)}
-                      compact={true}
-                      fillHeight={false}
-                      draggable={false}
-                      isAllDay={true}
-                      hideTime={true}
-                    />
-                  ))}
-                </div>
-              );
-            })}
-          </div>
+          return (
+            <div
+              key={`allday-${date.toISOString()}`}
+              className={`
+                flex-1 border-r border-[var(--color-bg-tertiary)] last:border-r-0 p-2 space-y-1 min-w-[80px] min-h-[60px]
+                ${today ? 'bg-[var(--color-accent)]/5' : ''}
+              `}
+            >
+              {allDayBlocks.map((block) => (
+                <EventCard
+                  key={`${block.calendarId}-${block.id}`}
+                  block={block}
+                  onClick={() => onBlockClick(block)}
+                  compact={true}
+                  fillHeight={false}
+                  draggable={false}
+                  isAllDay={true}
+                  hideTime={true}
+                />
+              ))}
+            </div>
+          );
+        })}
+      </div>
 
-          {/* Timed events section */}
-          <div className="flex-1 flex overflow-x-auto">
-            {weekDays.map((date) => (
-              <DroppableDayEvents
-                key={date.toISOString()}
-                date={date}
-                blocks={blocks}
-                onBlockClick={onBlockClick}
-                onCreateEventForDate={onCreateEventForDate}
-              />
-            ))}
-          </div>
-        </>
-      )}
-    </DesktopView>
+      {/* Timed events section */}
+      <div className="flex-1 flex overflow-x-auto">
+        {weekDays.map((date) => (
+          <DroppableDayEvents
+            key={date.toISOString()}
+            date={date}
+            blocks={blocks}
+            onBlockClick={onBlockClick}
+            onCreateEventForDate={onCreateEventForDate}
+          />
+        ))}
+      </div>
+    </>
   );
 }

@@ -5,6 +5,7 @@ import { WeekViewHeader } from '@/components/WeekView/WeekViewHeader';
 import { WeekViewDragOverlay } from '@/components/WeekView/WeekViewDragOverlay';
 import { NotConfiguredState, LoadingState, ErrorState } from '@/components/WeekView/WeekViewStates';
 import type { Block } from '@/types';
+import type { ViewMode } from '@/types/viewMode';
 
 /**
  * Props passed to the render prop children function
@@ -18,7 +19,33 @@ export interface DesktopViewRenderProps {
   onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
 }
 
+/**
+ * View-specific configuration for content container and drag overlay
+ */
+const VIEW_CONFIG: Record<ViewMode, { contentClassName: string; dragOverlayProps: { compact?: boolean; hideTime?: boolean } }> = {
+  grid: {
+    contentClassName: 'flex-1 overflow-auto p-4',
+    dragOverlayProps: { compact: true },
+  },
+  day: {
+    contentClassName: 'flex-1 flex flex-col overflow-hidden',
+    dragOverlayProps: {},
+  },
+  hour: {
+    contentClassName: 'flex-1 flex flex-col overflow-hidden min-h-0',
+    dragOverlayProps: { hideTime: true },
+  },
+  user: {
+    contentClassName: 'flex-1 overflow-auto',
+    dragOverlayProps: { compact: true },
+  },
+};
+
 interface DesktopViewProps {
+  /**
+   * The current view mode - determines content container styling and drag overlay props
+   */
+  viewMode: ViewMode;
   /**
    * Callback when a block/event is clicked
    */
@@ -33,17 +60,6 @@ interface DesktopViewProps {
   onNextWeek?: () => void;
   onPrevWeek?: () => void;
   onGoToToday?: () => void;
-  /**
-   * Props for the drag overlay
-   */
-  dragOverlayProps?: {
-    compact?: boolean;
-    hideTime?: boolean;
-  };
-  /**
-   * Additional class name for the content container
-   */
-  contentClassName?: string;
   /**
    * Render prop that receives data and renders the view-specific content
    */
@@ -62,15 +78,16 @@ interface DesktopViewProps {
  * Individual views only need to provide their unique content via the render prop.
  */
 export function DesktopView({
+  viewMode,
   onBlockClick,
   onCreateEventForDate,
   onNextWeek,
   onPrevWeek,
   onGoToToday,
-  dragOverlayProps = {},
-  contentClassName = 'flex-1 overflow-auto',
   children,
 }: DesktopViewProps) {
+  const config = VIEW_CONFIG[viewMode];
+
   // Shared data fetching
   const { blocks, weekDays, selectedDate, isLoading, error, isConfigured, updateEventTime, moveEvent } =
     useWeekViewData();
@@ -98,7 +115,7 @@ export function DesktopView({
 
         {error && <ErrorState error={error} />}
 
-        <div className={contentClassName}>
+        <div className={config.contentClassName}>
           {isLoading ? (
             <LoadingState />
           ) : (
@@ -116,10 +133,9 @@ export function DesktopView({
 
       <WeekViewDragOverlay
         activeBlock={activeBlock}
-        compact={dragOverlayProps.compact}
-        hideTime={dragOverlayProps.hideTime}
+        compact={config.dragOverlayProps.compact}
+        hideTime={config.dragOverlayProps.hideTime}
       />
     </DndContext>
   );
 }
-

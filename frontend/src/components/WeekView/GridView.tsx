@@ -2,7 +2,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { formatDayShort, isToday } from '@/utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
 import { EventCard } from '@/components/WeekView/EventCard';
-import { DesktopView } from '@/components/WeekView/DesktopView';
+import type { DesktopViewRenderProps } from '@/components/WeekView/DesktopView';
 import type { Block } from '@/types';
 
 interface DroppableGridDayProps {
@@ -94,46 +94,28 @@ function DroppableGridDay({ date, dayBlocks, onBlockClick, onEmptyClick, isCurre
   );
 }
 
-interface GridViewProps {
-  onBlockClick: (block: Block) => void;
-  onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
-  onNextWeek?: () => void;
-  onPrevWeek?: () => void;
-  onGoToToday?: () => void;
-}
+export type GridViewProps = DesktopViewRenderProps;
 
-export function GridView({ onBlockClick, onCreateEventForDate, onNextWeek, onPrevWeek, onGoToToday }: GridViewProps) {
+export function GridView({ blocks, weekDays, onBlockClick, onCreateEventForDate }: GridViewProps) {
   return (
-    <DesktopView
-      onBlockClick={onBlockClick}
-      onCreateEventForDate={onCreateEventForDate}
-      onNextWeek={onNextWeek}
-      onPrevWeek={onPrevWeek}
-      onGoToToday={onGoToToday}
-      dragOverlayProps={{ compact: true }}
-      contentClassName="flex-1 overflow-auto p-4"
-    >
-      {({ blocks, weekDays, onBlockClick, onCreateEventForDate }) => (
-        <div className="grid grid-cols-4 grid-rows-2 gap-3 h-full">
-          {weekDays.map((date) => {
-            const dayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date));
-            const isCurrentDay = isToday(date);
+    <div className="grid grid-cols-4 grid-rows-2 gap-3 h-full">
+      {weekDays.map((date) => {
+        const dayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date));
+        const isCurrentDay = isToday(date);
 
-            return (
-              <DroppableGridDay
-                key={date.toISOString()}
-                date={date}
-                dayBlocks={dayBlocks}
-                onBlockClick={onBlockClick}
-                onEmptyClick={(date) => onCreateEventForDate?.(date)}
-                isCurrentDay={isCurrentDay}
-              />
-            );
-          })}
-          {/* Empty cell for 8th position */}
-          <div className="rounded-xl border border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)]/30" />
-        </div>
-      )}
-    </DesktopView>
+        return (
+          <DroppableGridDay
+            key={date.toISOString()}
+            date={date}
+            dayBlocks={dayBlocks}
+            onBlockClick={onBlockClick}
+            onEmptyClick={(date) => onCreateEventForDate?.(date)}
+            isCurrentDay={isCurrentDay}
+          />
+        );
+      })}
+      {/* Empty cell for 8th position */}
+      <div className="rounded-xl border border-[var(--color-bg-tertiary)] bg-[var(--color-bg-secondary)]/30" />
+    </div>
   );
 }

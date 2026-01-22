@@ -3,13 +3,14 @@ import { MobileGridView } from '@/components/WeekView/MobileGridView';
 import { MobileUserView } from '@/components/WeekView/MobileUserView';
 import { MobileHourView } from '@/components/WeekView/MobileHourView';
 import type { Block } from '@/types';
+import type { Calendar } from '@/types/calendar';
 import type { MobileViewMode } from '@/utils/viewModeUtils';
 
 interface MobileViewContentProps {
   weekDays: Date[];
   blocks: Block[];
   mobileViewMode: MobileViewMode;
-  calendars: Array<{ id: string; name: string }>;
+  calendars: Calendar[];
   activeBlock: Block | null;
   onBlockClick: (block: Block) => void;
   onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;

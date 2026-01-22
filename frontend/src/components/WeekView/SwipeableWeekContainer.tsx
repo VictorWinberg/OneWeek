@@ -32,7 +32,7 @@ export function SwipeableWeekContainer({
   onPrevWeek,
   onNextWeek,
   isDisabled = false,
-  activeBlock,
+  activeBlock: _activeBlock,
   children,
   onAllBlocksChange,
 }: SwipeableWeekContainerProps) {
@@ -79,7 +79,7 @@ export function SwipeableWeekContainer({
   }, [selectedDate, dateChanged]);
 
   // Handle slide change
-  const handleSlideChange = (swiper: SwiperType) => {
+  const handleSlideChange = (swiper: SwiperType): void => {
     const activeIndex = swiper.activeIndex;
 
     // Swiper slides: [0: prev, 1: current, 2: next]

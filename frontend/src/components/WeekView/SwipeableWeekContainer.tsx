@@ -1,6 +1,7 @@
 import { useRef, useEffect, useLayoutEffect, useState, useCallback, startTransition, type ReactNode } from 'react';
 import { addWeeks, subWeeks } from 'date-fns';
-import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
+import { motion, useMotionValue } from 'framer-motion';
+import type { PanInfo } from 'framer-motion';
 import { useWeekEvents } from '@/hooks/useCalendarQueries';
 import { getWeekDays } from '@/utils/dateUtils';
 import type { Block } from '@/types';
@@ -22,6 +23,8 @@ interface SwipeableWeekContainerProps {
   onAllBlocksChange?: (blocks: Block[]) => void;
 }
 
+const THRESHOLD = 100;
+
 export function SwipeableWeekContainer({
   selectedDate,
   onPrevWeek,
@@ -33,6 +36,8 @@ export function SwipeableWeekContainer({
 }: SwipeableWeekContainerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const prevWeekDate = subWeeks(selectedDate, 1);
   const nextWeekDate = addWeeks(selectedDate, 1);
@@ -89,36 +94,29 @@ export function SwipeableWeekContainer({
     }
   }, [prevBlocks, currentBlocks, nextBlocks, onAllBlocksChange]);
 
-  const {
-    swipeState,
-    isDragging,
-    isAnimating,
-    resetSwipeState,
-    containerRef: swipeContainerRef,
-  } = useSwipeNavigation({
-    onPrevWeek,
-    onNextWeek,
-    isDisabled,
-    containerWidth,
-    activeBlock,
-  });
+  // Use motion value for x position
+  const x = useMotionValue(-containerWidth);
 
-  const combinedRef = useCallback(
-    (element: HTMLDivElement | null) => {
-      containerRef.current = element;
-      swipeContainerRef(element);
-    },
-    [swipeContainerRef]
-  );
+  // Update x when containerWidth changes
+  useEffect(() => {
+    if (containerWidth > 0) {
+      x.set(-containerWidth);
+    }
+  }, [containerWidth, x]);
 
   const [prevSelectedDate, setPrevSelectedDate] = useState(selectedDate);
   const dateChanged = prevSelectedDate.getTime() !== selectedDate.getTime();
 
+  // Reset position when selectedDate changes
   useLayoutEffect(() => {
-    if (dateChanged) {
-      resetSwipeState();
+    if (dateChanged && containerWidth > 0) {
+      x.set(-containerWidth);
+      startTransition(() => {
+        setIsDragging(false);
+        setIsAnimating(false);
+      });
     }
-  }, [selectedDate, resetSwipeState, dateChanged]);
+  }, [selectedDate, dateChanged, containerWidth, x]);
 
   useEffect(() => {
     if (dateChanged) {
@@ -128,9 +126,48 @@ export function SwipeableWeekContainer({
     }
   }, [selectedDate, dateChanged]);
 
-  const baseOffset = -containerWidth;
-  const effectiveOffsetX = dateChanged && !isDragging && !isAnimating ? 0 : swipeState.offsetX;
-  const transformX = baseOffset + effectiveOffsetX;
+  // Handle drag end
+  const handleDragEnd = useCallback(
+    (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+      setIsDragging(false);
+      const offset = info.offset.x;
+      const absOffset = Math.abs(offset);
+      const velocity = info.velocity.x;
+
+      // Check threshold or velocity
+      if (absOffset >= THRESHOLD || Math.abs(velocity) > 500) {
+        setIsAnimating(true);
+        if (offset > 0 && onPrevWeek) {
+          // Dragged right -> go to previous week
+          onPrevWeek();
+        } else if (offset < 0 && onNextWeek) {
+          // Dragged left -> go to next week
+          onNextWeek();
+        }
+        setTimeout(() => {
+          setIsAnimating(false);
+        }, 300);
+      } else {
+        // Threshold not met, animate back to center
+        setIsAnimating(true);
+        x.set(-containerWidth);
+        setTimeout(() => {
+          setIsAnimating(false);
+        }, 300);
+      }
+    },
+    [containerWidth, onPrevWeek, onNextWeek, x]
+  );
+
+  // Calculate drag constraints
+  const dragConstraints = containerWidth > 0
+    ? {
+        left: -containerWidth * 2, // Can drag left to show next week
+        right: 0, // Can drag right to show previous week
+      }
+    : undefined;
+
+  // Prepare week data for each position
   const prevWeekData: WeekData = {
     date: prevWeekDate,
     weekDays: prevWeekDays,
@@ -154,22 +191,43 @@ export function SwipeableWeekContainer({
 
   return (
     <div
-      ref={combinedRef}
-      className="h-full overflow-hidden relative"
+      ref={containerRef}
+      className="flex-1 overflow-hidden relative"
       style={{
         touchAction: isDragging ? 'none' : 'pan-y',
         userSelect: isDragging ? 'none' : 'auto',
         WebkitUserSelect: isDragging ? 'none' : 'auto',
       }}
     >
-      <div
+      <motion.div
         className="flex h-full"
-        style={{
-          width: `${containerWidth * 3}px`,
-          transform: `translateX(${transformX}px)`,
-          transition: isAnimating ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-          willChange: isDragging ? 'transform' : 'auto',
+        drag="x"
+        dragConstraints={dragConstraints}
+        dragElastic={0.3}
+        dragMomentum={false}
+        onDragStart={() => {
+          if (!isDisabled) {
+            setIsDragging(true);
+          }
         }}
+        onDragEnd={isDisabled ? undefined : handleDragEnd}
+        style={{
+          x,
+          width: `${containerWidth * 3}px`,
+          cursor: isDragging ? 'grabbing' : 'grab',
+        }}
+        animate={
+          isAnimating
+            ? {
+                x: -containerWidth,
+                transition: {
+                  type: 'spring',
+                  stiffness: 300,
+                  damping: 30,
+                },
+              }
+            : undefined
+        }
       >
         {/* Previous Week */}
         <div
@@ -203,7 +261,7 @@ export function SwipeableWeekContainer({
         >
           {children(nextWeekData)}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

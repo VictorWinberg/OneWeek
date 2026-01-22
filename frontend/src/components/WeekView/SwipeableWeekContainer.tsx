@@ -30,7 +30,7 @@ export function SwipeableWeekContainer({
   onPrevWeek,
   onNextWeek,
   isDisabled = false,
-  activeBlock,
+  activeBlock: _activeBlock,
   children,
   onAllBlocksChange,
 }: SwipeableWeekContainerProps) {
@@ -136,7 +136,7 @@ export function SwipeableWeekContainer({
 
   // Drag gesture handler
   const bind = useDrag(
-    ({ down, movement: [mx], velocity: [vx], cancel }) => {
+    ({ down, movement: [mx], velocity: [vx], cancel }: { down: boolean; movement: [number, number]; velocity: [number, number]; cancel: () => void }) => {
       if (isDisabled) {
         cancel();
         return;

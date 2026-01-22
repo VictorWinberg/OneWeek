@@ -1,6 +1,5 @@
-import { useRef, useEffect, useLayoutEffect, useState, useCallback, startTransition, type ReactNode } from 'react';
+import { useRef, useEffect, useLayoutEffect, useState, startTransition, type ReactNode } from 'react';
 import { addWeeks, subWeeks } from 'date-fns';
-import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { useWeekEvents } from '@/hooks/useCalendarQueries';
 import { getWeekDays } from '@/utils/dateUtils';
 import type { Block } from '@/types';
@@ -32,7 +31,11 @@ export function SwipeableWeekContainer({
   onAllBlocksChange,
 }: SwipeableWeekContainerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const scrollTimeoutRef = useRef<number | null>(null);
 
   const prevWeekDate = subWeeks(selectedDate, 1);
   const nextWeekDate = addWeeks(selectedDate, 1);
@@ -45,6 +48,7 @@ export function SwipeableWeekContainer({
   const prevWeekDays = getWeekDays(prevWeekDate);
   const nextWeekDays = getWeekDays(nextWeekDate);
 
+  // Measure container width
   useEffect(() => {
     const updateWidth = () => {
       if (containerRef.current) {
@@ -89,48 +93,81 @@ export function SwipeableWeekContainer({
     }
   }, [prevBlocks, currentBlocks, nextBlocks, onAllBlocksChange]);
 
-  const {
-    swipeState,
-    isDragging,
-    isAnimating,
-    resetSwipeState,
-    containerRef: swipeContainerRef,
-  } = useSwipeNavigation({
-    onPrevWeek,
-    onNextWeek,
-    isDisabled,
-    containerWidth,
-    activeBlock,
-  });
-
-  const combinedRef = useCallback(
-    (element: HTMLDivElement | null) => {
-      containerRef.current = element;
-      swipeContainerRef(element);
-    },
-    [swipeContainerRef]
-  );
-
+  // Track previous date to detect changes
   const [prevSelectedDate, setPrevSelectedDate] = useState(selectedDate);
   const dateChanged = prevSelectedDate.getTime() !== selectedDate.getTime();
 
+  // Reset scroll position when selectedDate changes
   useLayoutEffect(() => {
-    if (dateChanged) {
-      resetSwipeState();
-    }
-  }, [selectedDate, resetSwipeState, dateChanged]);
-
-  useEffect(() => {
-    if (dateChanged) {
+    if (dateChanged && scrollContainerRef.current && containerWidth > 0) {
+      // Scroll to current week (middle position)
+      scrollContainerRef.current.scrollTo({
+        left: containerWidth,
+        behavior: 'auto',
+      });
       startTransition(() => {
+        setIsDragging(false);
         setPrevSelectedDate(selectedDate);
       });
     }
-  }, [selectedDate, dateChanged]);
+  }, [selectedDate, dateChanged, containerWidth]);
 
-  const baseOffset = -containerWidth;
-  const effectiveOffsetX = dateChanged && !isDragging && !isAnimating ? 0 : swipeState.offsetX;
-  const transformX = baseOffset + effectiveOffsetX;
+  // Handle scroll to detect week changes
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer || containerWidth === 0) return;
+
+    const handleScroll = () => {
+      if (isDragging) return; // Don't trigger during active drag
+
+      const scrollLeft = scrollContainer.scrollLeft;
+      const threshold = containerWidth * 0.3; // 30% threshold
+
+      // Clear any existing timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+
+      // Debounce scroll detection
+      scrollTimeoutRef.current = window.setTimeout(() => {
+        if (scrollLeft < containerWidth - threshold && onPrevWeek) {
+          // Scrolled to previous week
+          onPrevWeek();
+        } else if (scrollLeft > containerWidth + threshold && onNextWeek) {
+          // Scrolled to next week
+          onNextWeek();
+        }
+      }, 150);
+    };
+
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, [containerWidth, onPrevWeek, onNextWeek, isDragging]);
+
+  // Touch event handlers for momentum detection
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (isDisabled) return;
+
+    const touch = e.touches[0];
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      time: Date.now(),
+    };
+    setIsDragging(true);
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    touchStartRef.current = null;
+  };
+
+  // Prepare week data for each position
   const prevWeekData: WeekData = {
     date: prevWeekDate,
     weekDays: prevWeekDays,
@@ -154,29 +191,34 @@ export function SwipeableWeekContainer({
 
   return (
     <div
-      ref={combinedRef}
-      className="h-full overflow-hidden relative"
+      ref={containerRef}
+      className="flex-1 overflow-hidden relative"
       style={{
         touchAction: isDragging ? 'none' : 'pan-y',
         userSelect: isDragging ? 'none' : 'auto',
         WebkitUserSelect: isDragging ? 'none' : 'auto',
       }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
       <div
-        className="flex h-full"
+        ref={scrollContainerRef}
+        className="flex h-full overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden"
         style={{
-          width: `${containerWidth * 3}px`,
-          transform: `translateX(${transformX}px)`,
-          transition: isAnimating ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-          willChange: isDragging ? 'transform' : 'auto',
+          scrollSnapType: 'x mandatory',
+          scrollBehavior: 'smooth',
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
         }}
       >
+
         {/* Previous Week */}
         <div
-          className="h-full overflow-hidden flex flex-col"
+          className="h-full overflow-hidden flex-shrink-0"
           style={{
             width: `${containerWidth}px`,
-            flexShrink: 0,
+            scrollSnapAlign: 'start',
           }}
         >
           {children(prevWeekData)}
@@ -184,10 +226,10 @@ export function SwipeableWeekContainer({
 
         {/* Current Week */}
         <div
-          className="h-full overflow-hidden flex flex-col"
+          className="h-full overflow-hidden flex-shrink-0"
           style={{
             width: `${containerWidth}px`,
-            flexShrink: 0,
+            scrollSnapAlign: 'center',
           }}
         >
           {children(currentWeekData)}
@@ -195,10 +237,10 @@ export function SwipeableWeekContainer({
 
         {/* Next Week */}
         <div
-          className="h-full overflow-hidden flex flex-col"
+          className="h-full overflow-hidden flex-shrink-0"
           style={{
             width: `${containerWidth}px`,
-            flexShrink: 0,
+            scrollSnapAlign: 'end',
           }}
         >
           {children(nextWeekData)}

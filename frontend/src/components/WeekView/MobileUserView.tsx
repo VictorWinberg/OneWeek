@@ -1,7 +1,6 @@
 import { useDroppable } from '@dnd-kit/core';
 import { formatDayShort, isToday } from '@/utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
-import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { EventCard } from '@/components/WeekView/EventCard';
 import type { Block } from '@/types';
 import type { Calendar } from '@/types/calendar';
@@ -126,8 +125,6 @@ interface MobileUserViewProps {
   onBlockClick: (block: Block) => void;
   onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
   activeBlock?: Block | null;
-  onPrevWeek?: () => void;
-  onNextWeek?: () => void;
 }
 
 export function MobileUserView({
@@ -137,15 +134,7 @@ export function MobileUserView({
   onBlockClick,
   onCreateEventForDate,
   activeBlock,
-  onPrevWeek,
-  onNextWeek,
 }: MobileUserViewProps) {
-  const { getContainerProps } = useSwipeNavigation({
-    onPrevWeek,
-    onNextWeek,
-    activeBlock,
-  });
-  const swipeContainerProps = getContainerProps();
   // Get blocks for a specific day and calendar
   const getBlocksForDayAndCalendar = (date: Date, calendarId: string) => {
     const dayBlocks = getBlocksForDay(blocks, date);
@@ -159,7 +148,7 @@ export function MobileUserView({
   };
 
   return (
-    <div {...swipeContainerProps} className="overflow-y-auto h-full">
+    <div className="overflow-y-auto h-full">
       <div className="overflow-x-auto h-full flex flex-col">
         <table className="w-full flex-1 border-collapse text-xs flex flex-col" style={{ tableLayout: 'fixed' }}>
           <thead className="sticky top-0 z-10 bg-[var(--color-bg-secondary)] block w-full">

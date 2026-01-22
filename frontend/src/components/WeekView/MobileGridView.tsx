@@ -1,7 +1,6 @@
 import { useDroppable } from '@dnd-kit/core';
 import { formatDayShort, isToday } from '@/utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
-import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { EventCard } from '@/components/WeekView/EventCard';
 import type { Block } from '@/types';
 
@@ -96,9 +95,6 @@ interface MobileGridViewProps {
   blocks: Block[];
   onBlockClick: (block: Block) => void;
   onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
-  activeBlock?: Block | null;
-  onPrevWeek?: () => void;
-  onNextWeek?: () => void;
 }
 
 export function MobileGridView({
@@ -106,16 +102,7 @@ export function MobileGridView({
   blocks,
   onBlockClick,
   onCreateEventForDate,
-  activeBlock,
-  onPrevWeek,
-  onNextWeek,
 }: MobileGridViewProps) {
-  const { getContainerProps } = useSwipeNavigation({
-    onPrevWeek,
-    onNextWeek,
-    activeBlock,
-  });
-  const swipeContainerProps = getContainerProps();
   const handleEmptySpaceClick = (date: Date) => {
     if (onCreateEventForDate) {
       onCreateEventForDate(date);
@@ -123,7 +110,7 @@ export function MobileGridView({
   };
 
   return (
-    <div {...swipeContainerProps} className="overflow-y-auto h-full">
+    <div className="overflow-y-auto h-full">
       <div className="grid grid-cols-2 gap-2 p-2">
         {weekDays.map((date) => {
           const dayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date));

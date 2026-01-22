@@ -11,6 +11,7 @@ import { MobileListView } from '@/components/WeekView/MobileListView';
 import { MobileGridView } from '@/components/WeekView/MobileGridView';
 import { MobileUserView } from '@/components/WeekView/MobileUserView';
 import { MobileHourView } from '@/components/WeekView/MobileHourView';
+import { SwipeableWeekContainer } from '@/components/WeekView/SwipeableWeekContainer';
 import type { Block } from '@/types';
 
 interface MobileViewProps {
@@ -47,6 +48,9 @@ export function MobileView({
 
   // Compute current mobile view mode from URL mode
   const mobileViewMode = urlToMobileViewMode(urlViewMode, 'grid');
+  
+  // Determine if SwipeableWeekContainer should be used (only for grid and list modes)
+  const useSwipeableContainer = mobileViewMode === 'grid' || mobileViewMode === 'list';
 
   // Handle view mode changes - all modes now map directly to URL
   const handleViewModeChange = (newMobileMode: MobileViewMode) => {
@@ -168,48 +172,75 @@ export function MobileView({
         )}
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden">
-          {mobileViewMode === 'list' ? (
-            <MobileListView
-              weekDays={weekDays}
-              blocks={blocks}
-              onBlockClick={onBlockClick}
-              onCreateEventForDate={onCreateEventForDate}
-              activeBlock={activeBlock}
-              onPrevWeek={onPrevWeek}
-              onNextWeek={onNextWeek}
-            />
-          ) : mobileViewMode === 'grid' ? (
-            <MobileGridView
-              weekDays={weekDays}
-              blocks={blocks}
-              onBlockClick={onBlockClick}
-              onCreateEventForDate={onCreateEventForDate}
-              activeBlock={activeBlock}
-              onPrevWeek={onPrevWeek}
-              onNextWeek={onNextWeek}
-            />
-          ) : mobileViewMode === 'hour' ? (
-            <MobileHourView
-              weekDays={weekDays}
-              blocks={blocks}
-              onBlockClick={onBlockClick}
-              activeBlock={activeBlock}
-              onCreateEventForDate={onCreateEventForDate}
-            />
-          ) : (
-            <MobileUserView
-              weekDays={weekDays}
-              blocks={blocks}
-              calendars={calendars}
-              onBlockClick={onBlockClick}
-              onCreateEventForDate={onCreateEventForDate}
-              activeBlock={activeBlock}
-              onPrevWeek={onPrevWeek}
-              onNextWeek={onNextWeek}
-            />
-          )}
-        </div>
+        {useSwipeableContainer ? (
+          <SwipeableWeekContainer
+            selectedDate={selectedDate}
+            onPrevWeek={onPrevWeek}
+            onNextWeek={onNextWeek}
+          >
+            {({ weekDays: swipeWeekDays, blocks: swipeBlocks, isLoading: swipeLoading }) => {
+              if (swipeLoading) {
+                return (
+                  <div className="flex-1 flex items-center justify-center p-8">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-8 h-8 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
+                      <p className="text-[var(--color-text-secondary)]">Laddar events...</p>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="flex-1 overflow-hidden">
+                  {mobileViewMode === 'list' ? (
+                    <MobileListView
+                      weekDays={swipeWeekDays}
+                      blocks={swipeBlocks}
+                      onBlockClick={onBlockClick}
+                      onCreateEventForDate={onCreateEventForDate}
+                      activeBlock={activeBlock}
+                      onPrevWeek={onPrevWeek}
+                      onNextWeek={onNextWeek}
+                    />
+                  ) : (
+                    <MobileGridView
+                      weekDays={swipeWeekDays}
+                      blocks={swipeBlocks}
+                      onBlockClick={onBlockClick}
+                      onCreateEventForDate={onCreateEventForDate}
+                      activeBlock={activeBlock}
+                      onPrevWeek={onPrevWeek}
+                      onNextWeek={onNextWeek}
+                    />
+                  )}
+                </div>
+              );
+            }}
+          </SwipeableWeekContainer>
+        ) : (
+          <div className="flex-1 overflow-hidden">
+            {mobileViewMode === 'hour' ? (
+              <MobileHourView
+                weekDays={weekDays}
+                blocks={blocks}
+                onBlockClick={onBlockClick}
+                activeBlock={activeBlock}
+                onCreateEventForDate={onCreateEventForDate}
+              />
+            ) : (
+              <MobileUserView
+                weekDays={weekDays}
+                blocks={blocks}
+                calendars={calendars}
+                onBlockClick={onBlockClick}
+                onCreateEventForDate={onCreateEventForDate}
+                activeBlock={activeBlock}
+                onPrevWeek={onPrevWeek}
+                onNextWeek={onNextWeek}
+              />
+            )}
+          </div>
+        )}
 
         {/* Drag Overlay */}
         <DragOverlay>

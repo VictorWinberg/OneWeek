@@ -3,7 +3,7 @@ import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
 import { usePrefetchAdjacentWeeks, useUpdateEvent, useMoveEvent } from '@/hooks/useCalendarQueries';
-import { formatWeekHeader, getWeekNumber } from '@/utils/dateUtils';
+import { formatWeekHeader, getWeekNumber, isCurrentWeek } from '@/utils/dateUtils';
 import { urlToMobileViewMode, mobileToUrlViewMode, type MobileViewMode, type UrlViewMode } from '@/utils/viewModeUtils';
 import { useMobileDragAndDrop } from '@/hooks/useDragAndDrop';
 import { EventCard } from '@/components/WeekView/EventCard';
@@ -80,6 +80,7 @@ export function MobileView({
       >
         {({ date, weekDays, blocks, isLoading }) => {
           const weekNumber = getWeekNumber(date);
+          const isCurrentWeekDisplayed = isCurrentWeek(date);
 
           if (isLoading) {
             return (
@@ -110,7 +111,11 @@ export function MobileView({
                   <div className="flex flex-col items-center">
                     <h1
                       onClick={onGoToToday}
-                      className="text-lg font-bold text-[var(--color-text-primary)] cursor-pointer hover:text-[var(--color-accent)] transition-colors"
+                      className={`text-lg font-bold cursor-pointer transition-colors ${
+                        isCurrentWeekDisplayed
+                          ? 'text-[var(--color-accent)]'
+                          : 'text-[var(--color-text-primary)] hover:text-[var(--color-accent)]'
+                      }`}
                     >
                       {formatWeekHeader(date)}
                     </h1>

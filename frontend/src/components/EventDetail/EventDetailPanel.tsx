@@ -344,13 +344,11 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
       }
 
       let eventIdToUpdate = block.id;
-      let shouldClosePanel = false;
 
       if (mode === 'this') {
         eventIdToUpdate = block.id;
       } else if (mode === 'all' || mode === 'future') {
         eventIdToUpdate = block.recurringEventId || block.id;
-        shouldClosePanel = true;
       }
 
       await updateEvent.mutateAsync({
@@ -364,21 +362,8 @@ export function EventDetailPanel({ block, onClose }: EventDetailPanelProps) {
         updateMode: mode,
       });
 
-      if (shouldClosePanel) {
-        onClose();
-      } else {
-        selectBlock({
-          ...block,
-          title: editTitle.trim(),
-          description: editDescription.trim() || undefined,
-          startTime: startDateTime,
-          endTime: endDateTime,
-        });
-
-        setError(null);
-      }
-
       setShowRecurringUpdateDialog(false);
+      onClose();
     } catch (err) {
       setError('Kunde inte uppdatera event');
       console.error('Failed to update event:', err);

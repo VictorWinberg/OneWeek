@@ -61,37 +61,42 @@ export function useSwipeNavigation({
   const [isDragging, setIsDragging] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
 
-  const handleTouchStart = useCallback(
-    (e: TouchEvent) => {
-      // Don't interfere if disabled or no navigation handlers
-      if (isDisabled || (!onPrevWeek && !onNextWeek)) return;
+  // Use refs to store callback values to avoid recreating event listeners
+  const callbacksRef = useRef({ onPrevWeek, onNextWeek, activeBlock, isDisabled });
+  useEffect(() => {
+    callbacksRef.current = { onPrevWeek, onNextWeek, activeBlock, isDisabled };
+  }, [onPrevWeek, onNextWeek, activeBlock, isDisabled]);
 
-      // Don't start swipe if a block is being dragged
-      if (activeBlock) return;
+  const handleTouchStart = useCallback((e: TouchEvent) => {
+    const { isDisabled, onPrevWeek, onNextWeek, activeBlock } = callbacksRef.current;
+    
+    // Don't interfere if disabled or no navigation handlers
+    if (isDisabled || (!onPrevWeek && !onNextWeek)) return;
 
-      // Don't start swipe if touching an interactive element
-      const target = e.target as HTMLElement;
-      if (
-        target.closest('button') ||
-        target.closest('a') ||
-        target.closest('[role="button"]') ||
-        target.closest('[data-event-card]')
-      ) {
-        return;
-      }
+    // Don't start swipe if a block is being dragged
+    if (activeBlock) return;
 
-      const touch = e.touches[0];
-      swipeStateRef.current = {
-        startX: touch.clientX,
-        startY: touch.clientY,
-        currentX: touch.clientX,
-        isSwiping: false,
-      };
-      setIsDragging(false);
-      setIsAnimating(false);
-    },
-    [onPrevWeek, onNextWeek, activeBlock, isDisabled]
-  );
+    // Don't start swipe if touching an interactive element
+    const target = e.target as HTMLElement;
+    if (
+      target.closest('button') ||
+      target.closest('a') ||
+      target.closest('[role="button"]') ||
+      target.closest('[data-event-card]')
+    ) {
+      return;
+    }
+
+    const touch = e.touches[0];
+    swipeStateRef.current = {
+      startX: touch.clientX,
+      startY: touch.clientY,
+      currentX: touch.clientX,
+      isSwiping: false,
+    };
+    setIsDragging(false);
+    setIsAnimating(false);
+  }, []);
 
   const handleTouchMove = useCallback(
     (e: TouchEvent) => {
@@ -135,6 +140,7 @@ export function useSwipeNavigation({
   const handleTouchEnd = useCallback(() => {
     if (!swipeStateRef.current) return;
 
+    const { onPrevWeek, onNextWeek } = callbacksRef.current;
     const deltaX = swipeStateRef.current.currentX - swipeStateRef.current.startX;
     const absDeltaX = Math.abs(deltaX);
 
@@ -161,7 +167,7 @@ export function useSwipeNavigation({
     // Reset swipe state
     swipeStateRef.current = null;
     setSwipeState({ offsetX: 0 });
-  }, [threshold, onPrevWeek, onNextWeek]);
+  }, [threshold]);
 
   // Attach native event listeners with passive: false to allow preventDefault
   useEffect(() => {

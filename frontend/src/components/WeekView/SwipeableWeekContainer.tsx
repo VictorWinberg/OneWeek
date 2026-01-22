@@ -86,10 +86,17 @@ export function SwipeableWeekContainer({
   }, []);
 
   // Merge all blocks and notify parent when they change
+  // Use a ref to track if blocks actually changed to avoid infinite loops
+  const prevBlocksRef = useRef<string>('');
   useEffect(() => {
     if (onAllBlocksChange) {
       const allBlocks = [...prevBlocks, ...currentBlocks, ...nextBlocks];
-      onAllBlocksChange(allBlocks);
+      // Create a simple hash to detect actual changes
+      const blocksKey = `${prevBlocks.length}-${currentBlocks.length}-${nextBlocks.length}`;
+      if (prevBlocksRef.current !== blocksKey) {
+        prevBlocksRef.current = blocksKey;
+        onAllBlocksChange(allBlocks);
+      }
     }
   }, [prevBlocks, currentBlocks, nextBlocks, onAllBlocksChange]);
 

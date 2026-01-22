@@ -69,7 +69,7 @@ export function useSwipeNavigation({
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
     const { isDisabled, onPrevWeek, onNextWeek, activeBlock } = callbacksRef.current;
-    
+
     // Don't interfere if disabled or no navigation handlers
     if (isDisabled || (!onPrevWeek && !onNextWeek)) return;
 
@@ -124,7 +124,8 @@ export function useSwipeNavigation({
       }
 
       // Prevent default scrolling during horizontal swipe
-      if (swipeStateRef.current.isSwiping && absDeltaX > minHorizontalMovement) {
+      // Only preventDefault if the event is cancelable (not already scrolling)
+      if (swipeStateRef.current.isSwiping && absDeltaX > minHorizontalMovement && e.cancelable) {
         e.preventDefault();
       }
 

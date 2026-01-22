@@ -342,14 +342,6 @@ export function SwipeableWeekContainer({
     }
   }, [selectedDate, dateChanged]);
 
-  useEffect(() => {
-    if (dateChanged) {
-      startTransition(() => {
-        setPrevSelectedDate(selectedDate);
-      });
-    }
-  }, [selectedDate, dateChanged]);
-
   // Cleanup animations on unmount
   useEffect(() => {
     return () => {

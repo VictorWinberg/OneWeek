@@ -44,8 +44,8 @@ export function MobileView({
   const [activeBlock, setActiveBlock] = useState<Block | null>(null);
   const [allBlocks, setAllBlocks] = useState<Block[]>([]);
 
-  // Use mobile drag and drop hook with all blocks from three weeks (prev/current/next)
-  // This ensures drag and drop works from any week position
+  // Use mobile drag and drop hook with ALL weeks' blocks (merged from SwipeableWeekContainer)
+  // This ensures drag and drop works from any week position (prev/current/next)
   const { activeBlock: currentActiveBlock, handleDragStart, handleDragEnd, sensors } = useMobileDragAndDrop(
     allBlocks,
     {
@@ -217,7 +217,7 @@ export function MobileView({
           );
         }}
       </SwipeableWeekContainer>
-      {/* Drag Overlay - outside SwipeableWeekContainer to work across all week panels */}
+      {/* Drag Overlay must be outside SwipeableWeekContainer but inside DndContext */}
       <DragOverlay>
         {currentActiveBlock ? (
           <div

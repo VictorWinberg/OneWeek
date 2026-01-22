@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
-import { usePrefetchAdjacentWeeks, useUpdateEvent, useMoveEvent, useWeekEvents } from '@/hooks/useCalendarQueries';
+import { usePrefetchAdjacentWeeks, useUpdateEvent, useMoveEvent } from '@/hooks/useCalendarQueries';
 import { formatWeekHeader, getWeekNumber } from '@/utils/dateUtils';
 import { urlToMobileViewMode, mobileToUrlViewMode, type MobileViewMode, type UrlViewMode } from '@/utils/viewModeUtils';
 import { useMobileDragAndDrop } from '@/hooks/useDragAndDrop';

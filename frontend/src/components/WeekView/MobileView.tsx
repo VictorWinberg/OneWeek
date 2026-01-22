@@ -3,7 +3,7 @@ import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
 import { useWeekEvents, usePrefetchAdjacentWeeks, useUpdateEvent, useMoveEvent } from '@/hooks/useCalendarQueries';
-import { formatWeekHeader, getWeekNumber, getWeekDays } from '@/utils/dateUtils';
+import { formatWeekHeader, getWeekNumber } from '@/utils/dateUtils';
 import { urlToMobileViewMode, mobileToUrlViewMode, type MobileViewMode, type UrlViewMode } from '@/utils/viewModeUtils';
 import { useMobileDragAndDrop } from '@/hooks/useDragAndDrop';
 import { EventCard } from '@/components/WeekView/EventCard';
@@ -11,6 +11,7 @@ import { MobileListView } from '@/components/WeekView/MobileListView';
 import { MobileGridView } from '@/components/WeekView/MobileGridView';
 import { MobileUserView } from '@/components/WeekView/MobileUserView';
 import { MobileHourView } from '@/components/WeekView/MobileHourView';
+import { SwipeableWeekContainer } from '@/components/WeekView/SwipeableWeekContainer';
 import type { Block } from '@/types';
 
 interface MobileViewProps {
@@ -35,15 +36,14 @@ export function MobileView({
   const { selectedDate } = useCalendarStore();
   const { config } = useConfigStore();
 
-  // Fetch events using React Query (for drag and drop)
-  const { data: blocks = [], isLoading, error } = useWeekEvents(selectedDate);
+  // Fetch current week events for drag and drop hook
+  const { data: currentBlocks = [] } = useWeekEvents(selectedDate);
   const { prefetch } = usePrefetchAdjacentWeeks(selectedDate);
   const updateEventTime = useUpdateEvent();
   const moveEvent = useMoveEvent();
 
   const weekNumber = getWeekNumber(selectedDate);
   const calendars = config.calendars;
-  const weekDays = getWeekDays(selectedDate);
 
   // Compute current mobile view mode from URL mode
   const mobileViewMode = urlToMobileViewMode(urlViewMode, 'grid');
@@ -57,28 +57,15 @@ export function MobileView({
   };
 
   // Use mobile drag and drop hook
-  const { activeBlock, handleDragStart, handleDragEnd, sensors } = useMobileDragAndDrop(blocks, {
+  const { activeBlock, handleDragStart, handleDragEnd, sensors } = useMobileDragAndDrop(currentBlocks, {
     updateEventTime,
     moveEvent,
   });
 
-  // Prefetch adjacent weeks when data loads
+  // Prefetch adjacent weeks
   useEffect(() => {
-    if (!isLoading && blocks.length >= 0) {
-      prefetch();
-    }
-  }, [isLoading, prefetch, blocks.length]);
-
-  if (isLoading) {
-    return (
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
-          <p className="text-[var(--color-text-secondary)]">Laddar events...</p>
-        </div>
-      </div>
-    );
-  }
+    prefetch();
+  }, [prefetch]);
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -160,55 +147,71 @@ export function MobileView({
           </div>
         </header>
 
-        {/* Error */}
-        {error && (
-          <div className="p-4 bg-red-900/30 border-b border-red-700 text-red-200 text-sm">
-            {error instanceof Error ? error.message : 'Failed to load events'}
-          </div>
-        )}
-
-        {/* Content */}
+        {/* Content - Swipeable area only, header stays fixed */}
         <div className="flex-1 overflow-hidden">
-          {mobileViewMode === 'list' ? (
-            <MobileListView
-              weekDays={weekDays}
-              blocks={blocks}
-              onBlockClick={onBlockClick}
-              onCreateEventForDate={onCreateEventForDate}
-              activeBlock={activeBlock}
-              onPrevWeek={onPrevWeek}
-              onNextWeek={onNextWeek}
-            />
-          ) : mobileViewMode === 'grid' ? (
-            <MobileGridView
-              weekDays={weekDays}
-              blocks={blocks}
-              onBlockClick={onBlockClick}
-              onCreateEventForDate={onCreateEventForDate}
-              activeBlock={activeBlock}
-              onPrevWeek={onPrevWeek}
-              onNextWeek={onNextWeek}
-            />
-          ) : mobileViewMode === 'hour' ? (
-            <MobileHourView
-              weekDays={weekDays}
-              blocks={blocks}
-              onBlockClick={onBlockClick}
-              activeBlock={activeBlock}
-              onCreateEventForDate={onCreateEventForDate}
-            />
-          ) : (
-            <MobileUserView
-              weekDays={weekDays}
-              blocks={blocks}
-              calendars={calendars}
-              onBlockClick={onBlockClick}
-              onCreateEventForDate={onCreateEventForDate}
-              activeBlock={activeBlock}
-              onPrevWeek={onPrevWeek}
-              onNextWeek={onNextWeek}
-            />
-          )}
+          <SwipeableWeekContainer
+            selectedDate={selectedDate}
+            onPrevWeek={onPrevWeek}
+            onNextWeek={onNextWeek}
+          >
+            {({ weekDays, blocks, isLoading }) => {
+              if (isLoading) {
+                return (
+                  <div className="flex-1 flex items-center justify-center p-8">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-8 h-8 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
+                      <p className="text-[var(--color-text-secondary)]">Laddar events...</p>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <>
+                  {mobileViewMode === 'list' ? (
+                    <MobileListView
+                      weekDays={weekDays}
+                      blocks={blocks}
+                      onBlockClick={onBlockClick}
+                      onCreateEventForDate={onCreateEventForDate}
+                      activeBlock={activeBlock}
+                      onPrevWeek={onPrevWeek}
+                      onNextWeek={onNextWeek}
+                    />
+                  ) : mobileViewMode === 'grid' ? (
+                    <MobileGridView
+                      weekDays={weekDays}
+                      blocks={blocks}
+                      onBlockClick={onBlockClick}
+                      onCreateEventForDate={onCreateEventForDate}
+                      activeBlock={activeBlock}
+                      onPrevWeek={onPrevWeek}
+                      onNextWeek={onNextWeek}
+                    />
+                  ) : mobileViewMode === 'hour' ? (
+                    <MobileHourView
+                      weekDays={weekDays}
+                      blocks={blocks}
+                      onBlockClick={onBlockClick}
+                      activeBlock={activeBlock}
+                      onCreateEventForDate={onCreateEventForDate}
+                    />
+                  ) : (
+                    <MobileUserView
+                      weekDays={weekDays}
+                      blocks={blocks}
+                      calendars={calendars}
+                      onBlockClick={onBlockClick}
+                      onCreateEventForDate={onCreateEventForDate}
+                      activeBlock={activeBlock}
+                      onPrevWeek={onPrevWeek}
+                      onNextWeek={onNextWeek}
+                    />
+                  )}
+                </>
+              );
+            }}
+          </SwipeableWeekContainer>
         </div>
 
         {/* Drag Overlay */}

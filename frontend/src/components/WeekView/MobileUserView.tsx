@@ -140,7 +140,7 @@ export function MobileUserView({
   onPrevWeek,
   onNextWeek,
 }: MobileUserViewProps) {
-  const { getContainerProps } = useSwipeNavigation({
+  const { swipeState, isDragging, isAnimating, getContainerProps } = useSwipeNavigation({
     onPrevWeek,
     onNextWeek,
     activeBlock,
@@ -159,8 +159,15 @@ export function MobileUserView({
   };
 
   return (
-    <div {...swipeContainerProps} className="overflow-y-auto h-full">
-      <div className="overflow-x-auto h-full flex flex-col">
+    <div {...swipeContainerProps} className="overflow-y-auto h-full overflow-x-hidden relative">
+      <div
+        className="overflow-x-auto h-full flex flex-col"
+        style={{
+          transform: `translateX(${swipeState.offsetX}px)`,
+          transition: isAnimating ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+          willChange: isDragging ? 'transform' : 'auto',
+        }}
+      >
         <table className="w-full flex-1 border-collapse text-xs flex flex-col" style={{ tableLayout: 'fixed' }}>
           <thead className="sticky top-0 z-10 bg-[var(--color-bg-secondary)] block w-full">
             <tr className="flex w-full">

@@ -142,6 +142,7 @@ export function useSwipeNavigation({
 
     // Check if threshold is met
     if (swipeStateRef.current.isSwiping && absDeltaX >= threshold) {
+      // Enable animation transition first
       setIsAnimating(true);
 
       if (deltaX > 0 && onPrevWeek) {
@@ -152,15 +153,25 @@ export function useSwipeNavigation({
         onNextWeek();
       }
 
-      // Reset animation state after transition
+      // Reset offsetX to 0 in the next frame to trigger slide-back animation
+      // The transition will animate from current offsetX to 0
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setSwipeState({ offsetX: 0 });
+        });
+      });
+
+      // Reset animation state after transition completes
       setTimeout(() => {
         setIsAnimating(false);
       }, 300);
+    } else {
+      // If threshold not met, reset immediately
+      setSwipeState({ offsetX: 0 });
     }
 
-    // Reset swipe state
+    // Always clear the ref
     swipeStateRef.current = null;
-    setSwipeState({ offsetX: 0 });
   }, [threshold, onPrevWeek, onNextWeek]);
 
   const resetSwipeState = useCallback(() => {

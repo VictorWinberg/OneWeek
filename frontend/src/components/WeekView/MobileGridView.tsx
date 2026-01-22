@@ -110,7 +110,7 @@ export function MobileGridView({
   onPrevWeek,
   onNextWeek,
 }: MobileGridViewProps) {
-  const { getContainerProps } = useSwipeNavigation({
+  const { swipeState, isDragging, isAnimating, getContainerProps } = useSwipeNavigation({
     onPrevWeek,
     onNextWeek,
     activeBlock,
@@ -123,8 +123,15 @@ export function MobileGridView({
   };
 
   return (
-    <div {...swipeContainerProps} className="overflow-y-auto h-full">
-      <div className="grid grid-cols-2 gap-2 p-2">
+    <div {...swipeContainerProps} className="overflow-y-auto h-full overflow-x-hidden relative">
+      <div
+        className="grid grid-cols-2 gap-2 p-2"
+        style={{
+          transform: `translateX(${swipeState.offsetX}px)`,
+          transition: isAnimating ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+          willChange: isDragging ? 'transform' : 'auto',
+        }}
+      >
         {weekDays.map((date) => {
           const dayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date));
           const isCurrentDay = isToday(date);

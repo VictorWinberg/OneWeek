@@ -110,7 +110,7 @@ export function MobileListView({
     }
   };
 
-  const { getContainerProps } = useSwipeNavigation({
+  const { swipeState, isDragging, isAnimating, getContainerProps } = useSwipeNavigation({
     onPrevWeek,
     onNextWeek,
     activeBlock,
@@ -118,8 +118,15 @@ export function MobileListView({
   const swipeContainerProps = getContainerProps();
 
   return (
-    <div {...swipeContainerProps} className="overflow-y-auto h-full">
-      {weekDays.map((date) => {
+    <div {...swipeContainerProps} className="overflow-y-auto h-full overflow-x-hidden relative">
+      <div
+        style={{
+          transform: `translateX(${swipeState.offsetX}px)`,
+          transition: isAnimating ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+          willChange: isDragging ? 'transform' : 'auto',
+        }}
+      >
+        {weekDays.map((date) => {
         const dayBlocks = sortBlocksForList(getBlocksForDay(blocks, date));
         const isCurrentDay = isToday(date);
 
@@ -135,6 +142,7 @@ export function MobileListView({
           />
         );
       })}
+      </div>
     </div>
   );
 }

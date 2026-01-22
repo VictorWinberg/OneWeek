@@ -1,5 +1,5 @@
 import { useDraggable } from '@dnd-kit/core';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import type { Block } from '@/types';
 import { getInitial } from '@/types';
 import { useConfigStore } from '@/stores/configStore';
@@ -40,10 +40,13 @@ export function EventCard({
     startTime: number;
   } | null>(null);
 
-  // Setup draggable
+  // Track if we're in a fast swipe to disable drag
+  const [isFastSwipe, setIsFastSwipe] = useState(false);
+
+  // Setup draggable - disable if it's a fast swipe
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `${block.calendarId}-${block.id}`,
-    disabled: !draggable || !person,
+    disabled: !draggable || !person || isFastSwipe,
   });
 
   const style = {
@@ -51,7 +54,8 @@ export function EventCard({
     opacity: isDragging ? 0.3 : 1,
     backgroundColor: person ? `color-mix(in srgb, ${person.color} 25%, var(--color-bg-secondary))` : 'transparent',
     borderLeft: person ? `4px solid ${person.color}` : 'none',
-    touchAction: draggable ? 'none' : 'auto',
+    // Use pan-x to prevent drag during fast swipes, otherwise allow drag
+    touchAction: isFastSwipe ? 'pan-x' : draggable ? 'none' : 'auto',
   } as React.CSSProperties;
 
   if (!person) {
@@ -68,6 +72,7 @@ export function EventCard({
   // Handle touch events to detect fast swipes and prevent drag
   const handleTouchStart = (e: React.TouchEvent) => {
     if (!draggable) return;
+    setIsFastSwipe(false); // Reset fast swipe state
     const touch = e.touches[0];
     touchStateRef.current = {
       startX: touch.clientX,
@@ -84,15 +89,25 @@ export function EventCard({
     const deltaY = Math.abs(touch.clientY - touchStateRef.current.startY);
     const elapsedTime = Date.now() - touchStateRef.current.startTime;
 
+    // Early detection: if horizontal movement is very significant compared to vertical, it's likely a fast swipe
+    // Check this first before calculating velocity to catch fast swipes immediately
+    if (deltaX >= 30 && deltaX > deltaY * 2 && elapsedTime < 200) {
+      setIsFastSwipe(true); // Disable draggable and change touch-action to pan-x immediately
+      e.preventDefault();
+      e.stopPropagation();
+      touchStateRef.current = null;
+      return;
+    }
+
     // Check if this is a fast horizontal swipe (high velocity and significant horizontal movement)
     // Fast swipe threshold: velocity >= 0.5 px/ms and horizontal movement >= 20px, or very significant horizontal movement
     const velocity = elapsedTime > 0 ? deltaX / elapsedTime : 0;
-    const isFastSwipe =
-      (velocity >= 0.5 && deltaX >= 20 && deltaX > deltaY * 2) ||
-      (deltaX >= 40 && deltaX > deltaY * 2); // Very significant horizontal movement
+    const detectedFastSwipe =
+      (velocity >= 0.5 && deltaX >= 20 && deltaX > deltaY * 2) || (deltaX >= 40 && deltaX > deltaY * 2); // Very significant horizontal movement
 
     // If it's a fast swipe, prevent the drag from starting
-    if (isFastSwipe) {
+    if (detectedFastSwipe) {
+      setIsFastSwipe(true); // Disable draggable and change touch-action to pan-x
       e.preventDefault();
       e.stopPropagation();
       // Clear touch state to prevent drag
@@ -102,6 +117,8 @@ export function EventCard({
 
   const handleTouchEnd = () => {
     touchStateRef.current = null;
+    // Reset fast swipe state after a short delay to allow drag to work again
+    setTimeout(() => setIsFastSwipe(false), 100);
   };
 
   return (
@@ -113,7 +130,7 @@ export function EventCard({
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      {...(draggable ? { ...listeners, ...attributes } : {})}
+      {...(draggable && !isFastSwipe ? { ...listeners, ...attributes } : { ...attributes })}
       className={`
         group relative w-full text-left rounded-lg transition-all duration-200
         flex flex-col items-start justify-start select-none

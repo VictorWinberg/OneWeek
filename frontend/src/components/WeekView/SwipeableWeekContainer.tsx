@@ -26,7 +26,7 @@ export function SwipeableWeekContainer({
   onPrevWeek,
   onNextWeek,
   isDisabled = false,
-  activeBlock,
+  activeBlock: _activeBlock,
   children,
   onAllBlocksChange,
 }: SwipeableWeekContainerProps) {

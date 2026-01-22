@@ -11,6 +11,7 @@ import {
   isToday,
   formatDayShort,
   formatDayNumber,
+  isCurrentWeek,
 } from '@/utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
 import { EventCard } from '@/components/WeekView/EventCard';
@@ -98,6 +99,7 @@ export function DayView({ onBlockClick, onCreateEventForDate, onNextWeek, onPrev
 
   const weekDays = getWeekDays(selectedDate);
   const weekNumber = getWeekNumber(selectedDate);
+  const isCurrentWeekDisplayed = isCurrentWeek(selectedDate);
 
   const handleDragStart = (event: DragStartEvent) => {
     const blockId = String(event.active.id);
@@ -156,7 +158,11 @@ export function DayView({ onBlockClick, onCreateEventForDate, onNextWeek, onPrev
           <div className="flex items-center gap-4">
             <h1
               onClick={onGoToToday}
-              className="text-xl font-bold text-[var(--color-text-primary)] cursor-pointer hover:text-[var(--color-accent)] transition-colors"
+              className={`text-xl font-bold cursor-pointer transition-colors ${
+                isCurrentWeekDisplayed
+                  ? 'text-[var(--color-accent)]'
+                  : 'text-[var(--color-text-primary)] hover:text-[var(--color-accent)]'
+              }`}
             >
               {formatWeekHeader(selectedDate)}
             </h1>

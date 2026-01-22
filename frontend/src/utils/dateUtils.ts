@@ -1,4 +1,4 @@
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay, addDays, getWeek, parseISO, isValid } from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay, addDays, getWeek, parseISO, isValid, isWithinInterval } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
 export function getWeekDays(date: Date): Date[] {
@@ -46,6 +46,16 @@ export { isToday, isSameDay, addDays };
 
 export function getWeekNumber(date: Date): number {
   return getWeek(date, { weekStartsOn: 1, firstWeekContainsDate: 4 });
+}
+
+/**
+ * Check if a given week contains today's date
+ */
+export function isCurrentWeek(date: Date): boolean {
+  const today = new Date();
+  const weekStart = startOfWeek(date, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(date, { weekStartsOn: 1 });
+  return isWithinInterval(today, { start: weekStart, end: weekEnd });
 }
 
 /**

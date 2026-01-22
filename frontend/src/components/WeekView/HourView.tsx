@@ -3,7 +3,7 @@ import { DndContext, DragOverlay, useDroppable } from '@dnd-kit/core';
 import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
 import { useWeekEvents, usePrefetchAdjacentWeeks, useUpdateEvent } from '@/hooks/useCalendarQueries';
-import { getWeekDays, formatWeekHeader, getWeekNumber, formatDayShort, isToday } from '@/utils/dateUtils';
+import { getWeekDays, formatWeekHeader, getWeekNumber, formatDayShort, isToday, isCurrentWeek } from '@/utils/dateUtils';
 import { getBlocksForDay, calculateBlockPosition } from '@/services/calendarNormalizer';
 import { calculateNextHourTimeSlot } from '@/utils/timeUtils';
 import { useDesktopDragAndDrop } from '@/hooks/useDragAndDrop';
@@ -91,6 +91,7 @@ export function HourView({ onBlockClick, onCreateEventForDate, onNextWeek, onPre
 
   const weekDays = getWeekDays(selectedDate);
   const weekNumber = getWeekNumber(selectedDate);
+  const isCurrentWeekDisplayed = isCurrentWeek(selectedDate);
 
   // Generate hours array (8-20 visible, but support scrolling to 0-23)
   const hours = Array.from({ length: 24 }, (_, i) => i);
@@ -122,7 +123,11 @@ export function HourView({ onBlockClick, onCreateEventForDate, onNextWeek, onPre
           <div className="flex items-center gap-4">
             <h1
               onClick={onGoToToday}
-              className="text-xl font-bold text-[var(--color-text-primary)] cursor-pointer hover:text-[var(--color-accent)] transition-colors"
+              className={`text-xl font-bold cursor-pointer transition-colors ${
+                isCurrentWeekDisplayed
+                  ? 'text-[var(--color-accent)]'
+                  : 'text-[var(--color-text-primary)] hover:text-[var(--color-accent)]'
+              }`}
             >
               {formatWeekHeader(selectedDate)}
             </h1>

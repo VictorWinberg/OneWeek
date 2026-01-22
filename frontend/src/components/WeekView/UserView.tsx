@@ -4,7 +4,7 @@ import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { useCalendarStore } from '@/stores/calendarStore';
 import { useConfigStore } from '@/stores/configStore';
 import { useWeekEvents, usePrefetchAdjacentWeeks, useUpdateEvent, useMoveEvent } from '@/hooks/useCalendarQueries';
-import { getWeekDays, formatWeekHeader, getWeekNumber, formatDayShort, isToday } from '@/utils/dateUtils';
+import { getWeekDays, formatWeekHeader, getWeekNumber, formatDayShort, isToday, isCurrentWeek } from '@/utils/dateUtils';
 import { EventCard } from '@/components/WeekView/EventCard';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
 import type { Block } from '@/types';
@@ -80,6 +80,7 @@ export function UserView({ onBlockClick, onCreateEventForDate, onNextWeek, onPre
 
   const weekDays = getWeekDays(selectedDate);
   const weekNumber = getWeekNumber(selectedDate);
+  const isCurrentWeekDisplayed = isCurrentWeek(selectedDate);
   const calendars = config.calendars;
 
   if (!isConfigured) {
@@ -216,7 +217,11 @@ export function UserView({ onBlockClick, onCreateEventForDate, onNextWeek, onPre
           <div className="flex items-center gap-4">
             <h1
               onClick={onGoToToday}
-              className="text-xl font-bold text-[var(--color-text-primary)] cursor-pointer hover:text-[var(--color-accent)] transition-colors"
+              className={`text-xl font-bold cursor-pointer transition-colors ${
+                isCurrentWeekDisplayed
+                  ? 'text-[var(--color-accent)]'
+                  : 'text-[var(--color-text-primary)] hover:text-[var(--color-accent)]'
+              }`}
             >
               {formatWeekHeader(selectedDate)}
             </h1>

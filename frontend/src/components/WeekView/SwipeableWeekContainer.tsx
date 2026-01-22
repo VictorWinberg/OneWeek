@@ -1,9 +1,14 @@
-import { useRef, useEffect, useLayoutEffect, useState, useCallback, startTransition, type ReactNode } from 'react';
+import { useRef, useEffect, useState, startTransition, type ReactNode } from 'react';
 import { addWeeks, subWeeks } from 'date-fns';
-import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import type { Swiper as SwiperType } from 'swiper';
 import { useWeekEvents } from '@/hooks/useCalendarQueries';
 import { getWeekDays } from '@/utils/dateUtils';
 import type { Block } from '@/types';
+
+// Import Swiper styles
+// @ts-expect-error - CSS import
+import 'swiper/css';
 
 interface WeekData {
   date: Date;
@@ -31,8 +36,8 @@ export function SwipeableWeekContainer({
   children,
   onAllBlocksChange,
 }: SwipeableWeekContainerProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(0);
+  const swiperRef = useRef<SwiperType | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const prevWeekDate = subWeeks(selectedDate, 1);
   const nextWeekDate = addWeeks(selectedDate, 1);
@@ -44,38 +49,6 @@ export function SwipeableWeekContainer({
   const currentWeekDays = getWeekDays(selectedDate);
   const prevWeekDays = getWeekDays(prevWeekDate);
   const nextWeekDays = getWeekDays(nextWeekDate);
-
-  useEffect(() => {
-    const updateWidth = () => {
-      if (containerRef.current) {
-        const width = containerRef.current.offsetWidth;
-        if (width > 0) {
-          setContainerWidth(width);
-        }
-      }
-    };
-
-    updateWidth();
-
-    if (containerRef.current) {
-      const resizeObserver = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          const width = entry.contentRect.width;
-          if (width > 0) {
-            setContainerWidth(width);
-          }
-        }
-      });
-
-      resizeObserver.observe(containerRef.current);
-      window.addEventListener('resize', updateWidth);
-
-      return () => {
-        resizeObserver.disconnect();
-        window.removeEventListener('resize', updateWidth);
-      };
-    }
-  }, []);
 
   const prevBlocksRef = useRef<string>('');
   useEffect(() => {
@@ -89,48 +62,37 @@ export function SwipeableWeekContainer({
     }
   }, [prevBlocks, currentBlocks, nextBlocks, onAllBlocksChange]);
 
-  const {
-    swipeState,
-    isDragging,
-    isAnimating,
-    resetSwipeState,
-    containerRef: swipeContainerRef,
-  } = useSwipeNavigation({
-    onPrevWeek,
-    onNextWeek,
-    isDisabled,
-    containerWidth,
-    activeBlock,
-  });
-
-  const combinedRef = useCallback(
-    (element: HTMLDivElement | null) => {
-      containerRef.current = element;
-      swipeContainerRef(element);
-    },
-    [swipeContainerRef]
-  );
-
+  // Track previous date to detect changes
   const [prevSelectedDate, setPrevSelectedDate] = useState(selectedDate);
   const dateChanged = prevSelectedDate.getTime() !== selectedDate.getTime();
 
-  useLayoutEffect(() => {
-    if (dateChanged) {
-      resetSwipeState();
-    }
-  }, [selectedDate, resetSwipeState, dateChanged]);
-
+  // Reset Swiper position when selectedDate changes
   useEffect(() => {
-    if (dateChanged) {
+    if (dateChanged && swiperRef.current) {
+      // Swiper uses 0-indexed slides: [0: prev, 1: current, 2: next]
+      // We want to show slide 1 (current week) when date changes
+      swiperRef.current.slideTo(1, 0); // 0ms transition for instant update
       startTransition(() => {
         setPrevSelectedDate(selectedDate);
       });
     }
   }, [selectedDate, dateChanged]);
 
-  const baseOffset = -containerWidth;
-  const effectiveOffsetX = dateChanged && !isDragging && !isAnimating ? 0 : swipeState.offsetX;
-  const transformX = baseOffset + effectiveOffsetX;
+  // Handle slide change
+  const handleSlideChange = (swiper: SwiperType) => {
+    const activeIndex = swiper.activeIndex;
+
+    // Swiper slides: [0: prev, 1: current, 2: next]
+    if (activeIndex === 0 && onPrevWeek) {
+      // Swiped to previous week slide -> navigate to previous week
+      onPrevWeek();
+    } else if (activeIndex === 2 && onNextWeek) {
+      // Swiped to next week slide -> navigate to next week
+      onNextWeek();
+    }
+  };
+
+  // Prepare week data for each position
   const prevWeekData: WeekData = {
     date: prevWeekDate,
     weekDays: prevWeekDays,
@@ -154,56 +116,55 @@ export function SwipeableWeekContainer({
 
   return (
     <div
-      ref={combinedRef}
-      className="h-full overflow-hidden relative"
+      className="flex-1 overflow-hidden relative"
       style={{
         touchAction: isDragging ? 'none' : 'pan-y',
         userSelect: isDragging ? 'none' : 'auto',
         WebkitUserSelect: isDragging ? 'none' : 'auto',
       }}
     >
-      <div
-        className="flex h-full"
+      <Swiper
+        onSwiper={(swiper) => {
+          swiperRef.current = swiper;
+          // Initialize to show current week (slide index 1)
+          swiper.slideTo(1, 0);
+        }}
+        onSlideChange={handleSlideChange}
+        onTouchStart={() => {
+          if (!isDisabled) {
+            setIsDragging(true);
+          }
+        }}
+        onTouchEnd={() => {
+          setIsDragging(false);
+        }}
+        slidesPerView={1}
+        spaceBetween={0}
+        resistance={true}
+        resistanceRatio={0.3}
+        allowTouchMove={!isDisabled}
+        speed={300}
+        className="h-full"
         style={{
-          width: `${containerWidth * 3}px`,
-          transform: `translateX(${transformX}px)`,
-          transition: isAnimating ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-          willChange: isDragging ? 'transform' : 'auto',
+          width: '100%',
+          height: '100%',
         }}
       >
         {/* Previous Week */}
-        <div
-          className="h-full overflow-hidden flex flex-col"
-          style={{
-            width: `${containerWidth}px`,
-            flexShrink: 0,
-          }}
-        >
-          {children(prevWeekData)}
-        </div>
+        <SwiperSlide>
+          <div className="h-full overflow-hidden">{children(prevWeekData)}</div>
+        </SwiperSlide>
 
         {/* Current Week */}
-        <div
-          className="h-full overflow-hidden flex flex-col"
-          style={{
-            width: `${containerWidth}px`,
-            flexShrink: 0,
-          }}
-        >
-          {children(currentWeekData)}
-        </div>
+        <SwiperSlide>
+          <div className="h-full overflow-hidden">{children(currentWeekData)}</div>
+        </SwiperSlide>
 
         {/* Next Week */}
-        <div
-          className="h-full overflow-hidden flex flex-col"
-          style={{
-            width: `${containerWidth}px`,
-            flexShrink: 0,
-          }}
-        >
-          {children(nextWeekData)}
-        </div>
-      </div>
+        <SwiperSlide>
+          <div className="h-full overflow-hidden">{children(nextWeekData)}</div>
+        </SwiperSlide>
+      </Swiper>
     </div>
   );
 }

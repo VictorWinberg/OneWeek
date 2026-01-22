@@ -1,4 +1,5 @@
 import { useDraggable } from '@dnd-kit/core';
+import { useRef } from 'react';
 import type { Block } from '@/types';
 import { getInitial } from '@/types';
 import { useConfigStore } from '@/stores/configStore';
@@ -32,6 +33,13 @@ export function EventCard({
   const isPast = isBlockPast(block);
   const isCurrent = isBlockCurrent(block);
 
+  // Track touch state to detect fast swipes
+  const touchStateRef = useRef<{
+    startX: number;
+    startY: number;
+    startTime: number;
+  } | null>(null);
+
   // Setup draggable
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `${block.calendarId}-${block.id}`,
@@ -57,12 +65,54 @@ export function EventCard({
     onClick();
   };
 
+  // Handle touch events to detect fast swipes and prevent drag
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!draggable) return;
+    const touch = e.touches[0];
+    touchStateRef.current = {
+      startX: touch.clientX,
+      startY: touch.clientY,
+      startTime: Date.now(),
+    };
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!draggable || !touchStateRef.current) return;
+
+    const touch = e.touches[0];
+    const deltaX = Math.abs(touch.clientX - touchStateRef.current.startX);
+    const deltaY = Math.abs(touch.clientY - touchStateRef.current.startY);
+    const elapsedTime = Date.now() - touchStateRef.current.startTime;
+
+    // Check if this is a fast horizontal swipe (high velocity and significant horizontal movement)
+    // Fast swipe threshold: velocity >= 0.5 px/ms and horizontal movement >= 20px, or very significant horizontal movement
+    const velocity = elapsedTime > 0 ? deltaX / elapsedTime : 0;
+    const isFastSwipe =
+      (velocity >= 0.5 && deltaX >= 20 && deltaX > deltaY * 2) ||
+      (deltaX >= 40 && deltaX > deltaY * 2); // Very significant horizontal movement
+
+    // If it's a fast swipe, prevent the drag from starting
+    if (isFastSwipe) {
+      e.preventDefault();
+      e.stopPropagation();
+      // Clear touch state to prevent drag
+      touchStateRef.current = null;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    touchStateRef.current = null;
+  };
+
   return (
     <button
       ref={setNodeRef}
       data-event-card
       style={style}
       onClick={handleClick}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
       {...(draggable ? { ...listeners, ...attributes } : {})}
       className={`
         group relative w-full text-left rounded-lg transition-all duration-200

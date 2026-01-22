@@ -114,10 +114,10 @@ export function useSwipeNavigation({
       const deltaY = Math.abs(touch.clientY - swipeStateRef.current.startY);
       const absDeltaX = Math.abs(deltaX);
       const elapsedTime = Date.now() - swipeStateRef.current.startTime;
-      
+
       // Calculate velocity (pixels per millisecond)
       const velocity = elapsedTime > 0 ? absDeltaX / elapsedTime : 0;
-      
+
       // Check if this is a fast swipe (high velocity and significant horizontal movement)
       // Also consider it fast if horizontal movement is very significant (user clearly swiping)
       const isFastSwipe =

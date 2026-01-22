@@ -106,12 +106,16 @@ export function SwipeableWeekContainer({
     }
   }, [selectedDate, dateChanged]);
 
-  // Calculate transform offset
-  // The weeks are laid out as: [prev][current][next]
-  // Default position shows current week (translateX = -100%)
-  // When dragging right (positive offset), we reveal prev week
-  // When dragging left (negative offset), we reveal next week
-  const baseOffset = -containerWidth; // Start at current week (-100%)
+  // Calculate transform offset to show current week centered with parts of prev/next visible
+  // Layout: [prev: 0-W][current: W-2W][next: 2W-3W] where W = containerWidth
+  // Viewport: [0 to W]
+  // To center current week and show equal parts of prev/next, offset by -W/2:
+  // - Container x=W/2 maps to viewport x=0 → shows right half of prev
+  // - Container x=W maps to viewport x=W/2 → current week starts at viewport center
+  // - Container x=2W maps to viewport x=3W/2 → current week extends beyond viewport
+  // - Container x=3W/2 maps to viewport x=W → shows left half of next week
+  // With overflow-x: visible, the parts extending beyond viewport will be visible
+  const baseOffset = containerWidth > 0 ? -containerWidth / 2 : 0; // Center current week, show parts of prev/next
   // If date changed, ignore swipe offset to prevent flicker during the transition
   // Only ignore if we're not currently dragging (to allow smooth swipe animation)
   const effectiveOffsetX = dateChanged && !isDragging && !isAnimating ? 0 : swipeState.offsetX;
@@ -139,11 +143,13 @@ export function SwipeableWeekContainer({
   return (
     <div
       ref={combinedRef}
-      className="flex-1 overflow-hidden relative"
+      className="flex-1 relative"
       style={{
         touchAction: isDragging ? 'none' : 'pan-y',
         userSelect: isDragging ? 'none' : 'auto',
         WebkitUserSelect: isDragging ? 'none' : 'auto',
+        overflowY: 'hidden',
+        overflowX: 'visible', // Allow content to extend beyond viewport to show adjacent weeks
       }}
     >
       <div

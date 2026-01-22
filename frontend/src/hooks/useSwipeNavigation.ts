@@ -53,7 +53,7 @@ export function useSwipeNavigation({
   maxVerticalMovement = 50,
   activeBlock,
   isDisabled = false,
-  containerWidth: _containerWidth = 0, // Currently unused but kept for API compatibility
+  containerWidth: _containerWidth = 0,
 }: UseSwipeNavigationOptions) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const swipeStateRef = useRef<SwipeState | null>(null);
@@ -61,7 +61,6 @@ export function useSwipeNavigation({
   const [isDragging, setIsDragging] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
 
-  // Use refs to store callback values to avoid recreating event listeners
   const callbacksRef = useRef({ onPrevWeek, onNextWeek, activeBlock, isDisabled });
   useEffect(() => {
     callbacksRef.current = { onPrevWeek, onNextWeek, activeBlock, isDisabled };
@@ -70,13 +69,8 @@ export function useSwipeNavigation({
   const handleTouchStart = useCallback((e: TouchEvent) => {
     const { isDisabled, onPrevWeek, onNextWeek, activeBlock } = callbacksRef.current;
 
-    // Don't interfere if disabled or no navigation handlers
     if (isDisabled || (!onPrevWeek && !onNextWeek)) return;
-
-    // Don't start swipe if a block is being dragged
     if (activeBlock) return;
-
-    // Don't start swipe if touching an interactive element
     const target = e.target as HTMLElement;
     if (
       target.closest('button') ||
@@ -107,32 +101,23 @@ export function useSwipeNavigation({
       const deltaY = Math.abs(touch.clientY - swipeStateRef.current.startY);
       const absDeltaX = Math.abs(deltaX);
 
-      // Check if this is a horizontal swipe
       if (!swipeStateRef.current.isSwiping) {
-        // Need minimum horizontal movement to start
         if (absDeltaX < minHorizontalMovement) return;
 
-        // If vertical movement is too much, cancel swipe
         if (deltaY > maxVerticalMovement) {
           swipeStateRef.current = null;
           return;
         }
 
-        // Mark as swiping
         swipeStateRef.current.isSwiping = true;
         setIsDragging(true);
       }
 
-      // Prevent default scrolling during horizontal swipe
-      // Only preventDefault if the event is cancelable (not already scrolling)
       if (swipeStateRef.current.isSwiping && absDeltaX > minHorizontalMovement && e.cancelable) {
         e.preventDefault();
       }
 
-      // Update current position
       swipeStateRef.current.currentX = touch.clientX;
-
-      // Update offsetX state
       setSwipeState({ offsetX: deltaX });
     },
     [minHorizontalMovement, maxVerticalMovement]
@@ -147,35 +132,28 @@ export function useSwipeNavigation({
 
     setIsDragging(false);
 
-    // Check if threshold is met
     if (swipeStateRef.current.isSwiping && absDeltaX >= threshold) {
       setIsAnimating(true);
 
       if (deltaX > 0 && onPrevWeek) {
-        // Swiped right -> go to previous week
         onPrevWeek();
       } else if (deltaX < 0 && onNextWeek) {
-        // Swiped left -> go to next week
         onNextWeek();
       }
 
-      // Reset animation state after transition
       setTimeout(() => {
         setIsAnimating(false);
       }, 300);
     }
 
-    // Reset swipe state
     swipeStateRef.current = null;
     setSwipeState({ offsetX: 0 });
   }, [threshold]);
 
-  // Attach native event listeners with passive: false to allow preventDefault
   useEffect(() => {
     const element = containerRef.current;
     if (!element) return;
 
-    // Use native listeners with { passive: false } to allow preventDefault
     element.addEventListener('touchstart', handleTouchStart, { passive: true });
     element.addEventListener('touchmove', handleTouchMove, { passive: false });
     element.addEventListener('touchend', handleTouchEnd, { passive: true });
@@ -194,18 +172,15 @@ export function useSwipeNavigation({
     setIsAnimating(false);
   }, []);
 
-  // getContainerProps is no longer needed since we use native listeners
-  // Keeping for backwards compatibility but it won't attach handlers
   const getContainerProps = useCallback(() => {
     return {
       ref: containerRef,
       style: {
-        touchAction: 'pan-y pinch-zoom' as const, // Allow vertical scrolling but handle horizontal swipes
+        touchAction: 'pan-y pinch-zoom' as const,
       },
     };
   }, []);
 
-  // Container ref callback function
   const containerRefCallback = useCallback((element: HTMLDivElement | null) => {
     containerRef.current = element;
   }, []);

@@ -34,21 +34,17 @@ export function SwipeableWeekContainer({
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
-  // Calculate adjacent week dates
   const prevWeekDate = subWeeks(selectedDate, 1);
   const nextWeekDate = addWeeks(selectedDate, 1);
 
-  // Fetch events for all three weeks
   const { data: currentBlocks = [], isLoading: isCurrentLoading } = useWeekEvents(selectedDate);
   const { data: prevBlocks = [], isLoading: isPrevLoading } = useWeekEvents(prevWeekDate);
   const { data: nextBlocks = [], isLoading: isNextLoading } = useWeekEvents(nextWeekDate);
 
-  // Get week days for all three weeks
   const currentWeekDays = getWeekDays(selectedDate);
   const prevWeekDays = getWeekDays(prevWeekDate);
   const nextWeekDays = getWeekDays(nextWeekDate);
 
-  // Measure container width for swipe calculations
   useEffect(() => {
     const updateWidth = () => {
       if (containerRef.current) {
@@ -59,10 +55,8 @@ export function SwipeableWeekContainer({
       }
     };
 
-    // Measure immediately
     updateWidth();
 
-    // Use ResizeObserver for more reliable width detection
     if (containerRef.current) {
       const resizeObserver = new ResizeObserver((entries) => {
         for (const entry of entries) {
@@ -74,8 +68,6 @@ export function SwipeableWeekContainer({
       });
 
       resizeObserver.observe(containerRef.current);
-
-      // Fallback to window resize
       window.addEventListener('resize', updateWidth);
 
       return () => {
@@ -85,13 +77,10 @@ export function SwipeableWeekContainer({
     }
   }, []);
 
-  // Merge all blocks and notify parent when they change
-  // Use a ref to track if blocks actually changed to avoid infinite loops
   const prevBlocksRef = useRef<string>('');
   useEffect(() => {
     if (onAllBlocksChange) {
       const allBlocks = [...prevBlocks, ...currentBlocks, ...nextBlocks];
-      // Create a simple hash to detect actual changes
       const blocksKey = `${prevBlocks.length}-${currentBlocks.length}-${nextBlocks.length}`;
       if (prevBlocksRef.current !== blocksKey) {
         prevBlocksRef.current = blocksKey;
@@ -114,8 +103,6 @@ export function SwipeableWeekContainer({
     activeBlock,
   });
 
-  // Combine refs: both containerRef (for width measurement) and swipeContainerRef (for touch events)
-  // Note: Touch events are now handled via native listeners in useSwipeNavigation hook
   const combinedRef = useCallback(
     (element: HTMLDivElement | null) => {
       containerRef.current = element;
@@ -124,26 +111,15 @@ export function SwipeableWeekContainer({
     [swipeContainerRef]
   );
 
-  // Track previous date to detect changes and prevent flicker
   const [prevSelectedDate, setPrevSelectedDate] = useState(selectedDate);
-
-  // Detect if date changed - if so, ignore swipe offset to prevent flicker
   const dateChanged = prevSelectedDate.getTime() !== selectedDate.getTime();
 
-  // Reset swipe state when selectedDate changes (after navigation completes)
-  // This prevents flickering when the date changes after a swipe
-  // Using useLayoutEffect to update synchronously before paint to prevent flicker
   useLayoutEffect(() => {
     if (dateChanged) {
-      // Date has changed - reset swipe state immediately to prevent flicker
-      // The date change means navigation completed, so we should show the new week centered
       resetSwipeState();
     }
   }, [selectedDate, resetSwipeState, dateChanged]);
 
-  // Update previous date tracking after layout effect completes
-  // Separated to avoid lint warning about setState in useLayoutEffect
-  // Using startTransition to mark this as a non-urgent update
   useEffect(() => {
     if (dateChanged) {
       startTransition(() => {
@@ -152,18 +128,9 @@ export function SwipeableWeekContainer({
     }
   }, [selectedDate, dateChanged]);
 
-  // Calculate transform offset
-  // The weeks are laid out as: [prev][current][next]
-  // Default position shows current week (translateX = -100%)
-  // When dragging right (positive offset), we reveal prev week
-  // When dragging left (negative offset), we reveal next week
-  const baseOffset = -containerWidth; // Start at current week (-100%)
-  // If date changed, ignore swipe offset to prevent flicker during the transition
-  // Only ignore if we're not currently dragging (to allow smooth swipe animation)
+  const baseOffset = -containerWidth;
   const effectiveOffsetX = dateChanged && !isDragging && !isAnimating ? 0 : swipeState.offsetX;
   const transformX = baseOffset + effectiveOffsetX;
-
-  // Prepare week data for each position
   const prevWeekData: WeekData = {
     date: prevWeekDate,
     weekDays: prevWeekDays,

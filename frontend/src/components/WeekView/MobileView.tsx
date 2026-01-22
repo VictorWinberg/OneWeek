@@ -44,8 +44,6 @@ export function MobileView({
   const [activeBlock, setActiveBlock] = useState<Block | null>(null);
   const [allBlocks, setAllBlocks] = useState<Block[]>([]);
 
-  // Use mobile drag and drop hook with ALL weeks' blocks (merged from SwipeableWeekContainer)
-  // This ensures drag and drop works from any week position (prev/current/next)
   const { activeBlock: currentActiveBlock, handleDragStart, handleDragEnd, sensors } = useMobileDragAndDrop(
     allBlocks,
     {
@@ -54,20 +52,16 @@ export function MobileView({
     }
   );
 
-  // Update activeBlock state when it changes
   useEffect(() => {
     setActiveBlock(currentActiveBlock);
   }, [currentActiveBlock]);
 
-  // Prefetch adjacent weeks when selectedDate changes
   useEffect(() => {
     prefetch();
   }, [selectedDate, prefetch]);
 
-  // Compute current mobile view mode from URL mode
   const mobileViewMode = urlToMobileViewMode(urlViewMode, 'grid');
 
-  // Handle view mode changes - all modes now map directly to URL
   const handleViewModeChange = (newMobileMode: MobileViewMode) => {
     const newUrlMode = mobileToUrlViewMode(newMobileMode);
     if (onViewModeChange) {
@@ -217,7 +211,6 @@ export function MobileView({
           );
         }}
       </SwipeableWeekContainer>
-      {/* Drag Overlay must be outside SwipeableWeekContainer but inside DndContext */}
       <DragOverlay>
         {currentActiveBlock ? (
           <div

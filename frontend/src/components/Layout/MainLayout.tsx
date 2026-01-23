@@ -4,6 +4,7 @@ import { addWeeks, subWeeks } from 'date-fns';
 import { useCalendarStore } from '@/stores/calendarStore';
 import { getWeekMonday, parseDateParam } from '@/utils/dateUtils';
 import { NavigationBar } from '@/components/Layout/NavigationBar';
+import { DesktopView } from '@/components/WeekView/DesktopView';
 import { DayView } from '@/components/WeekView/DayView';
 import { GridView } from '@/components/WeekView/GridView';
 import { UserView } from '@/components/WeekView/UserView';
@@ -93,6 +94,24 @@ export function MainLayout({ viewMode, onBlockClick, onCreateEventForDate }: Mai
     [selectedDate, navigate]
   );
 
+  // Render the appropriate view content based on viewMode
+  const renderViewContent = useCallback(
+    (props: Parameters<Parameters<typeof DesktopView>[0]['children']>[0]) => {
+      switch (viewMode) {
+        case 'grid':
+          return <GridView {...props} />;
+        case 'hour':
+          return <HourView {...props} />;
+        case 'user':
+          return <UserView {...props} />;
+        case 'day':
+        default:
+          return <DayView {...props} />;
+      }
+    },
+    [viewMode]
+  );
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <NavigationBar viewMode={viewMode} onViewModeChange={handleViewModeChange} />
@@ -111,38 +130,17 @@ export function MainLayout({ viewMode, onBlockClick, onCreateEventForDate }: Mai
             onViewModeChange={handleViewModeChange}
             onGoToToday={handleGoToToday}
           />
-        ) : viewMode === 'day' ? (
-          <DayView
-            onBlockClick={onBlockClick}
-            onCreateEventForDate={onCreateEventForDate}
-            onNextWeek={handleNextWeek}
-            onPrevWeek={handlePrevWeek}
-            onGoToToday={handleGoToToday}
-          />
-        ) : viewMode === 'grid' ? (
-          <GridView
-            onBlockClick={onBlockClick}
-            onCreateEventForDate={onCreateEventForDate}
-            onNextWeek={handleNextWeek}
-            onPrevWeek={handlePrevWeek}
-            onGoToToday={handleGoToToday}
-          />
-        ) : viewMode === 'hour' ? (
-          <HourView
-            onBlockClick={onBlockClick}
-            onCreateEventForDate={onCreateEventForDate}
-            onNextWeek={handleNextWeek}
-            onPrevWeek={handlePrevWeek}
-            onGoToToday={handleGoToToday}
-          />
         ) : (
-          <UserView
+          <DesktopView
+            viewMode={viewMode}
             onBlockClick={onBlockClick}
             onCreateEventForDate={onCreateEventForDate}
             onNextWeek={handleNextWeek}
             onPrevWeek={handlePrevWeek}
             onGoToToday={handleGoToToday}
-          />
+          >
+            {renderViewContent}
+          </DesktopView>
         )}
       </main>
     </div>

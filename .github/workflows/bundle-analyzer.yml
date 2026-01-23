@@ -29,7 +29,6 @@ jobs:
       - uses: preactjs/compressed-size-action@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          cwd: backend/dist
-          pattern: 'public/**/*.{js,css}'
+          pattern: 'backend/dist/public/**/*.{js,css}'
           strip-hash: "-[^.]+(?=\\.)"
           install-script: npm install

@@ -119,15 +119,8 @@ export function usePressAndHold({
       shouldHandleTouchMoveRef.current = true;
 
       touchStateMachineRef.current?.transition('touching');
-      touchStateMachineRef.current?.scheduleTransition(
-        'holding',
-        holdDuration,
-        'hold-timer',
-        () => {
-          const stateRef = getTouchStateRef();
-          return stateRef.current === 'touching' && touchStartRef.current !== null;
-        }
-      );
+      // Immediately transition to holding instead of waiting
+      touchStateMachineRef.current?.transition('holding');
     };
 
     const handleTouchMove = (e: TouchEvent) => {

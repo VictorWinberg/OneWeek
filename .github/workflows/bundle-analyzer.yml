@@ -32,3 +32,5 @@ jobs:
           cwd: backend/dist
           pattern: 'public/**/*.{js,css}'
           strip-hash: "-[^.]+(?=\\.)"
+          install-script: npm ci --prefix frontend
+          build-script: npm run build --prefix frontend

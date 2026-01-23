@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { startOfWeek, endOfWeek, addWeeks, subWeeks } from 'date-fns';
+import { startOfWeek, endOfWeek, addWeeks, subWeeks, format } from 'date-fns';
 import { eventsApi } from '@/services/api';
 import { getCachedWeek, setCachedWeek } from '@/services/weekCache';
 import { useConfigStore } from '@/stores/configStore';
@@ -8,7 +8,7 @@ import type { Block } from '@/types';
 // Helper to get week key for query keys
 export const getWeekKey = (date: Date): string => {
   const weekStart = startOfWeek(date, { weekStartsOn: 1 });
-  return weekStart.toISOString();
+  return format(weekStart, 'yyyy-MM-dd');
 };
 
 // Query key factory

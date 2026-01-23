@@ -129,10 +129,11 @@ export function useSwipeNavigation({
     const { onPrevWeek, onNextWeek } = callbacksRef.current;
     const deltaX = swipeStateRef.current.currentX - swipeStateRef.current.startX;
     const absDeltaX = Math.abs(deltaX);
+    const wasSwiping = swipeStateRef.current.isSwiping;
 
     setIsDragging(false);
 
-    if (swipeStateRef.current.isSwiping && absDeltaX >= threshold) {
+    if (wasSwiping && absDeltaX >= threshold) {
       setIsAnimating(true);
 
       if (deltaX > 0 && onPrevWeek) {
@@ -143,11 +144,22 @@ export function useSwipeNavigation({
 
       setTimeout(() => {
         setIsAnimating(false);
+        setSwipeState({ offsetX: 0 });
       }, 300);
+    } else if (wasSwiping && absDeltaX > 0) {
+      // Animate back to center if swipe didn't meet threshold
+      setIsAnimating(true);
+      setSwipeState({ offsetX: 0 });
+      setTimeout(() => {
+        setIsAnimating(false);
+      }, 300);
+    } else {
+      // No swipe occurred, reset immediately
+      swipeStateRef.current = null;
+      setSwipeState({ offsetX: 0 });
     }
 
     swipeStateRef.current = null;
-    setSwipeState({ offsetX: 0 });
   }, [threshold]);
 
   useEffect(() => {

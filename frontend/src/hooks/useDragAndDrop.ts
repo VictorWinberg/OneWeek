@@ -3,7 +3,7 @@
  * Encapsulates drag state management and event handling
  */
 
-import { useCallback, useRef, useEffect } from 'react';
+import { useCallback } from 'react';
 import { useSensor, useSensors, PointerSensor, TouchSensor } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import type { Block } from '@/types';
@@ -34,29 +34,22 @@ export function useDragAndDrop({
   const { setActiveBlock } = useAppContext();
 
   // Configure sensors based on device type
-  // Always include both sensors to avoid conditional hook calls
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: isMobile
-        ? {
-            // Disable PointerSensor on mobile - only use TouchSensor
-            distance: 9999,
-          }
-        : {
-            distance: 8,
-          },
+      activationConstraint: {
+        distance: isMobile ? 3 : 8,
+      },
     }),
-    useSensor(TouchSensor, {
-      activationConstraint: isMobile
-        ? {
-            // Allow immediate drag on mobile with small movement threshold
-            distance: 5,
-          }
-        : {
-            // Disable on desktop by requiring impossible distance
-            distance: 9999,
-          },
-    })
+    ...(isMobile
+      ? [
+          useSensor(TouchSensor, {
+            activationConstraint: {
+              delay: 150,
+              tolerance: 5,
+            },
+          }),
+        ]
+      : [])
   );
 
   /**
@@ -66,13 +59,9 @@ export function useDragAndDrop({
     (event: DragStartEvent) => {
       const blockId = String(event.active.id);
       const block = findBlockById(blocks, blockId);
-
-      if (!block) {
-        console.warn(`[useDragAndDrop] Block not found for id: ${blockId}`);
-        return;
+      if (block) {
+        setActiveBlock(block);
       }
-
-      setActiveBlock(block);
     },
     [blocks, setActiveBlock]
   );
@@ -125,4 +114,3 @@ export function useMobileDragAndDrop(
 ): UseDragAndDropResult {
   return useDragAndDrop({ blocks, mutations, isMobile: true });
 }
-

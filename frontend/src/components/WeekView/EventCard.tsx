@@ -67,6 +67,16 @@ export function EventCard({
     onBlockClick(block);
   };
 
+  // Debug: Log listeners when draggable
+  if (draggable && person) {
+    console.log(`[EventCard ${block.calendarId}-${block.id}] Render with draggable=true`, {
+      hasListeners: !!listeners,
+      listenersKeys: listeners ? Object.keys(listeners) : [],
+      hasAttributes: !!attributes,
+      disabled: !draggable || !person,
+    });
+  }
+
   return (
     <button
       ref={combinedRef}

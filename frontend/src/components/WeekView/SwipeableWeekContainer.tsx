@@ -3,7 +3,6 @@ import { addWeeks, subWeeks } from 'date-fns';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { useWeekEvents } from '@/hooks/useCalendarQueries';
 import { getWeekDays } from '@/utils/dateUtils';
-import { useAppContext } from '@/contexts/AppContext';
 import type { Block } from '@/types';
 
 interface WeekData {
@@ -141,7 +140,9 @@ export function SwipeableWeekContainer({
       ref={combinedRef}
       className="h-full overflow-hidden relative"
       style={{
-        touchAction: isDragging ? 'none' : 'pan-y pan-x',
+        // Only allow vertical panning - horizontal should be handled by dnd-kit for dragging
+        // or by swipe navigation for week navigation
+        touchAction: isDragging ? 'none' : 'pan-y',
         userSelect: isDragging ? 'none' : 'auto',
         WebkitUserSelect: isDragging ? 'none' : 'auto',
       }}

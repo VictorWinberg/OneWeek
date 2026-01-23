@@ -1,4 +1,5 @@
-import { useRef, useEffect, useLayoutEffect, useState, useCallback, startTransition, type ReactNode } from 'react';
+import { useRef, useEffect, useLayoutEffect, useState, useCallback, type ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 import { addWeeks, subWeeks } from 'date-fns';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { useWeekEvents } from '@/hooks/useCalendarQueries';
@@ -112,24 +113,62 @@ export function SwipeableWeekContainer({
   );
 
   const [prevSelectedDate, setPrevSelectedDate] = useState(selectedDate);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const transitionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shouldTransitionRef = useRef(false);
   const dateChanged = prevSelectedDate.getTime() !== selectedDate.getTime();
+  const dateChangeDirectionRef = useRef<'prev' | 'next' | null>(null);
 
-  useLayoutEffect(() => {
-    if (dateChanged) {
-      resetSwipeState();
-    }
-  }, [selectedDate, resetSwipeState, dateChanged]);
-
+  // Determine navigation direction by comparing dates
   useEffect(() => {
-    if (dateChanged) {
-      startTransition(() => {
-        setPrevSelectedDate(selectedDate);
-      });
+    if (dateChanged && prevSelectedDate.getTime() !== 0) {
+      const timeDiff = selectedDate.getTime() - prevSelectedDate.getTime();
+      dateChangeDirectionRef.current = timeDiff > 0 ? 'next' : 'prev';
     }
-  }, [selectedDate, dateChanged]);
+  }, [selectedDate, prevSelectedDate, dateChanged]);
+
+  // Track when we should start transitioning
+  useLayoutEffect(() => {
+    if (dateChanged && !isDragging && !isAnimating) {
+      shouldTransitionRef.current = true;
+    }
+  }, [selectedDate, dateChanged, isDragging, isAnimating]);
+
+  // Apply transition state update in a separate effect to avoid lint warning
+  useEffect(() => {
+    // Clear any pending transition timeout
+    if (transitionTimeoutRef.current) {
+      clearTimeout(transitionTimeoutRef.current);
+      transitionTimeoutRef.current = null;
+    }
+
+    if (shouldTransitionRef.current && dateChanged && !isDragging && !isAnimating) {
+      shouldTransitionRef.current = false;
+      // Set transitioning state for smooth animation
+      // Use flushSync for synchronous DOM updates needed for animations
+      flushSync(() => {
+        setIsTransitioning(true);
+      });
+      // Reset swipe state after animation completes
+      transitionTimeoutRef.current = setTimeout(() => {
+        resetSwipeState();
+        setIsTransitioning(false);
+        setPrevSelectedDate(selectedDate);
+        dateChangeDirectionRef.current = null;
+        transitionTimeoutRef.current = null;
+      }, 300);
+    }
+
+    return () => {
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current);
+      }
+    };
+  }, [selectedDate, resetSwipeState, dateChanged, isDragging, isAnimating]);
 
   const baseOffset = -containerWidth;
-  const effectiveOffsetX = dateChanged && !isDragging && !isAnimating ? 0 : swipeState.offsetX;
+  // During transition, animate to center (offset 0), otherwise use swipe offset
+  const effectiveOffsetX = isTransitioning ? 0 : swipeState.offsetX;
   const transformX = baseOffset + effectiveOffsetX;
   const prevWeekData: WeekData = {
     date: prevWeekDate,
@@ -167,8 +206,8 @@ export function SwipeableWeekContainer({
         style={{
           width: `${containerWidth * 3}px`,
           transform: `translateX(${transformX}px)`,
-          transition: isAnimating ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-          willChange: isDragging ? 'transform' : 'auto',
+          transition: isAnimating || isTransitioning ? 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+          willChange: isDragging || isTransitioning ? 'transform' : 'auto',
         }}
       >
         {/* Previous Week */}

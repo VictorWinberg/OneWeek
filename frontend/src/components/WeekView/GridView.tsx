@@ -25,7 +25,6 @@ function DroppableGridDay({ date, dayBlocks, isCurrentDay }: DroppableGridDayPro
       return;
     }
     // Trigger for any click on the day (header or empty space)
-    console.log('[GridView] handleClick called for date:', date);
     onEmptyClick(date);
   };
 

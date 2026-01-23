@@ -70,21 +70,12 @@ export class StateMachine<T extends string> {
    */
   transition(to: T): boolean {
     if (!this.canTransition(to)) {
-      const debugId = this.config.debugId ? `[${this.config.debugId}] ` : '';
-      console.warn(
-        `${debugId}Invalid transition: ${this.currentState} → ${to}`
-      );
       return false;
     }
 
     const previousState = this.currentState;
     this.currentState = to;
     this.stateRef.current = to;
-
-    const debugId = this.config.debugId ? `[${this.config.debugId}] ` : '';
-    console.log(
-      `${debugId}State transition: ${previousState} → ${to}`
-    );
 
     if (this.config.onStateChange) {
       this.config.onStateChange(to, previousState);
@@ -113,10 +104,6 @@ export class StateMachine<T extends string> {
       this.timers.delete(timerId);
 
       if (condition && !condition()) {
-        const debugId = this.config.debugId ? `[${this.config.debugId}] ` : '';
-        console.log(
-          `${debugId}Scheduled transition to ${to} cancelled - condition not met`
-        );
         return;
       }
 

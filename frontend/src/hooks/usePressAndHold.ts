@@ -76,7 +76,6 @@ export function usePressAndHold({
 
       // Handle state-specific side effects
       if (newState === 'holding' && previousState === 'touching') {
-        console.log(`[PressAndHold ${blockId}] Calling onHoldStart(${blockId})`);
         onHoldStartRef.current?.(blockId);
         shouldHandleTouchMoveRef.current = false;
       } else if (newState === 'idle' && previousState !== 'idle') {

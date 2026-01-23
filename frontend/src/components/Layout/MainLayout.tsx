@@ -13,16 +13,13 @@ import { MobileView } from '@/components/WeekView/MobileView';
 import { TasksView } from '@/components/TasksView/TasksView';
 import { useIsMobile } from '@/hooks/useMediaQuery';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import type { Block } from '@/types';
 import type { ViewMode } from '@/types/viewMode';
 
 interface MainLayoutProps {
   viewMode?: ViewMode;
-  onBlockClick: (block: Block) => void;
-  onCreateEventForDate: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
 }
 
-export function MainLayout({ viewMode, onBlockClick, onCreateEventForDate }: MainLayoutProps) {
+export function MainLayout({ viewMode }: MainLayoutProps) {
   const { date } = useParams<{ date?: string }>();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -122,8 +119,6 @@ export function MainLayout({ viewMode, onBlockClick, onCreateEventForDate }: Mai
           <TasksView onGoToToday={handleGoToToday} />
         ) : isMobile ? (
           <MobileView
-            onBlockClick={onBlockClick}
-            onCreateEventForDate={onCreateEventForDate}
             viewMode={viewMode}
             onNextWeek={handleNextWeek}
             onPrevWeek={handlePrevWeek}
@@ -133,8 +128,6 @@ export function MainLayout({ viewMode, onBlockClick, onCreateEventForDate }: Mai
         ) : (
           <DesktopView
             viewMode={viewMode}
-            onBlockClick={onBlockClick}
-            onCreateEventForDate={onCreateEventForDate}
             onNextWeek={handleNextWeek}
             onPrevWeek={handlePrevWeek}
             onGoToToday={handleGoToToday}

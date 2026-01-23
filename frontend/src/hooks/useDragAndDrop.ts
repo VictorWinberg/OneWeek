@@ -3,12 +3,13 @@
  * Encapsulates drag state management and event handling
  */
 
-import { useState, useCallback } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import { useSensor, useSensors, PointerSensor, TouchSensor } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import type { Block } from '@/types';
 import { findBlockById } from '@/services/calendarNormalizer';
 import { handleDragDrop, type EventMutations, type FullDropData } from '@/utils/dragAndDrop';
+import { useAppContext } from '@/contexts/AppContext';
 
 export interface UseDragAndDropOptions {
   blocks: Block[];
@@ -17,7 +18,6 @@ export interface UseDragAndDropOptions {
 }
 
 export interface UseDragAndDropResult {
-  activeBlock: Block | null;
   handleDragStart: (event: DragStartEvent) => void;
   handleDragEnd: (event: DragEndEvent) => Promise<void>;
   sensors: ReturnType<typeof useSensors>;
@@ -31,25 +31,32 @@ export function useDragAndDrop({
   mutations,
   isMobile = false,
 }: UseDragAndDropOptions): UseDragAndDropResult {
-  const [activeBlock, setActiveBlock] = useState<Block | null>(null);
+  const { setActiveBlock } = useAppContext();
 
   // Configure sensors based on device type
+  // Always include both sensors to avoid conditional hook calls
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: isMobile ? 3 : 8,
-      },
+      activationConstraint: isMobile
+        ? {
+            // Disable PointerSensor on mobile - only use TouchSensor
+            distance: 9999,
+          }
+        : {
+            distance: 8,
+          },
     }),
-    ...(isMobile
-      ? [
-          useSensor(TouchSensor, {
-            activationConstraint: {
-              delay: 150,
-              tolerance: 5,
-            },
-          }),
-        ]
-      : [])
+    useSensor(TouchSensor, {
+      activationConstraint: isMobile
+        ? {
+            // Allow immediate drag on mobile with small movement threshold
+            distance: 5,
+          }
+        : {
+            // Disable on desktop by requiring impossible distance
+            distance: 9999,
+          },
+    })
   );
 
   /**
@@ -59,11 +66,15 @@ export function useDragAndDrop({
     (event: DragStartEvent) => {
       const blockId = String(event.active.id);
       const block = findBlockById(blocks, blockId);
-      if (block) {
-        setActiveBlock(block);
+
+      if (!block) {
+        console.warn(`[useDragAndDrop] Block not found for id: ${blockId}`);
+        return;
       }
+
+      setActiveBlock(block);
     },
-    [blocks]
+    [blocks, setActiveBlock]
   );
 
   /**
@@ -71,11 +82,11 @@ export function useDragAndDrop({
    */
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
+      const blockId = String(event.active.id);
       setActiveBlock(null);
 
       if (!event.over) return;
 
-      const blockId = String(event.active.id);
       const dropData = event.over.data.current as FullDropData | undefined;
 
       if (!dropData) return;
@@ -85,11 +96,10 @@ export function useDragAndDrop({
 
       await handleDragDrop(block, dropData, mutations);
     },
-    [blocks, mutations]
+    [blocks, mutations, setActiveBlock]
   );
 
   return {
-    activeBlock,
     handleDragStart,
     handleDragEnd,
     sensors,

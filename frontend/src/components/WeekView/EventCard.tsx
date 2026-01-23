@@ -1,12 +1,13 @@
 import { useDraggable } from '@dnd-kit/core';
+import { useRef } from 'react';
 import type { Block } from '@/types';
 import { getInitial } from '@/types';
 import { useConfigStore } from '@/stores/configStore';
 import { formatBlockTime, isBlockPast, isBlockCurrent } from '@/services/calendarNormalizer';
+import { useAppContext } from '@/contexts/AppContext';
 
 interface EventCardProps {
   block: Block;
-  onClick: () => void;
   compact?: boolean;
   fillHeight?: boolean;
   draggable?: boolean;
@@ -18,7 +19,6 @@ interface EventCardProps {
 
 export function EventCard({
   block,
-  onClick,
   compact = false,
   fillHeight = false,
   draggable = false,
@@ -27,16 +27,26 @@ export function EventCard({
   extraCompact = false,
   truncate = false,
 }: EventCardProps) {
+  // Get callbacks from context
+  const { onBlockClick } = useAppContext();
   const { getPersonById } = useConfigStore();
   const person = getPersonById(block.calendarId);
   const isPast = isBlockPast(block);
   const isCurrent = isBlockCurrent(block);
+
+  const elementRef = useRef<HTMLElement | null>(null);
 
   // Setup draggable
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `${block.calendarId}-${block.id}`,
     disabled: !draggable || !person,
   });
+
+  // Combined ref callback
+  const combinedRef = (element: HTMLElement | null) => {
+    elementRef.current = element;
+    setNodeRef(element);
+  };
 
   const style = {
     // Don't apply transform - DragOverlay handles the dragged element position
@@ -54,12 +64,12 @@ export function EventCard({
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering parent click handlers
-    onClick();
+    onBlockClick(block);
   };
 
   return (
     <button
-      ref={setNodeRef}
+      ref={combinedRef}
       data-event-card
       style={style}
       onClick={handleClick}

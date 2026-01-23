@@ -4,6 +4,7 @@ import { formatDayShort, isToday } from '@/utils/dateUtils';
 import { getBlocksForDay, calculateBlockPosition } from '@/services/calendarNormalizer';
 import { calculateNextHourTimeSlot } from '@/utils/timeUtils';
 import { EventCard } from '@/components/WeekView/EventCard';
+import { useAppContext } from '@/contexts/AppContext';
 import type { DesktopViewRenderProps } from '@/components/WeekView/DesktopView';
 import type { Block } from '@/types';
 
@@ -51,7 +52,8 @@ const hours = Array.from({ length: 24 }, (_, i) => i);
 
 export type HourViewProps = DesktopViewRenderProps;
 
-export function HourView({ blocks, weekDays, activeBlock, onBlockClick, onCreateEventForDate }: HourViewProps) {
+export function HourView({ blocks, weekDays, activeBlock }: HourViewProps) {
+  const { onCreateEventForDate } = useAppContext();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const hasScrolledRef = useRef(false);
 
@@ -129,7 +131,6 @@ export function HourView({ blocks, weekDays, activeBlock, onBlockClick, onCreate
                 <EventCard
                   key={`${block.calendarId}-${block.id}`}
                   block={block}
-                  onClick={() => onBlockClick(block)}
                   compact={true}
                   fillHeight={false}
                   draggable={false}
@@ -215,7 +216,6 @@ export function HourView({ blocks, weekDays, activeBlock, onBlockClick, onCreate
                       >
                         <EventCard
                           block={block}
-                          onClick={() => onBlockClick(block)}
                           compact={false}
                           fillHeight={true}
                           draggable={true}

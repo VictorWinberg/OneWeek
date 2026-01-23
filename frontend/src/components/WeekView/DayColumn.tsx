@@ -3,12 +3,11 @@ import type { Block } from '@/types';
 import { isToday, formatDayShort, formatDayNumber } from '@/utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
 import { EventCard } from '@/components/WeekView/EventCard';
+import { useAppContext } from '@/contexts/AppContext';
 
 interface DayColumnProps {
   date: Date;
   blocks: Block[];
-  onBlockClick: (block: Block) => void;
-  onEmptySpaceClick?: (date: Date) => void;
   compact?: boolean;
   draggable?: boolean;
 }
@@ -16,11 +15,10 @@ interface DayColumnProps {
 export function DayColumn({
   date,
   blocks,
-  onBlockClick,
-  onEmptySpaceClick,
   compact = false,
   draggable = false,
 }: DayColumnProps) {
+  const { onEmptyClick } = useAppContext();
   const dayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date).filter((b) => !b.allDay));
   const today = isToday(date);
 
@@ -30,9 +28,7 @@ export function DayColumn({
   });
 
   const handleEmptySpaceClick = () => {
-    if (onEmptySpaceClick) {
-      onEmptySpaceClick(date);
-    }
+    onEmptyClick(date);
   };
 
   return (
@@ -80,7 +76,6 @@ export function DayColumn({
             <EventCard
               key={`${block.calendarId}-${block.id}`}
               block={block}
-              onClick={() => onBlockClick(block)}
               compact={compact}
               draggable={draggable}
             />

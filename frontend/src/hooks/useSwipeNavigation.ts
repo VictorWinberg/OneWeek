@@ -1,5 +1,5 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
-import type { Block } from '@/types';
+import { useAppContext } from '@/contexts/AppContext';
 
 interface UseSwipeNavigationOptions {
   onPrevWeek?: () => void;
@@ -16,10 +16,6 @@ interface UseSwipeNavigationOptions {
    * Maximum vertical movement allowed for horizontal swipe (default: 50)
    */
   maxVerticalMovement?: number;
-  /**
-   * If an active block is being dragged, disable swipe navigation
-   */
-  activeBlock?: Block | null;
   /**
    * Disable swipe navigation
    */
@@ -51,10 +47,11 @@ export function useSwipeNavigation({
   threshold = 100,
   minHorizontalMovement = 10,
   maxVerticalMovement = 50,
-  activeBlock,
   isDisabled = false,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   containerWidth: _containerWidth = 0,
 }: UseSwipeNavigationOptions) {
+  const { activeBlock } = useAppContext();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const swipeStateRef = useRef<SwipeState | null>(null);
   const [swipeState, setSwipeState] = useState<SwipeNavigationState>({ offsetX: 0 });
@@ -70,15 +67,35 @@ export function useSwipeNavigation({
     const { isDisabled, onPrevWeek, onNextWeek, activeBlock } = callbacksRef.current;
 
     if (isDisabled || (!onPrevWeek && !onNextWeek)) return;
-    if (activeBlock) return;
+    if (activeBlock) return; // Don't start swipe if a drag is in progress
+
     const target = e.target as HTMLElement;
+
+    // Don't start swipe if touching an event card - let dnd-kit handle it
+    // Event cards are always buttons, so we need to check for the data attribute
+    const eventCard = target.closest('[data-event-card]');
+    if (eventCard) {
+      // Check if the event card is draggable by checking computed style
+      const computedStyle = window.getComputedStyle(eventCard as HTMLElement);
+      const isDraggable = computedStyle.touchAction === 'none';
+      if (isDraggable) {
+        // Don't initialize swipe - let dnd-kit handle the drag
+        console.log('[useSwipeNavigation] Skipping swipe initialization - touching draggable event card');
+        return;
+      }
+    }
+
+    // Don't start swipe if touching interactive elements (buttons, links)
+    // But allow swipe to start on event cards if they're not draggable
     if (
       target.closest('button') ||
       target.closest('a') ||
-      target.closest('[role="button"]') ||
-      target.closest('[data-event-card]')
+      target.closest('[role="button"]')
     ) {
-      return;
+      // Only block if it's not an event card (event cards can be swiped over if not draggable)
+      if (!eventCard) {
+        return;
+      }
     }
 
     const touch = e.touches[0];
@@ -95,6 +112,31 @@ export function useSwipeNavigation({
   const handleTouchMove = useCallback(
     (e: TouchEvent) => {
       if (!swipeStateRef.current) return;
+
+      const { activeBlock } = callbacksRef.current;
+
+      // Cancel swipe if a drag is in progress
+      if (activeBlock) {
+        swipeStateRef.current = null;
+        setIsDragging(false);
+        setSwipeState({ offsetX: 0 });
+        return;
+      }
+
+      // Check if touch is now on a draggable event card - cancel swipe to let drag handle it
+      const target = e.target as HTMLElement;
+      const eventCard = target.closest('[data-event-card]');
+      if (eventCard) {
+        const computedStyle = window.getComputedStyle(eventCard as HTMLElement);
+        const isDraggable = computedStyle.touchAction === 'none';
+        if (isDraggable) {
+          // Cancel swipe to allow drag to proceed
+          swipeStateRef.current = null;
+          setIsDragging(false);
+          setSwipeState({ offsetX: 0 });
+          return;
+        }
+      }
 
       const touch = e.touches[0];
       const deltaX = touch.clientX - swipeStateRef.current.startX;
@@ -113,7 +155,19 @@ export function useSwipeNavigation({
         setIsDragging(true);
       }
 
+      // Only prevent default if we're actually swiping and not on a draggable element
       if (swipeStateRef.current.isSwiping && absDeltaX > minHorizontalMovement && e.cancelable) {
+        // Double-check we're not on a draggable event card before preventing default
+        const currentTarget = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement;
+        const currentEventCard = currentTarget?.closest('[data-event-card]');
+        if (currentEventCard) {
+          const computedStyle = window.getComputedStyle(currentEventCard);
+          const isDraggable = computedStyle.touchAction === 'none';
+          if (isDraggable) {
+            // Don't prevent default - let drag handle it
+            return;
+          }
+        }
         e.preventDefault();
       }
 
@@ -176,7 +230,7 @@ export function useSwipeNavigation({
     return {
       ref: containerRef,
       style: {
-        touchAction: 'pan-y pinch-zoom' as const,
+        touchAction: 'pan-y pan-x pinch-zoom' as const,
       },
     };
   }, []);

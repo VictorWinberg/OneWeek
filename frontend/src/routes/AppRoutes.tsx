@@ -1,72 +1,22 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { MainLayout } from '@/components/Layout/MainLayout';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import type { Block } from '@/types';
 import type { ViewMode } from '@/types/viewMode';
-
-interface AppRoutesProps {
-  onBlockClick: (block: Block) => void;
-  onCreateEventForDate: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
-}
 
 function RedirectToLastViewMode() {
   const [lastViewMode] = useLocalStorage<ViewMode>('lastViewMode', 'grid');
   return <Navigate to={`/${lastViewMode}`} replace />;
 }
 
-export function AppRoutes({ onBlockClick, onCreateEventForDate }: AppRoutesProps) {
+export function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<RedirectToLastViewMode />} />
-      <Route
-        path="/day/:date?"
-        element={
-          <MainLayout
-            viewMode="day"
-            onBlockClick={onBlockClick}
-            onCreateEventForDate={onCreateEventForDate}
-          />
-        }
-      />
-      <Route
-        path="/grid/:date?"
-        element={
-          <MainLayout
-            viewMode="grid"
-            onBlockClick={onBlockClick}
-            onCreateEventForDate={onCreateEventForDate}
-          />
-        }
-      />
-      <Route
-        path="/user/:date?"
-        element={
-          <MainLayout
-            viewMode="user"
-            onBlockClick={onBlockClick}
-            onCreateEventForDate={onCreateEventForDate}
-          />
-        }
-      />
-      <Route
-        path="/hour/:date?"
-        element={
-          <MainLayout
-            viewMode="hour"
-            onBlockClick={onBlockClick}
-            onCreateEventForDate={onCreateEventForDate}
-          />
-        }
-      />
-      <Route
-        path="/tasks"
-        element={
-          <MainLayout
-            onBlockClick={onBlockClick}
-            onCreateEventForDate={onCreateEventForDate}
-          />
-        }
-      />
+      <Route path="/day/:date?" element={<MainLayout viewMode="day" />} />
+      <Route path="/grid/:date?" element={<MainLayout viewMode="grid" />} />
+      <Route path="/user/:date?" element={<MainLayout viewMode="user" />} />
+      <Route path="/hour/:date?" element={<MainLayout viewMode="hour" />} />
+      <Route path="/tasks" element={<MainLayout />} />
       <Route path="*" element={<RedirectToLastViewMode />} />
     </Routes>
   );

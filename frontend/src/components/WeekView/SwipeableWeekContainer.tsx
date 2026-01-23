@@ -3,6 +3,7 @@ import { addWeeks, subWeeks } from 'date-fns';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { useWeekEvents } from '@/hooks/useCalendarQueries';
 import { getWeekDays } from '@/utils/dateUtils';
+import { useAppContext } from '@/contexts/AppContext';
 import type { Block } from '@/types';
 
 interface WeekData {
@@ -17,9 +18,7 @@ interface SwipeableWeekContainerProps {
   onPrevWeek?: () => void;
   onNextWeek?: () => void;
   isDisabled?: boolean;
-  activeBlock?: Block | null;
   children: (weekData: WeekData) => ReactNode;
-  onAllBlocksChange?: (blocks: Block[]) => void;
 }
 
 export function SwipeableWeekContainer({
@@ -27,9 +26,7 @@ export function SwipeableWeekContainer({
   onPrevWeek,
   onNextWeek,
   isDisabled = false,
-  activeBlock,
   children,
-  onAllBlocksChange,
 }: SwipeableWeekContainerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -77,18 +74,6 @@ export function SwipeableWeekContainer({
     }
   }, []);
 
-  const prevBlocksRef = useRef<string>('');
-  useEffect(() => {
-    if (onAllBlocksChange) {
-      const allBlocks = [...prevBlocks, ...currentBlocks, ...nextBlocks];
-      const blocksKey = `${prevBlocks.length}-${currentBlocks.length}-${nextBlocks.length}`;
-      if (prevBlocksRef.current !== blocksKey) {
-        prevBlocksRef.current = blocksKey;
-        onAllBlocksChange(allBlocks);
-      }
-    }
-  }, [prevBlocks, currentBlocks, nextBlocks, onAllBlocksChange]);
-
   const {
     swipeState,
     isDragging,
@@ -100,7 +85,6 @@ export function SwipeableWeekContainer({
     onNextWeek,
     isDisabled,
     containerWidth,
-    activeBlock,
   });
 
   const combinedRef = useCallback(
@@ -157,7 +141,7 @@ export function SwipeableWeekContainer({
       ref={combinedRef}
       className="h-full overflow-hidden relative"
       style={{
-        touchAction: isDragging ? 'none' : 'pan-y',
+        touchAction: isDragging ? 'none' : 'pan-y pan-x',
         userSelect: isDragging ? 'none' : 'auto',
         WebkitUserSelect: isDragging ? 'none' : 'auto',
       }}

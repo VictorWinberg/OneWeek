@@ -2,17 +2,21 @@ import { useDroppable } from '@dnd-kit/core';
 import { formatDayShort, isToday } from '@/utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
 import { EventCard } from '@/components/WeekView/EventCard';
+import { useAppContext } from '@/contexts/AppContext';
 import type { Block } from '@/types';
 
 interface DroppableGridDayProps {
   date: Date;
   dayBlocks: Block[];
-  onBlockClick: (block: Block) => void;
-  onEmptyClick?: (date: Date) => void;
   isCurrentDay: boolean;
 }
 
-function DroppableGridDay({ date, dayBlocks, onBlockClick, onEmptyClick, isCurrentDay }: DroppableGridDayProps) {
+function DroppableGridDay({
+  date,
+  dayBlocks,
+  isCurrentDay,
+}: DroppableGridDayProps) {
+  const { onEmptyClick } = useAppContext();
   const { setNodeRef, isOver } = useDroppable({
     id: `grid-day-${date.toISOString()}`,
     data: { date },
@@ -24,7 +28,7 @@ function DroppableGridDay({ date, dayBlocks, onBlockClick, onEmptyClick, isCurre
       return;
     }
     // Trigger for any click on the day (header or empty space)
-    onEmptyClick?.(date);
+    onEmptyClick(date);
   };
 
   return (
@@ -78,7 +82,6 @@ function DroppableGridDay({ date, dayBlocks, onBlockClick, onEmptyClick, isCurre
               <EventCard
                 key={`${block.calendarId}-${block.id}`}
                 block={block}
-                onClick={() => onBlockClick(block)}
                 compact={true}
                 draggable={true}
               />
@@ -93,22 +96,9 @@ function DroppableGridDay({ date, dayBlocks, onBlockClick, onEmptyClick, isCurre
 interface MobileGridViewProps {
   weekDays: Date[];
   blocks: Block[];
-  onBlockClick: (block: Block) => void;
-  onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
 }
 
-export function MobileGridView({
-  weekDays,
-  blocks,
-  onBlockClick,
-  onCreateEventForDate,
-}: MobileGridViewProps) {
-  const handleEmptySpaceClick = (date: Date) => {
-    if (onCreateEventForDate) {
-      onCreateEventForDate(date);
-    }
-  };
-
+export function MobileGridView({ weekDays, blocks }: MobileGridViewProps) {
   return (
     <div className="overflow-y-auto h-full">
       <div className="grid grid-cols-2 gap-2 p-2">
@@ -121,8 +111,6 @@ export function MobileGridView({
               key={date.toISOString()}
               date={date}
               dayBlocks={dayBlocks}
-              onBlockClick={onBlockClick}
-              onEmptyClick={handleEmptySpaceClick}
               isCurrentDay={isCurrentDay}
             />
           );

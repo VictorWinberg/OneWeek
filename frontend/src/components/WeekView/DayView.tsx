@@ -2,17 +2,17 @@ import { useDroppable } from '@dnd-kit/core';
 import { isToday, formatDayShort, formatDayNumber } from '@/utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
 import { EventCard } from '@/components/WeekView/EventCard';
+import { useAppContext } from '@/contexts/AppContext';
 import type { DesktopViewRenderProps } from '@/components/WeekView/DesktopView';
 import type { Block } from '@/types';
 
 interface DroppableDayEventsProps {
   date: Date;
   blocks: Block[];
-  onBlockClick: (block: Block) => void;
-  onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
 }
 
-function DroppableDayEvents({ date, blocks, onBlockClick, onCreateEventForDate }: DroppableDayEventsProps) {
+function DroppableDayEvents({ date, blocks }: DroppableDayEventsProps) {
+  const { onCreateEventForDate } = useAppContext();
   const dayBlocks = sortBlocksByTime(getBlocksForDay(blocks, date).filter((b) => !b.allDay));
   const today = isToday(date);
 
@@ -41,7 +41,6 @@ function DroppableDayEvents({ date, blocks, onBlockClick, onCreateEventForDate }
           <EventCard
             key={`${block.calendarId}-${block.id}`}
             block={block}
-            onClick={() => onBlockClick(block)}
             compact={false}
             draggable={true}
           />
@@ -53,7 +52,7 @@ function DroppableDayEvents({ date, blocks, onBlockClick, onCreateEventForDate }
 
 export type DayViewProps = DesktopViewRenderProps;
 
-export function DayView({ blocks, weekDays, onBlockClick, onCreateEventForDate }: DayViewProps) {
+export function DayView({ blocks, weekDays }: DayViewProps) {
   return (
     <>
       {/* Day Headers */}
@@ -102,7 +101,6 @@ export function DayView({ blocks, weekDays, onBlockClick, onCreateEventForDate }
                 <EventCard
                   key={`${block.calendarId}-${block.id}`}
                   block={block}
-                  onClick={() => onBlockClick(block)}
                   compact={true}
                   fillHeight={false}
                   draggable={false}
@@ -118,13 +116,7 @@ export function DayView({ blocks, weekDays, onBlockClick, onCreateEventForDate }
       {/* Timed events section */}
       <div className="flex-1 flex overflow-x-auto">
         {weekDays.map((date) => (
-          <DroppableDayEvents
-            key={date.toISOString()}
-            date={date}
-            blocks={blocks}
-            onBlockClick={onBlockClick}
-            onCreateEventForDate={onCreateEventForDate}
-          />
+          <DroppableDayEvents key={date.toISOString()} date={date} blocks={blocks} />
         ))}
       </div>
     </>

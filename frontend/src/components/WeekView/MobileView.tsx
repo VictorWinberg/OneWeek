@@ -82,7 +82,7 @@ export function MobileView({
           const weekNumber = getWeekNumber(date);
           const isCurrentWeekDisplayed = isCurrentWeek(date);
 
-          if (isLoading) {
+          if (isLoading && blocks.length === 0) {
             return (
               <div className="flex-1 flex items-center justify-center p-8">
                 <div className="flex flex-col items-center gap-3">

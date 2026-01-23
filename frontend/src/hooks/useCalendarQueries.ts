@@ -39,8 +39,7 @@ export function useWeekEvents(selectedDate: Date) {
     enabled: config.calendars.length > 0,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
-    initialData: cachedData ?? undefined,
-    initialDataUpdatedAt: cachedData ? 0 : undefined,
+    placeholderData: cachedData ?? undefined,
   });
 }
 

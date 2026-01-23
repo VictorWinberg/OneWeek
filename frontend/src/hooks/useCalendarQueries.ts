@@ -1,13 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { startOfWeek, endOfWeek, addWeeks, subWeeks } from 'date-fns';
+import { startOfWeek, endOfWeek, addWeeks, subWeeks, format } from 'date-fns';
 import { eventsApi } from '@/services/api';
+import { getCachedWeek, setCachedWeek } from '@/services/weekCache';
 import { useConfigStore } from '@/stores/configStore';
 import type { Block } from '@/types';
 
 // Helper to get week key for query keys
 export const getWeekKey = (date: Date): string => {
   const weekStart = startOfWeek(date, { weekStartsOn: 1 });
-  return weekStart.toISOString();
+  return format(weekStart, 'yyyy-MM-dd');
 };
 
 // Query key factory
@@ -17,14 +18,13 @@ export const calendarKeys = {
   week: (weekKey: string) => [...calendarKeys.events(), weekKey] as const,
 };
 
-/**
- * Hook to fetch events for a specific week
- */
 export function useWeekEvents(selectedDate: Date) {
   const { config } = useConfigStore();
   const weekKey = getWeekKey(selectedDate);
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
+
+  const cachedData = config.calendars.length > 0 ? getCachedWeek(weekKey) : null;
 
   return useQuery({
     queryKey: calendarKeys.week(weekKey),
@@ -32,17 +32,17 @@ export function useWeekEvents(selectedDate: Date) {
       if (config.calendars.length === 0) {
         return [];
       }
-      return eventsApi.getEvents(weekStart, weekEnd, config.calendars);
+      const blocks = await eventsApi.getEvents(weekStart, weekEnd, config.calendars);
+      setCachedWeek(weekKey, blocks);
+      return blocks;
     },
     enabled: config.calendars.length > 0,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    placeholderData: cachedData ?? undefined,
   });
 }
 
-/**
- * Hook to prefetch adjacent weeks
- */
 export function usePrefetchAdjacentWeeks(selectedDate: Date) {
   const queryClient = useQueryClient();
   const { config } = useConfigStore();
@@ -52,10 +52,18 @@ export function usePrefetchAdjacentWeeks(selectedDate: Date) {
     const weekStart = startOfWeek(date, { weekStartsOn: 1 });
     const weekEnd = endOfWeek(date, { weekStartsOn: 1 });
 
+    const cachedData = getCachedWeek(weekKey);
+
     await queryClient.prefetchQuery({
       queryKey: calendarKeys.week(weekKey),
-      queryFn: () => eventsApi.getEvents(weekStart, weekEnd, config.calendars),
+      queryFn: async () => {
+        const blocks = await eventsApi.getEvents(weekStart, weekEnd, config.calendars);
+        setCachedWeek(weekKey, blocks);
+        return blocks;
+      },
       staleTime: 5 * 60 * 1000,
+      initialData: cachedData ?? undefined,
+      initialDataUpdatedAt: cachedData ? 0 : undefined,
     });
   };
 

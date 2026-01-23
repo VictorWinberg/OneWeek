@@ -116,7 +116,7 @@ export function DesktopView({
         {error && <ErrorState error={error} />}
 
         <div className={config.contentClassName}>
-          {isLoading ? (
+          {isLoading && blocks.length === 0 ? (
             <LoadingState />
           ) : (
             children({

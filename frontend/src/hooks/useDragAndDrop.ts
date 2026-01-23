@@ -3,7 +3,7 @@
  * Encapsulates drag state management and event handling
  */
 
-import { useCallback } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import { useSensor, useSensors, PointerSensor, TouchSensor } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import type { Block } from '@/types';
@@ -31,7 +31,14 @@ export function useDragAndDrop({
   mutations,
   isMobile = false,
 }: UseDragAndDropOptions): UseDragAndDropResult {
-  const { setActiveBlock } = useAppContext();
+  const { holdingBlockId, setHolding, setActiveBlock } = useAppContext();
+  // Use ref to access current holdingBlockId synchronously in handleDragStart
+  const holdingBlockIdRef = useRef<string | null>(null);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    holdingBlockIdRef.current = holdingBlockId;
+  }, [holdingBlockId]);
 
   // Configure sensors based on device type
   const sensors = useSensors(
@@ -54,16 +61,29 @@ export function useDragAndDrop({
 
   /**
    * Handle drag start - find and set the active block
+   * On mobile, require hold state before allowing drag
    */
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
       const blockId = String(event.active.id);
       const block = findBlockById(blocks, blockId);
-      if (block) {
-        setActiveBlock(block);
+
+      if (!block) {
+        return;
       }
+
+      // On mobile, require hold state before allowing drag
+      if (isMobile) {
+        const currentHoldingBlockId = holdingBlockIdRef.current;
+        if (currentHoldingBlockId !== blockId) {
+          // Drag started without proper hold state - cancel it
+          return;
+        }
+      }
+
+      setActiveBlock(block);
     },
-    [blocks, setActiveBlock]
+    [blocks, isMobile, setActiveBlock]
   );
 
   /**
@@ -73,6 +93,7 @@ export function useDragAndDrop({
     async (event: DragEndEvent) => {
       const blockId = String(event.active.id);
       setActiveBlock(null);
+      setHolding(null);
 
       if (!event.over) return;
 
@@ -85,7 +106,7 @@ export function useDragAndDrop({
 
       await handleDragDrop(block, dropData, mutations);
     },
-    [blocks, mutations, setActiveBlock]
+    [blocks, mutations, setActiveBlock, setHolding]
   );
 
   return {

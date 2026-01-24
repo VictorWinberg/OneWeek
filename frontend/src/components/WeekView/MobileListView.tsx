@@ -10,14 +10,14 @@ interface DroppableDaySectionProps {
   date: Date;
   title: string;
   blocks: Block[];
-  isToday: boolean;
+  isCurrentDay: boolean;
 }
 
 function DroppableDaySection({
   date,
   title,
   blocks,
-  isToday,
+  isCurrentDay,
 }: DroppableDaySectionProps) {
   const { onEmptyClick } = useAppContext();
   const { setNodeRef, isOver } = useDroppable({
@@ -36,7 +36,7 @@ function DroppableDaySection({
 
   // Find where to insert the current time indicator (only for timed events)
   const timedBlocks = blocks.filter((b) => !b.allDay);
-  const currentTimeIndex = findCurrentTimeIndex(date, timedBlocks, isToday);
+  const currentTimeIndex = findCurrentTimeIndex(date, timedBlocks, isCurrentDay);
 
   return (
     <section
@@ -50,19 +50,19 @@ function DroppableDaySection({
       <header
         className={`
           sticky top-0 z-10 px-4 py-3
-          ${isToday ? 'bg-[var(--color-accent)]/10' : 'bg-[var(--color-bg-secondary)]'}
+          ${isCurrentDay ? 'bg-[var(--color-accent)]/10' : 'bg-[var(--color-bg-secondary)]'}
         `}
       >
         <div className="flex items-center gap-2">
           <h2
             className={`
               text-base font-bold
-              ${isToday ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'}
+              ${isCurrentDay ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'}
             `}
           >
             {title}
           </h2>
-          {isToday && <div className="w-2 h-2 bg-[var(--color-accent)] rounded-full animate-pulse" />}
+          {isCurrentDay && <div className="w-2 h-2 bg-[var(--color-accent)] rounded-full animate-pulse" />}
         </div>
       </header>
 
@@ -70,7 +70,7 @@ function DroppableDaySection({
         <div className="space-y-3">
           {blocks.length === 0 ? (
             <>
-              {isToday && <CurrentTimeIndicator date={date} variant="inline" />}
+              {isCurrentDay && <CurrentTimeIndicator date={date} variant="inline" />}
               <p className="text-center text-[var(--color-text-secondary)] py-8 opacity-60">Inga events</p>
             </>
           ) : (
@@ -88,7 +88,7 @@ function DroppableDaySection({
               {/* Timed events with indicator inserted at appropriate position */}
               {timedBlocks.map((block, index) => (
                 <div key={`${block.calendarId}-${block.id}`}>
-                  {isToday && currentTimeIndex === index && <CurrentTimeIndicator date={date} variant="inline" />}
+                  {isCurrentDay && currentTimeIndex === index && <CurrentTimeIndicator date={date} variant="inline" />}
                   <EventCard
                     block={block}
                     draggable={true}
@@ -96,11 +96,11 @@ function DroppableDaySection({
                 </div>
               ))}
               {/* Current time indicator after all timed events if needed */}
-              {isToday && timedBlocks.length > 0 && currentTimeIndex === -1 && (
+              {isCurrentDay && timedBlocks.length > 0 && currentTimeIndex === -1 && (
                 <CurrentTimeIndicator date={date} variant="inline" />
               )}
               {/* Show indicator even if no timed events */}
-              {isToday && timedBlocks.length === 0 && <CurrentTimeIndicator date={date} variant="inline" />}
+              {isCurrentDay && timedBlocks.length === 0 && <CurrentTimeIndicator date={date} variant="inline" />}
             </>
           )}
         </div>
@@ -134,7 +134,7 @@ export function MobileListView({ weekDays, blocks }: MobileListViewProps) {
             date={date}
             title={formatDayHeader(date)}
             blocks={dayBlocks}
-            isToday={isCurrentDay}
+            isCurrentDay={isCurrentDay}
           />
         );
       })}

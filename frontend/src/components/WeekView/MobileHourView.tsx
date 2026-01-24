@@ -5,6 +5,7 @@ import { getBlocksForDay, calculateBlockPosition } from '@/services/calendarNorm
 import { calculateNextHourTimeSlot } from '@/utils/timeUtils';
 import { EventCard } from '@/components/WeekView/EventCard';
 import { useAppContext } from '@/contexts/AppContext';
+import { CurrentTimeIndicator } from '@/components/WeekView/CurrentTimeIndicator';
 import type { Block } from '@/types';
 
 interface DroppableTimeSlotProps {
@@ -224,6 +225,9 @@ export function MobileHourView({ weekDays, blocks }: MobileHourViewProps) {
                 {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
                   <div key={hour} className="h-[50px] border-b border-[var(--color-bg-tertiary)]" />
                 ))}
+
+                {/* Current time indicator */}
+                <CurrentTimeIndicator date={date} variant="line" pixelsPerHour={50} />
 
                 {/* 15-minute droppable time slots overlay */}
                 <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none">

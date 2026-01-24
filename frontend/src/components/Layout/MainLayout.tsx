@@ -13,6 +13,7 @@ import { MobileView } from '@/components/WeekView/MobileView';
 import { TasksView } from '@/components/TasksView/TasksView';
 import { useIsMobile } from '@/hooks/useMediaQuery';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useAppContext } from '@/contexts/AppContext';
 import type { ViewMode } from '@/types/viewMode';
 
 interface MainLayoutProps {
@@ -25,6 +26,7 @@ export function MainLayout({ viewMode }: MainLayoutProps) {
   const isMobile = useIsMobile();
   const { selectedDate, setSelectedDate } = useCalendarStore();
   const [, setLastViewMode] = useLocalStorage<ViewMode>('lastViewMode', 'day');
+  const { onCreateEventForDate } = useAppContext();
 
   // Save view mode to localStorage when it changes
   useEffect(() => {
@@ -111,7 +113,14 @@ export function MainLayout({ viewMode }: MainLayoutProps) {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <NavigationBar viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+      <NavigationBar
+        viewMode={viewMode}
+        onViewModeChange={handleViewModeChange}
+        onCreateEventForDate={onCreateEventForDate}
+        onGoToToday={handleGoToToday}
+        mobileViewMode={viewMode}
+        onMobileViewModeChange={handleViewModeChange}
+      />
 
       {/* Main content */}
       <main className="flex-1 overflow-hidden min-h-0">
@@ -122,8 +131,6 @@ export function MainLayout({ viewMode }: MainLayoutProps) {
             viewMode={viewMode}
             onNextWeek={handleNextWeek}
             onPrevWeek={handlePrevWeek}
-            onViewModeChange={handleViewModeChange}
-            onGoToToday={handleGoToToday}
           />
         ) : (
           <DesktopView

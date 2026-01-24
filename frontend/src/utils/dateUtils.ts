@@ -1,4 +1,4 @@
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay, addDays, getWeek, parseISO, isValid, isWithinInterval } from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay, addDays, getWeek, getISOWeekYear, parseISO, isValid, isWithinInterval } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
 export function getWeekDays(date: Date): Date[] {
@@ -13,13 +13,34 @@ export function formatWeekHeader(date: Date): string {
 
   const startMonth = format(start, 'MMMM', { locale: sv });
   const endMonth = format(end, 'MMMM', { locale: sv });
-  const year = format(start, 'yyyy');
+  const weekYear = getISOWeekYear(date);
+  const currentYear = new Date().getFullYear();
+  const showYear = weekYear !== currentYear;
+  const year = showYear ? ` ${format(start, 'yyyy')}` : '';
 
   if (startMonth === endMonth) {
-    return `${format(start, 'd')}–${format(end, 'd')} ${startMonth} ${year}`;
+    return `${format(start, 'd')}–${format(end, 'd')} ${startMonth}${year}`;
   }
 
-  return `${format(start, 'd')} ${startMonth} – ${format(end, 'd')} ${endMonth} ${year}`;
+  return `${format(start, 'd')} ${startMonth} – ${format(end, 'd')} ${endMonth}${year}`;
+}
+
+export function formatWeekHeaderShort(date: Date): string {
+  const start = startOfWeek(date, { weekStartsOn: 1 });
+  const end = endOfWeek(date, { weekStartsOn: 1 });
+
+  const startMonth = format(start, 'MMM', { locale: sv });
+  const endMonth = format(end, 'MMM', { locale: sv });
+
+  if (startMonth === endMonth) {
+    return `${format(start, 'd')}–${format(end, 'd')} ${startMonth}`;
+  }
+
+  return `${format(start, 'd')} ${startMonth} – ${format(end, 'd')} ${endMonth}`;
+}
+
+export function getWeekYear(date: Date): string {
+  return getISOWeekYear(date).toString();
 }
 
 export function formatDayHeader(date: Date): string {
@@ -142,4 +163,40 @@ export function parseDateParam(dateParam: string | undefined): Date | null {
     // Invalid date format
   }
   return null;
+}
+
+/**
+ * Find the index where the current time indicator should be inserted in a list of timed blocks.
+ * Returns the index of the first block that starts after the current time, or -1 if all blocks are in the past.
+ *
+ * @param date - The date being viewed (used for normalization)
+ * @param timedBlocks - Array of timed blocks (non-all-day events) sorted by start time
+ * @param isCurrentDay - Whether the date is today
+ * @returns The index where the indicator should be inserted, or -1 if it should be after all events
+ */
+export function findCurrentTimeIndex(
+  date: Date,
+  timedBlocks: Array<{ startTime: Date }>,
+  isCurrentDay: boolean
+): number {
+  if (!isCurrentDay) {
+    return -1;
+  }
+
+  const now = new Date();
+
+  return timedBlocks.findIndex((block) => {
+    const blockStart = new Date(block.startTime);
+    // Normalize both times to the same day (the date we're viewing)
+    const normalizedNow = new Date(date);
+    normalizedNow.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+    const normalizedBlockStart = new Date(date);
+    normalizedBlockStart.setHours(
+      blockStart.getHours(),
+      blockStart.getMinutes(),
+      blockStart.getSeconds(),
+      blockStart.getMilliseconds()
+    );
+    return normalizedBlockStart > normalizedNow;
+  });
 }

@@ -5,6 +5,7 @@ import { getBlocksForDay, calculateBlockPosition } from '@/services/calendarNorm
 import { calculateNextHourTimeSlot } from '@/utils/timeUtils';
 import { EventCard } from '@/components/WeekView/EventCard';
 import { useAppContext } from '@/contexts/AppContext';
+import { CurrentTimeIndicator } from '@/components/WeekView/CurrentTimeIndicator';
 import type { DesktopViewRenderProps } from '@/components/WeekView/DesktopView';
 import type { Block } from '@/types';
 
@@ -177,6 +178,9 @@ export function HourView({ blocks, weekDays, activeBlock }: HourViewProps) {
                 {hours.map((hour) => (
                   <div key={hour} className="h-[60px] border-b border-[var(--color-bg-tertiary)]" />
                 ))}
+
+                {/* Current time indicator */}
+                <CurrentTimeIndicator date={date} variant="line" pixelsPerHour={60} />
 
                 {/* 15-minute droppable time slots overlay */}
                 <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none">

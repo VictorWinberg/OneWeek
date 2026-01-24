@@ -11,6 +11,7 @@ import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { calculateSmartDefaultTimes, calculateEndTimeWithDuration } from '@/utils/timeUtils';
 import { getDefaultCalendarId, prepareEventData } from '@/utils/eventCreationUtils';
 import type { RecurrenceRule } from '@/types/block';
+import CloseIcon from '@/assets/icons/close.svg?react';
 
 interface EventCreatePanelProps {
   isOpen: boolean;
@@ -144,9 +145,7 @@ export function EventCreatePanel({
         className="p-2 rounded-lg hover:bg-[var(--color-bg-tertiary)] transition-colors"
         aria-label="Stäng"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
+        <CloseIcon className="w-5 h-5" aria-hidden="true" />
       </button>
     </div>
   );

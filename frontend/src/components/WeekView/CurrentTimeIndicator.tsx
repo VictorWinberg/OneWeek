@@ -45,7 +45,6 @@ export function CurrentTimeIndicator({ date, variant = 'inline', pixelsPerHour =
     );
   }
 
-  // Inline variant for list views
   return (
     <div className="relative my-1 pointer-events-none">
       <div className="flex items-center gap-0">

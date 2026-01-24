@@ -1,4 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import CalendarIcon from '@/assets/icons/calendar.svg?react';
+import TasksIcon from '@/assets/icons/tasks.svg?react';
 
 export function NavigationIcons() {
   const navigate = useNavigate();
@@ -19,7 +21,7 @@ export function NavigationIcons() {
         }`}
         aria-label="Kalender"
       >
-        <img src="/icons/calendar.svg" alt="Kalender" className="w-5 h-5" />
+        <CalendarIcon className="w-5 h-5" aria-hidden="true" />
       </button>
       <button
         onClick={() => navigate('/tasks')}
@@ -30,7 +32,7 @@ export function NavigationIcons() {
         }`}
         aria-label="Uppgifter"
       >
-        <img src="/icons/tasks.svg" alt="Uppgifter" className="w-5 h-5" />
+        <TasksIcon className="w-5 h-5" aria-hidden="true" />
       </button>
     </div>
   );

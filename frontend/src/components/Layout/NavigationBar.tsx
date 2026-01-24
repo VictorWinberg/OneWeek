@@ -9,6 +9,13 @@ import { useCalendarStore } from '@/stores/calendarStore';
 import { formatWeekHeaderShort, getWeekNumber, getWeekYear, isCurrentWeek } from '@/utils/dateUtils';
 import { urlToMobileViewMode, mobileToUrlViewMode, type MobileViewMode, type UrlViewMode } from '@/utils/viewModeUtils';
 import type { ViewMode } from '@/types/viewMode';
+import CloseIcon from '@/assets/icons/close.svg?react';
+import MenuIcon from '@/assets/icons/menu.svg?react';
+import CalendarIcon from '@/assets/icons/calendar.svg?react';
+import TasksIcon from '@/assets/icons/tasks.svg?react';
+import PlusIcon from '@/assets/icons/plus.svg?react';
+import TodayIcon from '@/assets/icons/today.svg?react';
+import ViewModeIcon from '@/assets/icons/view-mode.svg?react';
 
 interface NavigationBarProps {
   viewMode?: ViewMode;
@@ -88,13 +95,9 @@ export function NavigationBar({
               aria-label="Menu"
             >
               {isMenuOpen ? (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <CloseIcon className="w-5 h-5" aria-hidden="true" />
               ) : (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
+                <MenuIcon className="w-5 h-5" aria-hidden="true" />
               )}
             </button>
 
@@ -128,9 +131,7 @@ export function NavigationBar({
                     !isOnTasksPage ? 'bg-[var(--color-bg-tertiary)]' : ''
                   }`}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
+                  <CalendarIcon className="w-5 h-5" aria-hidden="true" />
                   <span className="text-sm">Kalender</span>
                 </button>
 
@@ -141,9 +142,7 @@ export function NavigationBar({
                     isOnTasksPage ? 'bg-[var(--color-bg-tertiary)]' : ''
                   }`}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                  </svg>
+                  <TasksIcon className="w-5 h-5" aria-hidden="true" />
                   <span className="text-sm">Uppgifter</span>
                 </button>
 
@@ -183,9 +182,7 @@ export function NavigationBar({
                     className="p-1.5 rounded-lg hover:bg-[var(--color-bg-tertiary)] transition-colors text-[var(--color-text-primary)]"
                     aria-label="Skapa event"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
+                    <PlusIcon className="w-4 h-4" aria-hidden="true" />
                   </button>
                 )}
 
@@ -200,9 +197,7 @@ export function NavigationBar({
                     }`}
                     aria-label="Gå till idag"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
+                    <TodayIcon className="w-4 h-4" aria-hidden="true" />
                   </button>
                 )}
 
@@ -214,9 +209,7 @@ export function NavigationBar({
                       className="p-1.5 rounded-lg hover:bg-[var(--color-bg-tertiary)] transition-colors text-[var(--color-text-primary)]"
                       aria-label="Visa läge"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                      </svg>
+                      <ViewModeIcon className="w-4 h-4" aria-hidden="true" />
                     </button>
 
                     {/* Dropdown menu */}
@@ -261,7 +254,6 @@ export function NavigationBar({
     );
   }
 
-  // Desktop view (unchanged)
   return (
     <nav className="flex items-center justify-between p-4 bg-[var(--color-bg-secondary)] border-b border-[var(--color-bg-tertiary)] flex-shrink-0">
       <h1 className="text-xl font-bold text-[var(--color-text-primary)] flex items-baseline">

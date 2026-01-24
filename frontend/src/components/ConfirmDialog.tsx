@@ -1,4 +1,5 @@
 import { Description, Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
+import WarningIcon from '@/assets/icons/warning.svg?react';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -40,7 +41,7 @@ export function ConfirmDialog({
           <div className="p-6 pb-4">
             <DialogTitle className="text-xl font-bold text-[var(--color-text-primary)] flex items-center gap-3">
               {isDangerous && (
-                <img src="/icons/warning.svg" alt="Warning" className="w-6 h-6" style={{ color: '#f87171' }} />
+                <WarningIcon className="w-6 h-6 text-red-400" aria-hidden="true" />
               )}
               {title}
             </DialogTitle>

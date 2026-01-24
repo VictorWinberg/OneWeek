@@ -12,6 +12,11 @@ import {
   DEFAULT_TASK_LIST_ID,
 } from '@/hooks/useTasks';
 import type { Task } from '@/types';
+import EyeOpenIcon from '@/assets/icons/eye-open.svg?react';
+import EyeClosedIcon from '@/assets/icons/eye-closed.svg?react';
+import CalendarIcon from '@/assets/icons/calendar.svg?react';
+import CheckmarkIcon from '@/assets/icons/checkmark.svg?react';
+import CloseIcon from '@/assets/icons/close.svg?react';
 
 interface TasksViewProps {
   onGoToToday?: () => void;
@@ -260,9 +265,9 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
           title="Visa färdiga uppgifter"
         >
           {showCompleted ? (
-            <img src="/icons/eye-open.svg" alt="Hide completed" className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
+            <EyeOpenIcon className="w-5 h-5 text-[var(--color-accent)]" aria-hidden="true" />
           ) : (
-            <img src="/icons/eye-closed.svg" alt="Show completed" className="w-5 h-5 opacity-60" style={{ color: 'var(--color-text-secondary)' }} />
+            <EyeClosedIcon className="w-5 h-5 opacity-60 text-[var(--color-text-secondary)]" aria-hidden="true" />
           )}
         </button>
       </div>
@@ -295,7 +300,7 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
                 {formatDueDate(newTaskDue) || newTaskDue}
               </span>
             ) : (
-              <img src="/icons/calendar.svg" alt="Select date" className="w-4 h-4 opacity-50 pointer-events-none" style={{ color: 'var(--color-text-secondary)' }} />
+              <CalendarIcon className="w-4 h-4 opacity-50 pointer-events-none text-[var(--color-text-secondary)]" aria-hidden="true" />
             )}
           </label>
           <label className="flex-shrink-0 relative cursor-pointer min-w-[60px] sm:min-w-0 max-w-[100px] flex items-center">
@@ -449,7 +454,7 @@ function TaskItem({
         }`}
       >
         {isCompleted && (
-          <img src="/icons/checkmark.svg" alt="Completed" className="w-3 h-3" style={{ filter: 'brightness(0) invert(1)' }} />
+          <CheckmarkIcon className="w-3 h-3 text-white" aria-hidden="true" />
         )}
       </button>
 
@@ -488,7 +493,7 @@ function TaskItem({
             {dueDate}
           </span>
         ) : (
-          <img src="/icons/calendar.svg" alt="Select date" className="w-4 h-4 opacity-30 hover:opacity-60 transition-opacity" style={{ color: 'var(--color-text-secondary)' }} />
+          <CalendarIcon className="w-4 h-4 opacity-30 hover:opacity-60 transition-opacity text-[var(--color-text-secondary)]" aria-hidden="true" />
         )}
       </label>
 
@@ -528,7 +533,7 @@ function TaskItem({
           className="flex-shrink-0 p-1 rounded opacity-50 hover:opacity-100 text-[var(--color-text-secondary)] hover:text-red-400 transition-all"
           title="Ta bort"
         >
-          <img src="/icons/close.svg" alt="Delete" className="w-4 h-4" />
+          <CloseIcon className="w-4 h-4" aria-hidden="true" />
         </button>
       )}
     </div>

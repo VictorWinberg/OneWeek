@@ -1,4 +1,6 @@
 import { formatWeekHeader, getWeekNumber, isCurrentWeek } from '@/utils/dateUtils';
+import ChevronLeftIcon from '@/assets/icons/chevron-left.svg?react';
+import ChevronRightIcon from '@/assets/icons/chevron-right.svg?react';
 
 interface WeekViewHeaderProps {
   selectedDate: Date;
@@ -44,9 +46,7 @@ export function WeekViewHeader({
           className="p-2 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
           aria-label="Föregående vecka"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronLeftIcon className="w-5 h-5" aria-hidden="true" />
         </button>
 
         <button
@@ -61,9 +61,7 @@ export function WeekViewHeader({
           className="p-2 rounded-lg bg-[var(--color-bg-tertiary)] hover:bg-[var(--color-bg-tertiary)]/80 transition-colors"
           aria-label="Nästa vecka"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
+          <ChevronRightIcon className="w-5 h-5" aria-hidden="true" />
         </button>
       </div>
     </header>

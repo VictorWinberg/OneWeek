@@ -1,4 +1,5 @@
 import { Dialog, DialogPanel, DialogTitle, Description } from '@headlessui/react';
+import RefreshIcon from '@/assets/icons/refresh.svg?react';
 
 export type RecurringUpdateMode = 'this' | 'all' | 'future';
 
@@ -18,14 +19,7 @@ export function RecurringUpdateDialog({ isOpen, onClose, onConfirm, isLoading = 
         <DialogPanel className="mx-auto max-w-md w-full bg-[var(--color-bg-secondary)] rounded-lg shadow-2xl border border-[var(--color-bg-tertiary)]">
           <div className="p-6 pb-4">
             <DialogTitle className="text-xl font-bold text-[var(--color-text-primary)] flex items-center gap-3">
-              <svg className="w-6 h-6 text-[var(--color-accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
+              <RefreshIcon className="w-6 h-6 text-[var(--color-accent)]" aria-hidden="true" />
               Ändra återkommande händelse
             </DialogTitle>
             <Description className="mt-3 text-[var(--color-text-secondary)]">

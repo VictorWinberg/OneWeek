@@ -2,12 +2,13 @@ import type { Calendar } from '@/types';
 import { getInitial } from '@/types/calendar';
 import { useConfigStore } from '@/stores/configStore';
 import { useIsMobile } from '@/hooks/useMediaQuery';
+import CheckmarkFilledIcon from '@/assets/icons/checkmark-filled.svg?react';
 
 interface ResponsibilitySelectorProps {
   currentCalendarId: string;
   onSelect: (calendarId: string) => void;
   disabled?: boolean;
-  compact?: boolean; // Force compact (icons only) mode
+  compact?: boolean;
 }
 
 export function ResponsibilitySelector({
@@ -77,7 +78,7 @@ function CalendarButton({ person, isSelected, onClick, disabled, compact = false
           {initial.charAt(0)}
           {isSelected && (
             <div className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--color-accent)] rounded-full flex items-center justify-center">
-              <img src="/icons/checkmark-filled.svg" alt="Selected" className="w-3 h-3" style={{ filter: 'brightness(0) invert(1)' }} />
+              <CheckmarkFilledIcon className="w-3 h-3 text-white" aria-hidden="true" />
             </div>
           )}
         </div>
@@ -111,7 +112,7 @@ function CalendarButton({ person, isSelected, onClick, disabled, compact = false
       </div>
       <span className="text-sm font-medium text-[var(--color-text-primary)]">{person.name}</span>
       {isSelected && (
-        <img src="/icons/checkmark-filled.svg" alt="Selected" className="w-4 h-4 ml-auto" style={{ color: 'var(--color-accent)' }} />
+        <CheckmarkFilledIcon className="w-4 h-4 ml-auto text-[var(--color-accent)]" aria-hidden="true" />
       )}
     </button>
   );

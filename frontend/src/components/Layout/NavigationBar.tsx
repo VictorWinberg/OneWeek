@@ -178,7 +178,7 @@ export function NavigationBar({
                 {/* Create event button */}
                 {onCreateEventForDate && (
                   <button
-                    onClick={() => onCreateEventForDate(new Date())}
+                    onClick={() => onCreateEventForDate(selectedDate)}
                     className="p-1.5 rounded-lg hover:bg-[var(--color-bg-tertiary)] transition-colors text-[var(--color-text-primary)]"
                     aria-label="Skapa event"
                   >

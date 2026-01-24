@@ -25,6 +25,9 @@ export function WeekViewHeader({
       className={`flex items-center justify-between p-4 border-b border-[var(--color-bg-tertiary)] ${className}`}
     >
       <div className="flex items-center gap-4">
+        <span className="text-sm text-[var(--color-text-secondary)] bg-[var(--color-bg-tertiary)] px-2 py-1 rounded">
+          v.{weekNumber}
+        </span>
         <h1
           onClick={onGoToToday}
           className={`text-xl font-bold cursor-pointer transition-colors ${
@@ -35,9 +38,6 @@ export function WeekViewHeader({
         >
           {formatWeekHeader(selectedDate)}
         </h1>
-        <span className="text-sm text-[var(--color-text-secondary)] bg-[var(--color-bg-tertiary)] px-2 py-1 rounded">
-          v.{weekNumber}
-        </span>
       </div>
 
       <div className="flex items-center gap-2">

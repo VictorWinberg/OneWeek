@@ -1,4 +1,4 @@
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay, addDays, getWeek, parseISO, isValid, isWithinInterval } from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay, addDays, getWeek, getISOWeekYear, parseISO, isValid, isWithinInterval } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
 export function getWeekDays(date: Date): Date[] {
@@ -13,13 +13,16 @@ export function formatWeekHeader(date: Date): string {
 
   const startMonth = format(start, 'MMMM', { locale: sv });
   const endMonth = format(end, 'MMMM', { locale: sv });
-  const year = format(start, 'yyyy');
+  const weekYear = getISOWeekYear(date);
+  const currentYear = new Date().getFullYear();
+  const showYear = weekYear !== currentYear;
+  const year = showYear ? ` ${format(start, 'yyyy')}` : '';
 
   if (startMonth === endMonth) {
-    return `${format(start, 'd')}–${format(end, 'd')} ${startMonth} ${year}`;
+    return `${format(start, 'd')}–${format(end, 'd')} ${startMonth}${year}`;
   }
 
-  return `${format(start, 'd')} ${startMonth} – ${format(end, 'd')} ${endMonth} ${year}`;
+  return `${format(start, 'd')} ${startMonth} – ${format(end, 'd')} ${endMonth}${year}`;
 }
 
 export function formatWeekHeaderShort(date: Date): string {
@@ -37,25 +40,7 @@ export function formatWeekHeaderShort(date: Date): string {
 }
 
 export function getWeekYear(date: Date): string {
-  // Week 1 is the week containing January 4th (ISO week numbering)
-  // For weeks spanning year boundaries, we need to determine which year the week number belongs to
-  const start = startOfWeek(date, { weekStartsOn: 1 });
-  const end = endOfWeek(date, { weekStartsOn: 1 });
-
-  // Check if the week contains January 4th of the end year (most common case for week 1)
-  const jan4EndYear = new Date(end.getFullYear(), 0, 4);
-  if (start <= jan4EndYear && end >= jan4EndYear) {
-    return format(jan4EndYear, 'yyyy');
-  }
-
-  // Check if the week contains January 4th of the start year
-  const jan4StartYear = new Date(start.getFullYear(), 0, 4);
-  if (start <= jan4StartYear && end >= jan4StartYear) {
-    return format(jan4StartYear, 'yyyy');
-  }
-
-  // Otherwise, use the year of the start date
-  return format(start, 'yyyy');
+  return getISOWeekYear(date).toString();
 }
 
 export function formatDayHeader(date: Date): string {

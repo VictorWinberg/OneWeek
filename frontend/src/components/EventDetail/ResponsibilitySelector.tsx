@@ -7,16 +7,23 @@ interface ResponsibilitySelectorProps {
   currentCalendarId: string;
   onSelect: (calendarId: string) => void;
   disabled?: boolean;
+  compact?: boolean; // Force compact (icons only) mode
 }
 
-export function ResponsibilitySelector({ currentCalendarId, onSelect, disabled = false }: ResponsibilitySelectorProps) {
+export function ResponsibilitySelector({
+  currentCalendarId,
+  onSelect,
+  disabled = false,
+  compact: forceCompact,
+}: ResponsibilitySelectorProps) {
   const { persons } = useConfigStore();
   const isMobile = useIsMobile();
+  const compact = forceCompact ?? isMobile;
 
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-[var(--color-text-secondary)]">Ansvarig</label>
-      <div className={isMobile ? 'flex gap-2 overflow-x-auto' : 'grid grid-cols-2 gap-2'}>
+      <div className={compact ? 'flex gap-2 overflow-x-auto' : 'grid grid-cols-2 gap-2'}>
         {persons.map((person) => (
           <CalendarButton
             key={person.id}
@@ -24,7 +31,7 @@ export function ResponsibilitySelector({ currentCalendarId, onSelect, disabled =
             isSelected={person.id === currentCalendarId}
             onClick={() => onSelect(person.id)}
             disabled={disabled || person.id === currentCalendarId}
-            compact={isMobile}
+            compact={compact}
           />
         ))}
       </div>
@@ -70,13 +77,7 @@ function CalendarButton({ person, isSelected, onClick, disabled, compact = false
           {initial.charAt(0)}
           {isSelected && (
             <div className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--color-accent)] rounded-full flex items-center justify-center">
-              <svg className="w-3 h-3 text-[var(--color-bg-primary)]" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              <img src="/icons/checkmark-filled.svg" alt="Selected" className="w-3 h-3" style={{ filter: 'brightness(0) invert(1)' }} />
             </div>
           )}
         </div>
@@ -110,13 +111,7 @@ function CalendarButton({ person, isSelected, onClick, disabled, compact = false
       </div>
       <span className="text-sm font-medium text-[var(--color-text-primary)]">{person.name}</span>
       {isSelected && (
-        <svg className="w-4 h-4 ml-auto text-[var(--color-accent)]" fill="currentColor" viewBox="0 0 20 20">
-          <path
-            fillRule="evenodd"
-            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-            clipRule="evenodd"
-          />
-        </svg>
+        <img src="/icons/checkmark-filled.svg" alt="Selected" className="w-4 h-4 ml-auto" style={{ color: 'var(--color-accent)' }} />
       )}
     </button>
   );

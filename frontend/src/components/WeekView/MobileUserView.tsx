@@ -1,8 +1,9 @@
 import { useDroppable } from '@dnd-kit/core';
-import { formatDayShort, isToday } from '@/utils/dateUtils';
+import { formatDayShort, isToday, findCurrentTimeIndex } from '@/utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
 import { EventCard } from '@/components/WeekView/EventCard';
 import { useAppContext } from '@/contexts/AppContext';
+import { CurrentTimeIndicator } from '@/components/WeekView/CurrentTimeIndicator';
 import type { Block } from '@/types';
 import type { Calendar } from '@/types/calendar';
 
@@ -193,6 +194,9 @@ export function MobileUserView({ weekDays, blocks, calendars }: MobileUserViewPr
                   </td>
                   {calendars.map((calendar) => {
                     const dayCalendarBlocks = getBlocksForDayAndCalendar(date, calendar.id);
+                    const timedBlocks = dayCalendarBlocks.filter((b) => !b.allDay);
+                    const currentTimeIndex = findCurrentTimeIndex(date, timedBlocks, today);
+
                     return (
                       <DroppableMobileCell
                         key={`${date.toISOString()}-${calendar.id}`}
@@ -205,18 +209,47 @@ export function MobileUserView({ weekDays, blocks, calendars }: MobileUserViewPr
                       >
                         <div className="space-y-0.5 h-full flex flex-col">
                           {dayCalendarBlocks.length === 0 ? (
-                            <div className="flex items-center justify-center flex-1 text-[var(--color-text-secondary)] text-[9px] opacity-50">
-                              —
-                            </div>
+                            <>
+                              {today && <CurrentTimeIndicator date={date} variant="inline" />}
+                              <div className="flex items-center justify-center flex-1 text-[var(--color-text-secondary)] text-[9px] opacity-50">
+                                —
+                              </div>
+                            </>
                           ) : (
-                            dayCalendarBlocks.map((block) => (
-                              <EventCard
-                                key={`${block.calendarId}-${block.id}`}
-                                block={block}
-                                compact={true}
-                                draggable={true}
-                              />
-                            ))
+                            <>
+                              {/* All-day events first */}
+                              {dayCalendarBlocks
+                                .filter((b) => b.allDay)
+                                .map((block) => (
+                                  <EventCard
+                                    key={`${block.calendarId}-${block.id}`}
+                                    block={block}
+                                    compact={true}
+                                    draggable={true}
+                                  />
+                                ))}
+                              {/* Timed events with indicator inserted at appropriate position */}
+                              {timedBlocks.map((block, index) => (
+                                <div key={`${block.calendarId}-${block.id}`}>
+                                  {today && currentTimeIndex === index && (
+                                    <CurrentTimeIndicator date={date} variant="inline" />
+                                  )}
+                                  <EventCard
+                                    block={block}
+                                    compact={true}
+                                    draggable={true}
+                                  />
+                                </div>
+                              ))}
+                              {/* Current time indicator after all timed events if needed */}
+                              {today && timedBlocks.length > 0 && currentTimeIndex === -1 && (
+                                <CurrentTimeIndicator date={date} variant="inline" />
+                              )}
+                              {/* Show indicator even if no timed events */}
+                              {today && timedBlocks.length === 0 && (
+                                <CurrentTimeIndicator date={date} variant="inline" />
+                              )}
+                            </>
                           )}
                         </div>
                       </DroppableMobileCell>

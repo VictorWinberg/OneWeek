@@ -260,24 +260,9 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
           title="Visa färdiga uppgifter"
         >
           {showCompleted ? (
-            <svg className="w-5 h-5 text-[var(--color-accent)]" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
-            </svg>
+            <img src="/icons/eye-open.svg" alt="Hide completed" className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />
           ) : (
-            <svg
-              className="w-5 h-5 text-[var(--color-text-secondary)] opacity-60"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-              />
-            </svg>
+            <img src="/icons/eye-closed.svg" alt="Show completed" className="w-5 h-5 opacity-60" style={{ color: 'var(--color-text-secondary)' }} />
           )}
         </button>
       </div>
@@ -310,19 +295,7 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
                 {formatDueDate(newTaskDue) || newTaskDue}
               </span>
             ) : (
-              <svg
-                className="w-4 h-4 text-[var(--color-text-secondary)] opacity-50 pointer-events-none"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
+              <img src="/icons/calendar.svg" alt="Select date" className="w-4 h-4 opacity-50 pointer-events-none" style={{ color: 'var(--color-text-secondary)' }} />
             )}
           </label>
           <label className="flex-shrink-0 relative cursor-pointer min-w-[60px] sm:min-w-0 max-w-[100px] flex items-center">
@@ -476,9 +449,7 @@ function TaskItem({
         }`}
       >
         {isCompleted && (
-          <svg className="w-3 h-3 text-[var(--color-bg-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-          </svg>
+          <img src="/icons/checkmark.svg" alt="Completed" className="w-3 h-3" style={{ filter: 'brightness(0) invert(1)' }} />
         )}
       </button>
 
@@ -517,19 +488,7 @@ function TaskItem({
             {dueDate}
           </span>
         ) : (
-          <svg
-            className="w-4 h-4 text-[var(--color-text-secondary)] opacity-30 hover:opacity-60 transition-opacity"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-            />
-          </svg>
+          <img src="/icons/calendar.svg" alt="Select date" className="w-4 h-4 opacity-30 hover:opacity-60 transition-opacity" style={{ color: 'var(--color-text-secondary)' }} />
         )}
       </label>
 
@@ -569,9 +528,7 @@ function TaskItem({
           className="flex-shrink-0 p-1 rounded opacity-50 hover:opacity-100 text-[var(--color-text-secondary)] hover:text-red-400 transition-all"
           title="Ta bort"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <img src="/icons/close.svg" alt="Delete" className="w-4 h-4" />
         </button>
       )}
     </div>

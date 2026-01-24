@@ -1,8 +1,9 @@
 import { useDroppable } from '@dnd-kit/core';
-import { formatDayHeader, isToday } from '@/utils/dateUtils';
+import { formatDayHeader, isToday, findCurrentTimeIndex } from '@/utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
 import { EventCard } from '@/components/WeekView/EventCard';
 import { useAppContext } from '@/contexts/AppContext';
+import { CurrentTimeIndicator } from '@/components/WeekView/CurrentTimeIndicator';
 import type { Block } from '@/types';
 
 interface DroppableDaySectionProps {
@@ -33,6 +34,10 @@ function DroppableDaySection({
     onEmptyClick(date);
   };
 
+  // Find where to insert the current time indicator (only for timed events)
+  const timedBlocks = blocks.filter((b) => !b.allDay);
+  const currentTimeIndex = findCurrentTimeIndex(date, timedBlocks, isToday);
+
   return (
     <section
       ref={setNodeRef}
@@ -62,18 +67,41 @@ function DroppableDaySection({
       </header>
 
       <div className="p-4 min-h-[100px]">
-        {/* Events */}
         <div className="space-y-3">
           {blocks.length === 0 ? (
-            <p className="text-center text-[var(--color-text-secondary)] py-8 opacity-60">Inga events</p>
+            <>
+              {isToday && <CurrentTimeIndicator date={date} variant="inline" />}
+              <p className="text-center text-[var(--color-text-secondary)] py-8 opacity-60">Inga events</p>
+            </>
           ) : (
-            blocks.map((block) => (
-              <EventCard
-                key={`${block.calendarId}-${block.id}`}
-                block={block}
-                draggable={true}
-              />
-            ))
+            <>
+              {/* All-day events first */}
+              {blocks
+                .filter((b) => b.allDay)
+                .map((block) => (
+                  <EventCard
+                    key={`${block.calendarId}-${block.id}`}
+                    block={block}
+                    draggable={true}
+                  />
+                ))}
+              {/* Timed events with indicator inserted at appropriate position */}
+              {timedBlocks.map((block, index) => (
+                <div key={`${block.calendarId}-${block.id}`}>
+                  {isToday && currentTimeIndex === index && <CurrentTimeIndicator date={date} variant="inline" />}
+                  <EventCard
+                    block={block}
+                    draggable={true}
+                  />
+                </div>
+              ))}
+              {/* Current time indicator after all timed events if needed */}
+              {isToday && timedBlocks.length > 0 && currentTimeIndex === -1 && (
+                <CurrentTimeIndicator date={date} variant="inline" />
+              )}
+              {/* Show indicator even if no timed events */}
+              {isToday && timedBlocks.length === 0 && <CurrentTimeIndicator date={date} variant="inline" />}
+            </>
           )}
         </div>
       </div>

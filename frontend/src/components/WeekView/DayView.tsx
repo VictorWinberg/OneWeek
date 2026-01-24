@@ -1,8 +1,9 @@
 import { useDroppable } from '@dnd-kit/core';
-import { isToday, formatDayShort, formatDayNumber } from '@/utils/dateUtils';
+import { isToday, formatDayShort, formatDayNumber, findCurrentTimeIndex } from '@/utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
 import { EventCard } from '@/components/WeekView/EventCard';
 import { useAppContext } from '@/contexts/AppContext';
+import { CurrentTimeIndicator } from '@/components/WeekView/CurrentTimeIndicator';
 import type { DesktopViewRenderProps } from '@/components/WeekView/DesktopView';
 import type { Block } from '@/types';
 
@@ -21,11 +22,14 @@ function DroppableDayEvents({ date, blocks }: DroppableDayEventsProps) {
     data: { date },
   });
 
+  // Find where to insert the current time indicator
+  const currentTimeIndex = findCurrentTimeIndex(date, dayBlocks, today);
+
   return (
     <div
       ref={setNodeRef}
       className={`
-        flex-1 min-w-[80px] p-2 space-y-2 overflow-y-auto cursor-pointer border-r border-[var(--color-bg-tertiary)] last:border-r-0
+        flex-1 min-w-[80px] p-2 space-y-2 overflow-y-auto cursor-pointer border-r border-[var(--color-bg-tertiary)] last:border-r-0 relative
         ${today ? 'bg-[var(--color-bg-tertiary)]/30' : ''}
         ${isOver ? 'ring-2 ring-[var(--color-accent)] ring-inset' : 'hover:bg-[var(--color-bg-tertiary)]/20'}
         transition-colors
@@ -33,18 +37,26 @@ function DroppableDayEvents({ date, blocks }: DroppableDayEventsProps) {
       onClick={() => onCreateEventForDate?.(date)}
     >
       {dayBlocks.length === 0 ? (
-        <div className="h-full flex items-center justify-center text-[var(--color-text-secondary)] text-sm opacity-50 pointer-events-none">
-          —
-        </div>
+        <>
+          {today && <CurrentTimeIndicator date={date} variant="inline" />}
+          <div className="h-full flex items-center justify-center text-[var(--color-text-secondary)] text-sm opacity-50 pointer-events-none">
+            —
+          </div>
+        </>
       ) : (
-        dayBlocks.map((block) => (
-          <EventCard
-            key={`${block.calendarId}-${block.id}`}
-            block={block}
-            compact={false}
-            draggable={true}
-          />
-        ))
+        <>
+          {dayBlocks.map((block, index) => (
+            <div key={`${block.calendarId}-${block.id}`}>
+              {today && currentTimeIndex === index && <CurrentTimeIndicator date={date} variant="inline" />}
+              <EventCard
+                block={block}
+                compact={false}
+                draggable={true}
+              />
+            </div>
+          ))}
+          {today && currentTimeIndex === -1 && <CurrentTimeIndicator date={date} variant="inline" />}
+        </>
       )}
     </div>
   );

@@ -22,6 +22,42 @@ export function formatWeekHeader(date: Date): string {
   return `${format(start, 'd')} ${startMonth} – ${format(end, 'd')} ${endMonth} ${year}`;
 }
 
+export function formatWeekHeaderShort(date: Date): string {
+  const start = startOfWeek(date, { weekStartsOn: 1 });
+  const end = endOfWeek(date, { weekStartsOn: 1 });
+
+  const startMonth = format(start, 'MMM', { locale: sv });
+  const endMonth = format(end, 'MMM', { locale: sv });
+
+  if (startMonth === endMonth) {
+    return `${format(start, 'd')}–${format(end, 'd')} ${startMonth}`;
+  }
+
+  return `${format(start, 'd')} ${startMonth} – ${format(end, 'd')} ${endMonth}`;
+}
+
+export function getWeekYear(date: Date): string {
+  // Week 1 is the week containing January 4th (ISO week numbering)
+  // For weeks spanning year boundaries, we need to determine which year the week number belongs to
+  const start = startOfWeek(date, { weekStartsOn: 1 });
+  const end = endOfWeek(date, { weekStartsOn: 1 });
+
+  // Check if the week contains January 4th of the end year (most common case for week 1)
+  const jan4EndYear = new Date(end.getFullYear(), 0, 4);
+  if (start <= jan4EndYear && end >= jan4EndYear) {
+    return format(jan4EndYear, 'yyyy');
+  }
+
+  // Check if the week contains January 4th of the start year
+  const jan4StartYear = new Date(start.getFullYear(), 0, 4);
+  if (start <= jan4StartYear && end >= jan4StartYear) {
+    return format(jan4StartYear, 'yyyy');
+  }
+
+  // Otherwise, use the year of the start date
+  return format(start, 'yyyy');
+}
+
 export function formatDayHeader(date: Date): string {
   return format(date, 'EEEE d/M', { locale: sv });
 }
@@ -142,4 +178,40 @@ export function parseDateParam(dateParam: string | undefined): Date | null {
     // Invalid date format
   }
   return null;
+}
+
+/**
+ * Find the index where the current time indicator should be inserted in a list of timed blocks.
+ * Returns the index of the first block that starts after the current time, or -1 if all blocks are in the past.
+ *
+ * @param date - The date being viewed (used for normalization)
+ * @param timedBlocks - Array of timed blocks (non-all-day events) sorted by start time
+ * @param isCurrentDay - Whether the date is today
+ * @returns The index where the indicator should be inserted, or -1 if it should be after all events
+ */
+export function findCurrentTimeIndex(
+  date: Date,
+  timedBlocks: Array<{ startTime: Date }>,
+  isCurrentDay: boolean
+): number {
+  if (!isCurrentDay) {
+    return -1;
+  }
+
+  const now = new Date();
+
+  return timedBlocks.findIndex((block) => {
+    const blockStart = new Date(block.startTime);
+    // Normalize both times to the same day (the date we're viewing)
+    const normalizedNow = new Date(date);
+    normalizedNow.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+    const normalizedBlockStart = new Date(date);
+    normalizedBlockStart.setHours(
+      blockStart.getHours(),
+      blockStart.getMinutes(),
+      blockStart.getSeconds(),
+      blockStart.getMilliseconds()
+    );
+    return normalizedBlockStart > normalizedNow;
+  });
 }

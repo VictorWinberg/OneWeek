@@ -1,5 +1,5 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
-import type { Block } from '@/types';
+import { useAppContext } from '@/contexts/AppContext';
 
 interface UseSwipeNavigationOptions {
   onPrevWeek?: () => void;
@@ -16,10 +16,6 @@ interface UseSwipeNavigationOptions {
    * Maximum vertical movement allowed for horizontal swipe (default: 50)
    */
   maxVerticalMovement?: number;
-  /**
-   * If an active block is being dragged, disable swipe navigation
-   */
-  activeBlock?: Block | null;
   /**
    * Disable swipe navigation
    */
@@ -51,10 +47,11 @@ export function useSwipeNavigation({
   threshold = 100,
   minHorizontalMovement = 10,
   maxVerticalMovement = 50,
-  activeBlock,
   isDisabled = false,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   containerWidth: _containerWidth = 0,
 }: UseSwipeNavigationOptions) {
+  const { activeBlock } = useAppContext();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const swipeStateRef = useRef<SwipeState | null>(null);
   const [swipeState, setSwipeState] = useState<SwipeNavigationState>({ offsetX: 0 });

@@ -17,9 +17,7 @@ interface SwipeableWeekContainerProps {
   onPrevWeek?: () => void;
   onNextWeek?: () => void;
   isDisabled?: boolean;
-  activeBlock?: Block | null;
   children: (weekData: WeekData) => ReactNode;
-  onAllBlocksChange?: (blocks: Block[]) => void;
 }
 
 export function SwipeableWeekContainer({
@@ -27,9 +25,7 @@ export function SwipeableWeekContainer({
   onPrevWeek,
   onNextWeek,
   isDisabled = false,
-  activeBlock,
   children,
-  onAllBlocksChange,
 }: SwipeableWeekContainerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -77,18 +73,6 @@ export function SwipeableWeekContainer({
     }
   }, []);
 
-  const prevBlocksRef = useRef<string>('');
-  useEffect(() => {
-    if (onAllBlocksChange) {
-      const allBlocks = [...prevBlocks, ...currentBlocks, ...nextBlocks];
-      const blocksKey = `${prevBlocks.length}-${currentBlocks.length}-${nextBlocks.length}`;
-      if (prevBlocksRef.current !== blocksKey) {
-        prevBlocksRef.current = blocksKey;
-        onAllBlocksChange(allBlocks);
-      }
-    }
-  }, [prevBlocks, currentBlocks, nextBlocks, onAllBlocksChange]);
-
   const {
     swipeState,
     isDragging,
@@ -100,7 +84,6 @@ export function SwipeableWeekContainer({
     onNextWeek,
     isDisabled,
     containerWidth,
-    activeBlock,
   });
 
   const combinedRef = useCallback(
@@ -157,6 +140,8 @@ export function SwipeableWeekContainer({
       ref={combinedRef}
       className="h-full overflow-hidden relative"
       style={{
+        // Only allow vertical panning - horizontal should be handled by dnd-kit for dragging
+        // or by swipe navigation for week navigation
         touchAction: isDragging ? 'none' : 'pan-y',
         userSelect: isDragging ? 'none' : 'auto',
         WebkitUserSelect: isDragging ? 'none' : 'auto',

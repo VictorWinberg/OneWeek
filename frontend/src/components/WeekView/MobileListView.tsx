@@ -2,18 +2,23 @@ import { useDroppable } from '@dnd-kit/core';
 import { formatDayHeader, isToday } from '@/utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
 import { EventCard } from '@/components/WeekView/EventCard';
+import { useAppContext } from '@/contexts/AppContext';
 import type { Block } from '@/types';
 
 interface DroppableDaySectionProps {
   date: Date;
   title: string;
   blocks: Block[];
-  onBlockClick: (block: Block) => void;
-  onEmptyClick?: (date: Date) => void;
   isToday: boolean;
 }
 
-function DroppableDaySection({ date, title, blocks, onBlockClick, onEmptyClick, isToday }: DroppableDaySectionProps) {
+function DroppableDaySection({
+  date,
+  title,
+  blocks,
+  isToday,
+}: DroppableDaySectionProps) {
+  const { onEmptyClick } = useAppContext();
   const { setNodeRef, isOver } = useDroppable({
     id: `day-section-${date.toISOString()}`,
     data: { date },
@@ -25,7 +30,7 @@ function DroppableDaySection({ date, title, blocks, onBlockClick, onEmptyClick, 
       return;
     }
     // Trigger for any click on the day section (header or empty space)
-    onEmptyClick?.(date);
+    onEmptyClick(date);
   };
 
   return (
@@ -66,7 +71,6 @@ function DroppableDaySection({ date, title, blocks, onBlockClick, onEmptyClick, 
               <EventCard
                 key={`${block.calendarId}-${block.id}`}
                 block={block}
-                onClick={() => onBlockClick(block)}
                 draggable={true}
               />
             ))
@@ -80,27 +84,14 @@ function DroppableDaySection({ date, title, blocks, onBlockClick, onEmptyClick, 
 interface MobileListViewProps {
   weekDays: Date[];
   blocks: Block[];
-  onBlockClick: (block: Block) => void;
-  onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
 }
 
-export function MobileListView({
-  weekDays,
-  blocks,
-  onBlockClick,
-  onCreateEventForDate,
-}: MobileListViewProps) {
+export function MobileListView({ weekDays, blocks }: MobileListViewProps) {
   // Custom sort: timed events first (by time), then all-day events (by time)
   const sortBlocksForList = (blocks: Block[]): Block[] => {
     const timed = blocks.filter((b) => !b.allDay);
     const allDay = blocks.filter((b) => b.allDay);
     return [...sortBlocksByTime(timed), ...sortBlocksByTime(allDay)];
-  };
-
-  const handleEmptySpaceClick = (date: Date) => {
-    if (onCreateEventForDate) {
-      onCreateEventForDate(date);
-    }
   };
 
   return (
@@ -115,8 +106,6 @@ export function MobileListView({
             date={date}
             title={formatDayHeader(date)}
             blocks={dayBlocks}
-            onBlockClick={onBlockClick}
-            onEmptyClick={handleEmptySpaceClick}
             isToday={isCurrentDay}
           />
         );

@@ -3,10 +3,11 @@ import type { Block } from '@/types';
 import { getInitial } from '@/types';
 import { useConfigStore } from '@/stores/configStore';
 import { formatBlockTime, isBlockPast, isBlockCurrent } from '@/services/calendarNormalizer';
+import { useAppContext } from '@/contexts/AppContext';
+import { usePressAndHold } from '@/hooks/usePressAndHold';
 
 interface EventCardProps {
   block: Block;
-  onClick: () => void;
   compact?: boolean;
   fillHeight?: boolean;
   draggable?: boolean;
@@ -18,7 +19,6 @@ interface EventCardProps {
 
 export function EventCard({
   block,
-  onClick,
   compact = false,
   fillHeight = false,
   draggable = false,
@@ -27,16 +27,35 @@ export function EventCard({
   extraCompact = false,
   truncate = false,
 }: EventCardProps) {
+  // Get callbacks from context
+  const { onBlockClick, setHolding } = useAppContext();
   const { getPersonById } = useConfigStore();
   const person = getPersonById(block.calendarId);
   const isPast = isBlockPast(block);
   const isCurrent = isBlockCurrent(block);
 
+  const blockId = `${block.calendarId}-${block.id}`;
+
   // Setup draggable
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: `${block.calendarId}-${block.id}`,
+    id: blockId,
     disabled: !draggable || !person,
   });
+
+  // Setup press-and-hold touch interaction
+  const { elementRef: pressAndHoldElementRef, isHolding } = usePressAndHold({
+    blockId,
+    enabled: draggable && !!person,
+    onHoldStart: setHolding,
+    onHoldEnd: () => setHolding(null),
+    isDragging,
+  });
+
+  // Combined ref callback
+  const combinedRef = (element: HTMLElement | null) => {
+    pressAndHoldElementRef(element);
+    setNodeRef(element);
+  };
 
   const style = {
     // Don't apply transform - DragOverlay handles the dragged element position
@@ -44,6 +63,8 @@ export function EventCard({
     backgroundColor: person ? `color-mix(in srgb, ${person.color} 25%, var(--color-bg-secondary))` : 'transparent',
     borderLeft: person ? `4px solid ${person.color}` : 'none',
     touchAction: draggable ? 'none' : 'auto',
+    transform: isHolding && !isDragging ? 'scale(1.05)' : undefined,
+    transition: isHolding && !isDragging ? 'transform 0.1s ease-out' : undefined,
   } as React.CSSProperties;
 
   if (!person) {
@@ -54,12 +75,13 @@ export function EventCard({
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering parent click handlers
-    onClick();
+    onBlockClick(block);
   };
+
 
   return (
     <button
-      ref={setNodeRef}
+      ref={combinedRef}
       data-event-card
       style={style}
       onClick={handleClick}

@@ -3,6 +3,7 @@ import { useConfigStore } from '@/stores/configStore';
 import { formatDayShort, isToday } from '@/utils/dateUtils';
 import { EventCard } from '@/components/WeekView/EventCard';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
+import { useAppContext } from '@/contexts/AppContext';
 import type { DesktopViewRenderProps } from '@/components/WeekView/DesktopView';
 
 interface DroppableCellProps {
@@ -41,7 +42,8 @@ function DroppableCell({ id, date, calendarId, children, onClick, isToday }: Dro
 
 export type UserViewProps = DesktopViewRenderProps;
 
-export function UserView({ blocks, weekDays, onBlockClick, onCreateEventForDate }: UserViewProps) {
+export function UserView({ blocks, weekDays }: UserViewProps) {
+  const { onEmptyClick } = useAppContext();
   const { config } = useConfigStore();
   const calendars = config.calendars;
 
@@ -105,7 +107,7 @@ export function UserView({ blocks, weekDays, onBlockClick, onCreateEventForDate 
                     id={`${date.toISOString()}-${calendar.id}`}
                     date={date}
                     calendarId={calendar.id}
-                    onClick={() => onCreateEventForDate?.(date, calendar.id)}
+                    onClick={() => onEmptyClick(date, calendar.id)}
                     isToday={today}
                   >
                     <div className="space-y-2 min-h-[80px]">
@@ -118,7 +120,6 @@ export function UserView({ blocks, weekDays, onBlockClick, onCreateEventForDate 
                           <EventCard
                             key={`${block.calendarId}-${block.id}`}
                             block={block}
-                            onClick={() => onBlockClick(block)}
                             compact={true}
                             draggable={true}
                           />

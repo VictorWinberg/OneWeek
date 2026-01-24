@@ -2,6 +2,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { formatDayShort, isToday } from '@/utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
 import { EventCard } from '@/components/WeekView/EventCard';
+import { useAppContext } from '@/contexts/AppContext';
 import type { Block } from '@/types';
 import type { Calendar } from '@/types/calendar';
 
@@ -122,19 +123,11 @@ interface MobileUserViewProps {
   weekDays: Date[];
   blocks: Block[];
   calendars: Calendar[];
-  onBlockClick: (block: Block) => void;
-  onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
-  activeBlock?: Block | null;
 }
 
-export function MobileUserView({
-  weekDays,
-  blocks,
-  calendars,
-  onBlockClick,
-  onCreateEventForDate,
-  activeBlock,
-}: MobileUserViewProps) {
+export function MobileUserView({ weekDays, blocks, calendars }: MobileUserViewProps) {
+  const { onCreateEventForDate, activeBlock } = useAppContext();
+
   // Get blocks for a specific day and calendar
   const getBlocksForDayAndCalendar = (date: Date, calendarId: string) => {
     const dayBlocks = getBlocksForDay(blocks, date);
@@ -220,7 +213,6 @@ export function MobileUserView({
                               <EventCard
                                 key={`${block.calendarId}-${block.id}`}
                                 block={block}
-                                onClick={() => onBlockClick(block)}
                                 compact={true}
                                 draggable={true}
                               />

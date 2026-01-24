@@ -4,6 +4,7 @@ import { formatDayShort, isToday } from '@/utils/dateUtils';
 import { getBlocksForDay, calculateBlockPosition } from '@/services/calendarNormalizer';
 import { calculateNextHourTimeSlot } from '@/utils/timeUtils';
 import { EventCard } from '@/components/WeekView/EventCard';
+import { useAppContext } from '@/contexts/AppContext';
 import type { Block } from '@/types';
 
 interface DroppableTimeSlotProps {
@@ -48,18 +49,10 @@ function DroppableTimeSlot({ id, date, hour, minute, children, activeBlockDurati
 interface MobileHourViewProps {
   weekDays: Date[];
   blocks: Block[];
-  onBlockClick: (block: Block) => void;
-  activeBlock: Block | null;
-  onCreateEventForDate?: (date: Date, calendarId?: string, startTime?: string, endTime?: string) => void;
 }
 
-export function MobileHourView({
-  weekDays,
-  blocks,
-  onBlockClick,
-  activeBlock,
-  onCreateEventForDate,
-}: MobileHourViewProps) {
+export function MobileHourView({ weekDays, blocks }: MobileHourViewProps) {
+  const { onCreateEventForDate, activeBlock } = useAppContext();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
 
@@ -177,7 +170,6 @@ export function MobileHourView({
                 <EventCard
                   key={`${block.calendarId}-${block.id}`}
                   block={block}
-                  onClick={() => onBlockClick(block)}
                   compact={true}
                   fillHeight={false}
                   draggable={false}
@@ -283,7 +275,6 @@ export function MobileHourView({
                       >
                         <EventCard
                           block={block}
-                          onClick={() => onBlockClick(block)}
                           compact={true}
                           fillHeight={true}
                           draggable={true}

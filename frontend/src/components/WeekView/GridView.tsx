@@ -2,18 +2,18 @@ import { useDroppable } from '@dnd-kit/core';
 import { formatDayShort, isToday } from '@/utils/dateUtils';
 import { getBlocksForDay, sortBlocksByTime } from '@/services/calendarNormalizer';
 import { EventCard } from '@/components/WeekView/EventCard';
+import { useAppContext } from '@/contexts/AppContext';
 import type { DesktopViewRenderProps } from '@/components/WeekView/DesktopView';
 import type { Block } from '@/types';
 
 interface DroppableGridDayProps {
   date: Date;
   dayBlocks: Block[];
-  onBlockClick: (block: Block) => void;
-  onEmptyClick?: (date: Date) => void;
   isCurrentDay: boolean;
 }
 
-function DroppableGridDay({ date, dayBlocks, onBlockClick, onEmptyClick, isCurrentDay }: DroppableGridDayProps) {
+function DroppableGridDay({ date, dayBlocks, isCurrentDay }: DroppableGridDayProps) {
+  const { onEmptyClick } = useAppContext();
   const { setNodeRef, isOver } = useDroppable({
     id: `grid-day-${date.toISOString()}`,
     data: { date },
@@ -25,7 +25,7 @@ function DroppableGridDay({ date, dayBlocks, onBlockClick, onEmptyClick, isCurre
       return;
     }
     // Trigger for any click on the day (header or empty space)
-    onEmptyClick?.(date);
+    onEmptyClick(date);
   };
 
   return (
@@ -83,7 +83,6 @@ function DroppableGridDay({ date, dayBlocks, onBlockClick, onEmptyClick, isCurre
             <EventCard
               key={`${block.calendarId}-${block.id}`}
               block={block}
-              onClick={() => onBlockClick(block)}
               compact={true}
               draggable={true}
             />
@@ -96,7 +95,7 @@ function DroppableGridDay({ date, dayBlocks, onBlockClick, onEmptyClick, isCurre
 
 export type GridViewProps = DesktopViewRenderProps;
 
-export function GridView({ blocks, weekDays, onBlockClick, onCreateEventForDate }: GridViewProps) {
+export function GridView({ blocks, weekDays }: GridViewProps) {
   return (
     <div className="grid grid-cols-4 grid-rows-2 gap-3 h-full">
       {weekDays.map((date) => {
@@ -108,8 +107,6 @@ export function GridView({ blocks, weekDays, onBlockClick, onCreateEventForDate 
             key={date.toISOString()}
             date={date}
             dayBlocks={dayBlocks}
-            onBlockClick={onBlockClick}
-            onEmptyClick={(date) => onCreateEventForDate?.(date)}
             isCurrentDay={isCurrentDay}
           />
         );

@@ -9,15 +9,14 @@ import { LoginPage } from '@/pages/LoginPage';
 import { ConfigErrorPage } from '@/pages/ConfigErrorPage';
 import { NotConfiguredPage } from '@/pages/NotConfiguredPage';
 import { AppRoutes } from '@/routes/AppRoutes';
-import { useEventPanel } from '@/hooks/useEventPanel';
-import type { Block } from '@/types';
+import { AppProvider, useAppContext } from '@/contexts/AppContext';
 import './index.css';
 
-function App() {
+function AppContent() {
   const { isAuthenticated, isLoading: authLoading, checkAuth } = useAuthStore();
   const { isConfigured, isLoading: configLoading, error: configError, loadConfig } = useConfigStore();
   const { selectBlock, selectedBlock } = useCalendarStore();
-  const eventPanel = useEventPanel();
+  const { eventPanel } = useAppContext();
 
   // Check authentication on mount
   useEffect(() => {
@@ -30,10 +29,6 @@ function App() {
       loadConfig();
     }
   }, [isAuthenticated, loadConfig]);
-
-  const handleBlockClick = (block: Block) => {
-    selectBlock(block);
-  };
 
   const handleCloseDetail = () => {
     selectBlock(null);
@@ -62,7 +57,7 @@ function App() {
   // Main authenticated app with routing
   return (
     <>
-      <AppRoutes onBlockClick={handleBlockClick} onCreateEventForDate={eventPanel.openPanelWithDate} />
+      <AppRoutes />
       <EventDetailPanel block={selectedBlock} onClose={handleCloseDetail} />
       <EventCreatePanel
         isOpen={eventPanel.isOpen}
@@ -73,6 +68,14 @@ function App() {
         defaultEndTime={eventPanel.endTime}
       />
     </>
+  );
+}
+
+function App() {
+  return (
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
   );
 }
 

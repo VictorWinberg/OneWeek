@@ -3,12 +3,13 @@
  * Encapsulates drag state management and event handling
  */
 
-import { useState, useCallback } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import { useSensor, useSensors, PointerSensor, TouchSensor } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import type { Block } from '@/types';
 import { findBlockById } from '@/services/calendarNormalizer';
 import { handleDragDrop, type EventMutations, type FullDropData } from '@/utils/dragAndDrop';
+import { useAppContext } from '@/contexts/AppContext';
 
 export interface UseDragAndDropOptions {
   blocks: Block[];
@@ -17,7 +18,6 @@ export interface UseDragAndDropOptions {
 }
 
 export interface UseDragAndDropResult {
-  activeBlock: Block | null;
   handleDragStart: (event: DragStartEvent) => void;
   handleDragEnd: (event: DragEndEvent) => Promise<void>;
   sensors: ReturnType<typeof useSensors>;
@@ -31,7 +31,14 @@ export function useDragAndDrop({
   mutations,
   isMobile = false,
 }: UseDragAndDropOptions): UseDragAndDropResult {
-  const [activeBlock, setActiveBlock] = useState<Block | null>(null);
+  const { holdingBlockId, setHolding, setActiveBlock } = useAppContext();
+  // Use ref to access current holdingBlockId synchronously in handleDragStart
+  const holdingBlockIdRef = useRef<string | null>(null);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    holdingBlockIdRef.current = holdingBlockId;
+  }, [holdingBlockId]);
 
   // Configure sensors based on device type
   const sensors = useSensors(
@@ -54,16 +61,29 @@ export function useDragAndDrop({
 
   /**
    * Handle drag start - find and set the active block
+   * On mobile, require hold state before allowing drag
    */
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
       const blockId = String(event.active.id);
       const block = findBlockById(blocks, blockId);
-      if (block) {
-        setActiveBlock(block);
+
+      if (!block) {
+        return;
       }
+
+      // On mobile, require hold state before allowing drag
+      if (isMobile) {
+        const currentHoldingBlockId = holdingBlockIdRef.current;
+        if (currentHoldingBlockId !== blockId) {
+          // Drag started without proper hold state - cancel it
+          return;
+        }
+      }
+
+      setActiveBlock(block);
     },
-    [blocks]
+    [blocks, isMobile, setActiveBlock]
   );
 
   /**
@@ -71,11 +91,12 @@ export function useDragAndDrop({
    */
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
+      const blockId = String(event.active.id);
       setActiveBlock(null);
+      setHolding(null);
 
       if (!event.over) return;
 
-      const blockId = String(event.active.id);
       const dropData = event.over.data.current as FullDropData | undefined;
 
       if (!dropData) return;
@@ -85,11 +106,10 @@ export function useDragAndDrop({
 
       await handleDragDrop(block, dropData, mutations);
     },
-    [blocks, mutations]
+    [blocks, mutations, setActiveBlock, setHolding]
   );
 
   return {
-    activeBlock,
     handleDragStart,
     handleDragEnd,
     sensors,
@@ -115,4 +135,3 @@ export function useMobileDragAndDrop(
 ): UseDragAndDropResult {
   return useDragAndDrop({ blocks, mutations, isMobile: true });
 }
-

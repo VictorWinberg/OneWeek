@@ -48,7 +48,12 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
     color: cal.color,
   }));
 
-  const filteredTasks = filterUser ? tasks.filter((task) => task.metadata.assignedUser === filterUser) : tasks;
+  // Filter tasks by user and search text
+  const filteredTasks = tasks.filter((task) => {
+    const matchesUser = !filterUser || task.metadata.assignedUser === filterUser;
+    const matchesSearch = !newTaskTitle.trim() || task.title.toLowerCase().includes(newTaskTitle.toLowerCase().trim());
+    return matchesUser && matchesSearch;
+  });
 
   const sortTasks = (taskList: Task[]): Task[] => {
     const tasks = [...taskList];
@@ -75,8 +80,27 @@ export function TasksView({ onGoToToday }: TasksViewProps) {
     return tasks;
   };
 
+  const sortCompletedTasks = (taskList: Task[]): Task[] => {
+    const tasks = [...taskList];
+
+    // Sort by completion date (most recent first)
+    tasks.sort((a, b) => {
+      const aCompleted = a.completed ? new Date(a.completed) : null;
+      const bCompleted = b.completed ? new Date(b.completed) : null;
+
+      if (!aCompleted && !bCompleted) return 0;
+      if (!aCompleted) return 1; // Tasks without completion date go to the end
+      if (!bCompleted) return -1;
+
+      // Most recent first (descending order)
+      return bCompleted.getTime() - aCompleted.getTime();
+    });
+
+    return tasks;
+  };
+
   const activeTasks = sortTasks(filteredTasks.filter((t) => t.status === 'needsAction'));
-  const completedTasks = sortTasks(filteredTasks.filter((t) => t.status === 'completed'));
+  const completedTasks = sortCompletedTasks(filteredTasks.filter((t) => t.status === 'completed'));
 
   const handleFilterChange = useCallback((userId: string | null) => {
     setFilterUser(userId);

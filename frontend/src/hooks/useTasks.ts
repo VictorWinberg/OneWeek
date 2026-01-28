@@ -134,27 +134,8 @@ export function useCompleteTask(taskListId: string = DEFAULT_TASK_LIST_ID) {
 
   return useMutation({
     mutationFn: (taskId: string) => tasksApi.completeTask(taskListId, taskId),
-    onMutate: async (taskId) => {
-      await queryClient.cancelQueries({ queryKey: taskKeys.tasks(taskListId) });
-
-      const previousData = queryClient.getQueryData<Task[]>(taskKeys.tasks(taskListId));
-
-      if (previousData) {
-        queryClient.setQueryData<Task[]>(
-          taskKeys.tasks(taskListId),
-          previousData.map((task) => (task.id === taskId ? { ...task, status: 'completed' } : task))
-        );
-      }
-
-      return { previousData };
-    },
-    onError: (_err, _variables, context) => {
-      if (context?.previousData) {
-        queryClient.setQueryData(taskKeys.tasks(taskListId), context.previousData);
-      }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: taskKeys.tasks(taskListId) });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: taskKeys.tasks(taskListId), exact: false });
     },
   });
 }
@@ -167,27 +148,8 @@ export function useUncompleteTask(taskListId: string = DEFAULT_TASK_LIST_ID) {
 
   return useMutation({
     mutationFn: (taskId: string) => tasksApi.uncompleteTask(taskListId, taskId),
-    onMutate: async (taskId) => {
-      await queryClient.cancelQueries({ queryKey: taskKeys.tasks(taskListId) });
-
-      const previousData = queryClient.getQueryData<Task[]>(taskKeys.tasks(taskListId));
-
-      if (previousData) {
-        queryClient.setQueryData<Task[]>(
-          taskKeys.tasks(taskListId),
-          previousData.map((task) => (task.id === taskId ? { ...task, status: 'needsAction' } : task))
-        );
-      }
-
-      return { previousData };
-    },
-    onError: (_err, _variables, context) => {
-      if (context?.previousData) {
-        queryClient.setQueryData(taskKeys.tasks(taskListId), context.previousData);
-      }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: taskKeys.tasks(taskListId) });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: taskKeys.tasks(taskListId), exact: false });
     },
   });
 }
